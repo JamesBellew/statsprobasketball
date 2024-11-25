@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 export default function StartGame(){
   const navigate = useNavigate();
 const [opponentName,setOpponentName] = useState(null)
-  const [selectedVenue, setSelectedVenue] = useState("");
+  const [selectedVenue, setSelectedVenue] = useState("home");
   const handleClick = (venue) => {
     setSelectedVenue(venue);
   };
