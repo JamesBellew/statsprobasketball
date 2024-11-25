@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Login from './screens/login';
 import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
+import InGame from './screens/InGame';
 export default function App() {
 
  //UseStates
@@ -89,6 +90,7 @@ export default function App() {
         <Route path="/Login" element={<Login />} />
         <Route path="/homedashboard" element={<HomeDashboard />} />
         <Route path="/startgame" element={<StartGame />} />
+        <Route path="/ingame" element={<InGame />} />
 
   
       </Routes>
