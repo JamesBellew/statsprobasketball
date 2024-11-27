@@ -167,7 +167,7 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
           setGameActions((prevActions) => [
             ...prevActions,
             {
-              quarter: 1, // Default quarter
+              quarter: 1, // Default quarterdkndk
               actionName: label,
               x: 0, // No position required for free throws
               y: 0,
