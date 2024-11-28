@@ -9,6 +9,47 @@ export default function InGame() {
   const [threepoint,setThreePoint] = useState({total:0,made:0});
   const [fieldGoalPercentage,setFieldGoalPercentage]=useState(null);
   const [threePointPercentage,setThreePointPercentage]=useState(null);
+const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
+
+  const [currentQuater,setCurrentQuarter]=useState(1)
+
+
+//hanlder for going to next period/quarter
+const handleNextPeriodClick =()=>{
+  console.log('clicked boii');
+
+  //need to check if the current quarter is less then 4 before adding one to it
+  if(currentQuater<4){
+    //we can add one to it now, since its less then 4 
+    setCurrentQuarter(currentQuater+1)
+
+  }
+  if(currentQuater==3){
+    //we need to change the text to finsih game
+    console.log(' change text to finsih game ');
+    
+  }
+      // Show an alert message
+      setAlertMessage(`Finished Q${currentQuater} !`);
+      setTimeout(() => setAlertMessage(""), 3000);
+}
+// handler for going back a quarter
+const handlePreviousPeriodClick =()=>{
+//first we check if the quarter is more than one. I know we already check this in the disabled, but measure twice cut once hai
+
+if(currentQuater>1){
+  //we good to minus one
+  setCurrentQuarter(currentQuater-1);
+  //cheeky alert message 
+      // Show an alert message
+      setAlertMessage(`Back to Q${currentQuater-1} !`);
+      setTimeout(() => setAlertMessage(""), 3000);
+}else{
+  console.log('we have issue');
+  
+}
+  
+}
 
   // Handle click on the court
   const handleCourtClick = (e) => {
@@ -21,12 +62,12 @@ export default function InGame() {
     const x = e.clientX - court.left;
     const y = e.clientY - court.top;
   
-    const adjustedX = x - 45;
+    const adjustedX = x - 30;
     const adjustedY = y - 5;
   
     // Create a new action
     const newAction = {
-      quarter: 1,
+      quarter: currentQuater,
       actionName: actionSelected,
       x: adjustedX,
       y: adjustedY,
@@ -58,27 +99,100 @@ export default function InGame() {
     setTimeout(() => setAlertMessage(""), 3000);
    
   };
+
+
   
   const actions = [
     "2 Points",
     "3 Points",
     "2Pt Miss",
     "3Pt Miss",
-    "Free Throw",
-    "Free Throw Miss",
+    "FT Score",
+    "FT Miss",
    
 
     "T/O",
     "Block",
   ];
-//this useeffect is for the percentages
-useEffect(()=>{
-setFieldGoalPercentage(Math.round((fieldGoal.made/fieldGoal.total)*100))
-setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
-
-
-
-},[gameActions])
+  useEffect(() => {
+    // Overall stats
+    const overallFieldGoalAttempts = gameActions.filter((action) =>
+      ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
+    );
+    const overallFieldGoalMakes = overallFieldGoalAttempts.filter(
+      (action) => !action.actionName.includes("Miss")
+    );
+  
+    const overallThreePointAttempts = gameActions.filter((action) =>
+      action.actionName.includes("3")
+    );
+    const overallThreePointMakes = overallThreePointAttempts.filter(
+      (action) => !action.actionName.includes("Miss")
+    );
+  
+    setFieldGoal({
+      total: overallFieldGoalAttempts.length,
+      made: overallFieldGoalMakes.length,
+    });
+  
+    setThreePoint({
+      total: overallThreePointAttempts.length,
+      made: overallThreePointMakes.length,
+    });
+  
+    setFieldGoalPercentage(
+      Math.round((overallFieldGoalMakes.length / overallFieldGoalAttempts.length) * 100) || 0
+    );
+    setThreePointPercentage(
+      Math.round((overallThreePointMakes.length / overallThreePointAttempts.length) * 100) || 0
+    );
+  
+    // Current quarter stats
+    const currentQuarterActions = gameActions.filter(
+      (action) => action.quarter === currentQuater
+    );
+  
+    const currentFieldGoalAttempts = currentQuarterActions.filter((action) =>
+      ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
+    );
+    const currentFieldGoalMakes = currentFieldGoalAttempts.filter(
+      (action) => !action.actionName.includes("Miss")
+    );
+  
+    const currentThreePointAttempts = currentQuarterActions.filter((action) =>
+      action.actionName.includes("3")
+    );
+    const currentThreePointMakes = currentThreePointAttempts.filter(
+      (action) => !action.actionName.includes("Miss")
+    );
+  
+    setFieldGoal((prevState) => ({
+      ...prevState,
+      currentTotal: currentFieldGoalAttempts.length,
+      currentMade: currentFieldGoalMakes.length,
+    }));
+  
+    setThreePoint((prevState) => ({
+      ...prevState,
+      currentTotal: currentThreePointAttempts.length,
+      currentMade: currentThreePointMakes.length,
+    }));
+  
+    setFieldGoalPercentage((prevState) => ({
+      ...prevState,
+      current: Math.round(
+        (currentFieldGoalMakes.length / currentFieldGoalAttempts.length) * 100
+      ) || 0,
+    }));
+  
+    setThreePointPercentage((prevState) => ({
+      ...prevState,
+      current: Math.round(
+        (currentThreePointMakes.length / currentThreePointAttempts.length) * 100
+      ) || 0,
+    }));
+  }, [gameActions, currentQuater]);
+  
 
 
   return (
@@ -88,10 +202,33 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
         <div className="top-nav w-full h-[15vh] relative">
           {/* Alert Message */}
           {alertMessage && (
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg shadow-lg">
-              {alertMessage}
-            </div>
+        <div class="absolute w-2/4 left-1/4 mx-auto text-center px-5 lg:px-4">
+        <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-full flex lg:inline-flex" role="alert">
+          <span class="flex rounded-full bg-indigo-500 uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
+          <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
+          <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
+        </div>
+      </div>
           )}
+
+{/* top  of the top nav contents */}
+<div className="text-white h-1/2 flex-row flex w-full">
+<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> East Coast Cavan</p></div>
+<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> Q{currentQuater}</p></div>
+<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto">21-12-2024</p></div>
+</div>
+{/* bottom  of the top nav contents */}
+<div className=" flex flex-row text-white space-x-2 p-3 h-1/2 w-full">
+<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
+<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Settings</p></div><div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto">Court Theme</p>
+</div>
+<div className={` w-1/4 h-full  rounded-lg text-center flex items-center
+  ${currentQuater===4 ? "bg-indigo-800"  : "bg-gray-800"  }
+  `}>
+<p className="text-center mx-auto"> {SaveGameBtnText}</p></div>
+
+</div>
+
         </div>
 
         {/* Court */}
@@ -108,8 +245,9 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
 {/* Render Actions as Dots */}
 {gameActions
   .filter(
-    (action) => !["Free Throw", "Free Throw Miss"].includes(action.actionName)
-  ) // Exclude free throw actions
+    (action) =>
+      !["FT Score", "FT Miss"].includes(action.actionName) && action.quarter === currentQuater
+  ) // Exclude free throw actions and show only actions for the current quarter
   .map((action, index) => (
     <div
       key={index}
@@ -126,33 +264,56 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
       title={`Action: ${action.actionName} | Quarter: ${action.quarter}`} // Tooltip for clarity
     ></div>
   ))}
+
           </div>
         </div>
 
         {/* Bottom Nav */}
         <div className="bottom-nav  items-center justify-center w-full h-[30vh]">
 {/* Quick Stats Section */}
-        <div className="text-white text-center flex-row p-2 space-x-4 flex w-full h-1/4">
+        <div className="text-white  items-center justify-center text-center flex-row p-2 space-x-4 flex w-full h-1/4">
         
-<div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
-<p>FG 
-  {fieldGoalPercentage>=0
-  ? " "+fieldGoalPercentage +'%' :""
-}
+<div className="h-full flex w-1/4 my-auto flex-col justify-center items-center">
+<p>FG  
+{
+fieldGoal.made>0 &&
+" "+Math.round((fieldGoal.made/fieldGoal.total)*100)+'%'}
   </p>
 <p>{fieldGoal.made}-{fieldGoal.total}</p>
 
 </div>
-<div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
+<div className="h-full flex w-1/4 my-auto flex-col justify-center items-center">
 <p>3PT
-  {threePointPercentage>=0
-  ? " "+threePointPercentage +'%' :""
-}
+{
+threepoint.made>0 &&
+" "+Math.round((threepoint.made/threepoint.total)*100)+'%'}
   </p>
 <p>{threepoint.made}-{threepoint.total}</p>
 
 </div>
-
+{/* this only needs to be rendered if the current quarter is more than 1 */}
+ {/* Current Quarter Stats */}
+ {currentQuater > 1 && (
+    <div className="bg-gray-800/25 rounded-lg flex w-1/2 h-full relative">
+      <p className="absolute inset-x-0 top-5 text-center text-white">Q{currentQuater}</p>
+      <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
+        <p>
+          FG {fieldGoalPercentage.current || 0}%
+        </p>
+        <p>
+          {fieldGoal.currentMade}-{fieldGoal.currentTotal}
+        </p>
+      </div>
+      <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
+        <p>
+          3PT {threePointPercentage.current || 0}%
+        </p>
+        <p>
+          {threepoint.currentMade}-{threepoint.currentTotal}
+        </p>
+      </div>
+    </div>
+  )}
 
 
         </div>
@@ -162,7 +323,7 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
     <button
       key={index}
       onClick={() => {
-        if (["Free Throw", "Free Throw Miss"].includes(label)) {
+        if (["FT Score", "FT Miss"].includes(label)) {
           // Record the free throw action immediately
           setGameActions((prevActions) => [
             ...prevActions,
@@ -184,8 +345,8 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
       }}
       className={`${
         actionSelected === label ? "bg-blue-700" : "bg-gray-800" // Highlight selected action
-      } text-white font-semibold py-3 px-4 h-20 rounded-lg shadow hover:bg-blue-700 transition transform hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none ${
-        ["Free Throw Miss", "2Pt Miss", "3Pt Miss"].includes(label)
+      } text-white font-semibold py-2 px-4  rounded-lg shadow hover:bg-blue-700 transition transform hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none ${
+        ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label)
           ? "text-red-500" // Red text for misses
           : ""
       }`}
@@ -197,14 +358,30 @@ setThreePointPercentage(Math.round((threepoint.made/threepoint.total)*100))
 {/* Game Quick Settings Section */}
 <div className="text-white   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
         
-        <div className="h-full flex-row bg-gray-800 rounded-lg  flex w-2/4 my-auto  justify-center items-center">
-        <FontAwesomeIcon className="text-white mr-2 " icon={faBackward} />  Next Period       
+        <button 
+        disabled={currentQuater ===1}
+        onClick={
+         handlePreviousPeriodClick
+          
+        }
+        className={`h-full
+          
+          flex-row bg-gray-800 rounded-lg  flex w-2/4 my-auto  justify-center items-center
+          ${currentQuater==1 ? " line-through bg-gray-800/50 text-gray-400" : "text-white"}
+          `}>
+        <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period       
         
-        </div>
-        <div className="h-full flex-row bg-gray-800 rounded-lg  flex w-2/4 my-auto  justify-center items-center">
+        </button>
+        <button  
+                disabled={currentQuater ===4}
+        onClick={handleNextPeriodClick}
+        
+        className={`h-full flex-row bg-gray-800 rounded-lg  flex w-2/4 my-auto  justify-center items-center
+        
+           ${currentQuater==4 ? " line-through bg-gray-800/50 text-gray-400" : "text-white"}`}>
 Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForward} /> 
         
-        </div>
+        </button>
     
         
         
