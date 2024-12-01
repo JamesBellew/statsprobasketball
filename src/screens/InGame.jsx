@@ -51,42 +51,69 @@ if(currentQuater>1){
   
 }
 
-  // Handle click on the court
-  const handleCourtClick = (e) => {
-    if (!actionSelected) {
-      alert("Please select an action before plotting!");
-      return;
-    }
-  
-    const court = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - court.left;
-    const y = e.clientY - court.top;
-  
-    const adjustedX = x - 30;
-    const adjustedY = y - 5;
-  
-    // Create a new action
-    const newAction = {
-      quarter: currentQuater,
-      actionName: actionSelected,
-      x: adjustedX,
-      y: adjustedY,
-    };
-  
-    // Add the new action to the gameActions array
-    setGameActions((prevActions) => [...prevActions, newAction]);
-  
-    // Update fieldGoal state
-    setFieldGoal((prevFieldGoal) => ({
-      total: prevFieldGoal.total + 1,
-      made: !actionSelected.includes("Miss")
-        ? prevFieldGoal.made + 1
-        : prevFieldGoal.made,
-    }));
-  //now checking to see if it was a threepoint attempt
-  if(actionSelected.includes('3')){
-    //we have a three pointer 
-    // Update fieldGoal state
+// Handle click on the court
+const handleCourtClick = (e) => {
+  if (!actionSelected) {
+    alert("Please select an action before plotting!");
+    return;
+  }
+
+  const court = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - court.left;
+  const y = e.clientY - court.top;
+
+  const adjustedX = x - 45;
+  const adjustedY = y - 5;
+
+  // Check if the click is inside the 2-point arc
+  const centerX = court.width / 2;
+  const centerY = court.height; // Bottom center
+  const distanceFromCenter = Math.sqrt(
+    Math.pow(adjustedX - centerX, 2) + Math.pow(adjustedY - centerY, 2)
+  );
+  const isInsideTwoPointArc = distanceFromCenter <= court.height * 0.45; // Adjust based on your arc dimensions
+
+  if (
+    actionSelected &&
+    ["3 Points", "3Pt Miss"].includes(actionSelected) &&
+    isInsideTwoPointArc
+  ) {
+    setAlertMessage("Cannot click inside the 2-point area for a 3-point action!");
+    setTimeout(() => setAlertMessage(""), 2000);
+    return;
+  }
+
+  if (
+    actionSelected &&
+    ["2 Points", "2Pt Miss"].includes(actionSelected) &&
+    !isInsideTwoPointArc
+  ) {
+    setAlertMessage("Cannot click outside the 2-point area for a 2-point action!");
+    setTimeout(() => setAlertMessage(""), 2000);
+    return;
+  }
+
+  // Create a new action
+  const newAction = {
+    quarter: currentQuater,
+    actionName: actionSelected,
+    x: adjustedX,
+    y: adjustedY,
+  };
+
+  // Add the new action to the gameActions array
+  setGameActions((prevActions) => [...prevActions, newAction]);
+
+  // Update fieldGoal state
+  setFieldGoal((prevFieldGoal) => ({
+    total: prevFieldGoal.total + 1,
+    made: !actionSelected.includes("Miss")
+      ? prevFieldGoal.made + 1
+      : prevFieldGoal.made,
+  }));
+
+  // Update 3-point stats
+  if (actionSelected.includes("3")) {
     setThreePoint((prevThreePoint) => ({
       total: prevThreePoint.total + 1,
       made: !actionSelected.includes("Miss")
@@ -94,11 +121,11 @@ if(currentQuater>1){
         : prevThreePoint.made,
     }));
   }
-    // Show an alert message
-    setAlertMessage(`${actionSelected} recorded!`);
-    setTimeout(() => setAlertMessage(""), 3000);
-   
-  };
+
+  // Show an alert message
+  setAlertMessage(`${actionSelected} recorded!`);
+  setTimeout(() => setAlertMessage(""), 3000);
+};
 
 
   
@@ -199,10 +226,10 @@ if(currentQuater>1){
     <>
       {/* Top Nav */}
       <div className="container mx-auto bg-gradient-to-b items-center from-black to-gray-900">
-        <div className="top-nav w-full h-[15vh] relative">
+        <div className="top-nav w-full h-[12vh] relative">
           {/* Alert Message */}
           {alertMessage && (
-        <div class="absolute w-2/4 left-1/4 mx-auto text-center px-5 lg:px-4">
+        <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
         <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-full flex lg:inline-flex" role="alert">
           <span class="flex rounded-full bg-indigo-500 uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
           <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
@@ -212,68 +239,82 @@ if(currentQuater>1){
           )}
 
 {/* top  of the top nav contents */}
-<div className="text-white h-1/2 flex-row flex w-full">
+<div className="text-white h-2/5 flex-row flex w-full">
 <div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> East Coast Cavan</p></div>
 <div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> Q{currentQuater}</p></div>
 <div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto">21-12-2024</p></div>
 </div>
 {/* bottom  of the top nav contents */}
-<div className=" flex flex-row text-white space-x-2 p-3 h-1/2 w-full">
-<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
-<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Settings</p></div><div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto">Court Theme</p>
+<div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
+<div className=" w-1/4 h-full bg-gray-800 text-sm rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
+<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm"> Game Settings</p></div><div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Court Theme</p>
 </div>
 <div className={` w-1/4 h-full  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-indigo-800"  : "bg-gray-800"  }
   `}>
-<p className="text-center mx-auto"> {SaveGameBtnText}</p></div>
+<p className="text-center mx-auto text-sm"> {SaveGameBtnText}</p></div>
 
 </div>
 
         </div>
 
-        {/* Court */}
-        <div
-          onClick={handleCourtClick} // Make the court clickable
-          className="top-nav w-full relative bg-gray-800 h-[55vh]"
-        >
-          {/* Court outline */}
-          <div className="absolute w-[88%] h-[90%] rounded-b-full left-[6%] bg-gray-800 border-gray-500 border-2 relative box-border">
-            {/* Court Key */}
-            <div className="absolute w-1/3 left-1/3 border-2 border-gray-500 h-[60%]"></div>
-            <div className="absolute w-1/3 left-1/3 border-2 border-gray-500 h-[20%] rounded-b-full top-[60%]"></div>
-
-{/* Render Actions as Dots */}
-{gameActions
-  .filter(
-    (action) =>
-      !["FT Score", "FT Miss"].includes(action.actionName) && action.quarter === currentQuater
-  ) // Exclude free throw actions and show only actions for the current quarter
-  .map((action, index) => (
+{/* Court */}
+<div
+  onClick={handleCourtClick} // Make the court clickable
+  className={`top-nav w-full relative z-50 h-[55vh] ${
+    actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
+      ? "bg-indigo-400/50" // Highlight outer 3-point area in blue
+      : "bg-gray-800" // Default color
+  }`}
+>
+  {/* Court outline */}
+  <div
+    className={`absolute w-[88%] h-[90%] rounded-b-full left-[6%] relative box-border ${
+      actionSelected && ["2 Points", "2Pt Miss"].includes(actionSelected)
+        ? "bg-indigo-400/20" // Highlight inner arc in blue for 2-point actions
+        : "bg-gray-800" // Default color
+    } border-gray-500 border-2`}
+  >
+    {/* Court Key */}
     <div
-      key={index}
-      className={`absolute w-4 h-4 rounded-full ${
-        ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
-          ? "bg-red-500" // Red for misses
-          : "bg-blue-500" // Blue for other actions
-      }`}
-      style={{
-        top: `${action.y}px`,
-        left: `${action.x}px`,
-        transform: "translate(-50%, -50%)", // Center the dot on the exact click point
-      }}
-      title={`Action: ${action.actionName} | Quarter: ${action.quarter}`} // Tooltip for clarity
+      className={`absolute w-1/3 left-1/3 border border-gray-500 h-[60%]`}
     ></div>
-  ))}
+    <div className="absolute w-1/3 left-1/3 border-2 border-gray-500 h-[20%] rounded-b-full top-[60%]"></div>
 
-          </div>
-        </div>
+    {/* Render Actions as Dots */}
+    {gameActions
+      .filter(
+        (action) =>
+          !["FT Score", "FT Miss"].includes(action.actionName) &&
+          action.quarter === currentQuater
+      ) // Exclude free throw actions and show only actions for the current quarter
+      .map((action, index) => (
+        <div
+          key={index}
+          className={`absolute w-4 h-4 rounded-full ${
+            ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
+              ? "bg-red-500" // Red for misses
+              : "bg-blue-500" // Blue for other actions
+          }`}
+          style={{
+            top: `${action.y}px`,
+            left: `${action.x}px`,
+            transform: "translate(-50%, -50%)", // Center the dot on the exact click point
+          }}
+          title={`Action: ${action.actionName} | Quarter: ${action.quarter}`} // Tooltip for clarity
+        ></div>
+      ))}
+  </div>
+</div>
+
+
 
         {/* Bottom Nav */}
-        <div className="bottom-nav  items-center justify-center w-full h-[30vh]">
+        <div className="bottom-nav  items-center justify-center w-full h-[33vh] ">
 {/* Quick Stats Section */}
         <div className="text-white  items-center justify-center text-center flex-row p-2 space-x-4 flex w-full h-1/4">
-        
-<div className="h-full flex w-1/4 my-auto flex-col justify-center items-center">
+        <div className="relative w-1/2 flex flex-row  h-full">
+<div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
 <p>FG  
 {
 fieldGoal.made>0 &&
@@ -282,7 +323,7 @@ fieldGoal.made>0 &&
 <p>{fieldGoal.made}-{fieldGoal.total}</p>
 
 </div>
-<div className="h-full flex w-1/4 my-auto flex-col justify-center items-center">
+<div className="h-full flex w-2/4  my-auto flex-col justify-center items-center">
 <p>3PT
 {
 threepoint.made>0 &&
@@ -291,16 +332,17 @@ threepoint.made>0 &&
 <p>{threepoint.made}-{threepoint.total}</p>
 
 </div>
+</div>
 {/* this only needs to be rendered if the current quarter is more than 1 */}
  {/* Current Quarter Stats */}
  {currentQuater > 1 && (
-    <div className="bg-gray-800/25 rounded-lg flex w-1/2 h-full relative">
-      <p className="absolute inset-x-0 top-5 text-center text-white">Q{currentQuater}</p>
+    <div className="border-l-2 border-r-2 border-indigo-600 h-full py-2  flex  w-1/2 relative">
+      <p className="absolute inset-x-0 top-0 text-center text-white">Q{currentQuater}</p>
       <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
         <p>
           FG {fieldGoalPercentage.current || 0}%
         </p>
-        <p>
+        <p className="">
           {fieldGoal.currentMade}-{fieldGoal.currentTotal}
         </p>
       </div>
@@ -308,7 +350,7 @@ threepoint.made>0 &&
         <p>
           3PT {threePointPercentage.current || 0}%
         </p>
-        <p>
+        <p className="">
           {threepoint.currentMade}-{threepoint.currentTotal}
         </p>
       </div>
