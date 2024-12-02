@@ -50,6 +50,33 @@ if(currentQuater>1){
 }
   
 }
+const handleUndoLastActionHandler = () => {
+  if (gameActions.length === 0) {
+    setAlertMessage("No actions to undo!");
+    setTimeout(() => setAlertMessage(""), 2000);
+    return;
+  }
+
+  // Get the most recent action
+  const lastAction = gameActions[gameActions.length - 1];
+
+  // Check if the most recent action is in the current quarter
+  if (lastAction.quarter !== currentQuater) {
+    setAlertMessage(
+      `Cannot undo! Last action is in Q${lastAction.quarter}.`
+    );
+    setTimeout(() => setAlertMessage(""), 3000);
+    return;
+  }
+
+  // Remove the most recent action
+  setGameActions((prevActions) => prevActions.slice(0, -1));
+
+  // Show an alert message
+  setAlertMessage("Last action undone!");
+  setTimeout(() => setAlertMessage(""), 3000);
+};
+
 
 // Handle click on the court
 const handleCourtClick = (e) => {
@@ -64,34 +91,6 @@ const handleCourtClick = (e) => {
 
   const adjustedX = x - 45;
   const adjustedY = y - 5;
-
-  // Check if the click is inside the 2-point arc
-  const centerX = court.width / 2;
-  const centerY = court.height; // Bottom center
-  const distanceFromCenter = Math.sqrt(
-    Math.pow(adjustedX - centerX, 2) + Math.pow(adjustedY - centerY, 2)
-  );
-  const isInsideTwoPointArc = distanceFromCenter <= court.height * 0.45; // Adjust based on your arc dimensions
-
-  if (
-    actionSelected &&
-    ["3 Points", "3Pt Miss"].includes(actionSelected) &&
-    isInsideTwoPointArc
-  ) {
-    setAlertMessage("Cannot click inside the 2-point area for a 3-point action!");
-    setTimeout(() => setAlertMessage(""), 2000);
-    return;
-  }
-
-  if (
-    actionSelected &&
-    ["2 Points", "2Pt Miss"].includes(actionSelected) &&
-    !isInsideTwoPointArc
-  ) {
-    setAlertMessage("Cannot click outside the 2-point area for a 2-point action!");
-    setTimeout(() => setAlertMessage(""), 2000);
-    return;
-  }
 
   // Create a new action
   const newAction = {
@@ -126,6 +125,7 @@ const handleCourtClick = (e) => {
   setAlertMessage(`${actionSelected} recorded!`);
   setTimeout(() => setAlertMessage(""), 3000);
 };
+
 
 
   
@@ -230,8 +230,8 @@ const handleCourtClick = (e) => {
           {/* Alert Message */}
           {alertMessage && (
         <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
-        <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-full flex lg:inline-flex" role="alert">
-          <span class="flex rounded-full bg-indigo-500 uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
+        <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex lg:inline-flex" role="alert">
+          <span class="flex rounded-lg bg-indigo-500 uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
           <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
           <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
         </div>
@@ -247,7 +247,18 @@ const handleCourtClick = (e) => {
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
 <div className=" w-1/4 h-full bg-gray-800 text-sm rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
-<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm"> Game Settings</p></div><div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Court Theme</p>
+<button 
+disabled={gameActions===0}
+
+  onClick={handleUndoLastActionHandler} 
+  className={`w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
+  ${gameActions==0 ? "bg-gray-800/50 line-through text-gray-400" : "bg-gray-800"}
+  `}
+>
+  <p className="text-center mx-auto text-sm">Undo Last Action</p>
+</button >
+
+<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Game Settings</p>
 </div>
 <div className={` w-1/4 h-full  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-indigo-800"  : "bg-gray-800"  }
@@ -314,6 +325,9 @@ const handleCourtClick = (e) => {
 {/* Quick Stats Section */}
         <div className="text-white  items-center justify-center text-center flex-row p-2 space-x-4 flex w-full h-1/4">
         <div className="relative w-1/2 flex flex-row  h-full">
+        {currentQuater>1 &&
+        <p className="absolute inset-x-0 top-0 text-center text-white">Overall</p>
+}
 <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
 <p>FG  
 {
