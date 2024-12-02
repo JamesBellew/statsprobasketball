@@ -1,6 +1,7 @@
 import { useState,useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
+import { useLocation } from "react-router-dom";
 export default function InGame() {
   const [gameActions, setGameActions] = useState([]); // Stores actions with coordinates
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
@@ -12,7 +13,11 @@ export default function InGame() {
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 
   const [currentQuater,setCurrentQuarter]=useState(1)
+  const location = useLocation();
+  const { opponentName, selectedVenue } = location.state || {}; // Use default values if state is undefined
 
+  console.log("Opponent:", opponentName);
+  console.log("Venue:", selectedVenue);
 
 //hanlder for going to next period/quarter
 const handleNextPeriodClick =()=>{
@@ -230,7 +235,7 @@ const handleCourtClick = (e) => {
           {/* Alert Message */}
           {alertMessage && (
         <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
-        <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex lg:inline-flex" role="alert">
+        <div class="p-2 h-16 bg-gray-900 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
           <span class="flex rounded-lg bg-indigo-500 uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
           <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
           <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
@@ -239,24 +244,25 @@ const handleCourtClick = (e) => {
           )}
 
 {/* top  of the top nav contents */}
-<div className="text-white h-2/5 flex-row flex w-full">
-<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> East Coast Cavan</p></div>
-<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto"> Q{currentQuater}</p></div>
-<div className=" w-1/3 h-full text-center flex items-center"><p className="text-center mx-auto">21-12-2024</p></div>
+<div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
+<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
+<div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
+{/* <div className=" w-1/4 h-full text-center flex items-center bg-gray-800 rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
+<div className=" w-1/4 h-full text-center flex items-center bg-gray-900 rounded-lg "><p className="text-center mx-auto">Exit</p></div>
 </div>
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
 <div className=" w-1/4 h-full bg-gray-800 text-sm rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
-<button 
-disabled={gameActions===0}
+<div 
+// disabled={gameActions===0}
 
   onClick={handleUndoLastActionHandler} 
-  className={`w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
+  className={`w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
   ${gameActions==0 ? "bg-gray-800/50 line-through text-gray-400" : "bg-gray-800"}
   `}
 >
   <p className="text-center mx-auto text-sm">Undo Last Action</p>
-</button >
+</div >
 
 <div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Game Settings</p>
 </div>

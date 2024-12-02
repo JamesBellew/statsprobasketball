@@ -13,10 +13,15 @@ const [opponentName,setOpponentName] = useState(null)
   const handleOpponentInputChange = (event)=>{
     setOpponentName(event.target.value);
   }
-  const handleGameStart=()=>{
-    // alert('start game')
-    navigate('/ingame')
-  }
+  const handleGameStart = () => {
+    navigate('/ingame', {
+      state: {
+        opponentName,
+        selectedVenue,
+      },
+    });
+  };
+  
   return(
    <div className="h-screen w-full bg-gradient-to-b flex items-center  from-black to-gray-900">
 
