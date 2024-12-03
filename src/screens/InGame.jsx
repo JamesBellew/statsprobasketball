@@ -2,8 +2,13 @@ import { useState,useEffect } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 export default function InGame() {
-  const [gameActions, setGameActions] = useState([]); // Stores actions with coordinates
+  const navigate = useNavigate();
+  const [currentQuater,setCurrentQuarter]=useState(1)
+  const location = useLocation();
+  const savedGame = location.state; // Access saved game data if navigated from saved games
+  const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
   const [fieldGoal,setFieldGoal] = useState({total:0,made:0});
@@ -12,12 +17,32 @@ export default function InGame() {
   const [threePointPercentage,setThreePointPercentage]=useState(null);
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 
-  const [currentQuater,setCurrentQuarter]=useState(1)
-  const location = useLocation();
-  const { opponentName, selectedVenue } = location.state || {}; // Use default values if state is undefined
+
+
+const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
+const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 
   console.log("Opponent:", opponentName);
   console.log("Venue:", selectedVenue);
+  useEffect(() => {
+    if (savedGame) {
+      console.log("Loaded saved game:", savedGame);
+    } else {
+      console.log("Starting a new game.");
+    }
+  }, [savedGame]);
+
+   // Handle game actions
+   const handleGameAction = (action) => {
+    const newAction = {
+      quarter: currentQuarter,
+      actionName: action,
+      timestamp: Date.now(),
+    };
+    setGameActions((prev) => [...prev, newAction]);
+    setAlertMessage(`${action} recorded.`);
+    setTimeout(() => setAlertMessage(""), 3000);
+  };
 
 //hanlder for going to next period/quarter
 const handleNextPeriodClick =()=>{
@@ -27,7 +52,8 @@ const handleNextPeriodClick =()=>{
   if(currentQuater<4){
     //we can add one to it now, since its less then 4 
     setCurrentQuarter(currentQuater+1)
-
+//also clear the action selected
+setActionSelected()
   }
   if(currentQuater==3){
     //we need to change the text to finsih game
@@ -81,9 +107,37 @@ const handleUndoLastActionHandler = () => {
   setAlertMessage("Last action undone!");
   setTimeout(() => setAlertMessage(""), 3000);
 };
+//for saving the gamedata to localstorage
+// Save the game
+const handleSaveGame = () => {
+  if (!gameActions.length) {
+    setAlertMessage("No actions to save!");
+    setTimeout(() => setAlertMessage(""), 2000);
+    return;
+  }
+
+  const gameData = {
+    id: savedGame?.id || `game_${Date.now()}`,
+    opponentName,
+    venue: selectedVenue,
+    actions: gameActions,
+    timestamp: new Date().toISOString(),
+  };
+
+  const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
+  const updatedGames = savedGame
+    ? savedGames.map((game) => (game.id === savedGame.id ? gameData : game)) // Update existing game
+    : [...savedGames, gameData]; // Add new game
+
+  localStorage.setItem("savedGames", JSON.stringify(updatedGames));
+  setAlertMessage("Game saved successfully!");
+  setTimeout(() => setAlertMessage(""), 3000);
+};
+
 
 
 // Handle click on the court
+// Render actions on the court
 const handleCourtClick = (e) => {
   if (!actionSelected) {
     alert("Please select an action before plotting!");
@@ -94,39 +148,14 @@ const handleCourtClick = (e) => {
   const x = e.clientX - court.left;
   const y = e.clientY - court.top;
 
-  const adjustedX = x - 45;
-  const adjustedY = y - 5;
-
-  // Create a new action
   const newAction = {
-    quarter: currentQuater,
+    quarter: currentQuarter,
     actionName: actionSelected,
-    x: adjustedX,
-    y: adjustedY,
+    x: x,
+    y: y,
   };
 
-  // Add the new action to the gameActions array
-  setGameActions((prevActions) => [...prevActions, newAction]);
-
-  // Update fieldGoal state
-  setFieldGoal((prevFieldGoal) => ({
-    total: prevFieldGoal.total + 1,
-    made: !actionSelected.includes("Miss")
-      ? prevFieldGoal.made + 1
-      : prevFieldGoal.made,
-  }));
-
-  // Update 3-point stats
-  if (actionSelected.includes("3")) {
-    setThreePoint((prevThreePoint) => ({
-      total: prevThreePoint.total + 1,
-      made: !actionSelected.includes("Miss")
-        ? prevThreePoint.made + 1
-        : prevThreePoint.made,
-    }));
-  }
-
-  // Show an alert message
+  setGameActions((prev) => [...prev, newAction]);
   setAlertMessage(`${actionSelected} recorded!`);
   setTimeout(() => setAlertMessage(""), 3000);
 };
@@ -248,7 +277,8 @@ const handleCourtClick = (e) => {
 <div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-gray-800 rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
-<div className=" w-1/4 h-full text-center flex items-center bg-gray-900 rounded-lg "><p className="text-center mx-auto">Exit</p></div>
+<button onClick={()=>{
+  navigate('/homedashboard')}} className=" w-1/4 h-full text-center flex items-center bg-gray-900 rounded-lg "><p className="text-center mx-auto">Exit</p></button>
 </div>
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
@@ -266,7 +296,7 @@ const handleCourtClick = (e) => {
 
 <div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Game Settings</p>
 </div>
-<div className={` w-1/4 h-full  rounded-lg text-center flex items-center
+<div onClick={handleSaveGame} className={` w-1/4 h-full  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-indigo-800"  : "bg-gray-800"  }
   `}>
 <p className="text-center mx-auto text-sm"> {SaveGameBtnText}</p></div>
