@@ -54,7 +54,7 @@ export default function HomeDashboard() {
 
           <div className="grid grid-cols-4 lg:grid-cols-6 gap-4">
             <div
-              className="bg-gray-800 col-span-4 p-4 rounded-lg cursor-pointer"
+              className="bg-gray-800 col-span-6 p-4 rounded-lg cursor-pointer"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               <div className="flex items-center justify-between mb-2">

@@ -16,26 +16,21 @@ export default function InGame() {
   const [fieldGoalPercentage,setFieldGoalPercentage]=useState(null);
   const [threePointPercentage,setThreePointPercentage]=useState(null);
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
-
-
-
 const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 
-  console.log("Opponent:", opponentName);
-  console.log("Venue:", selectedVenue);
-  useEffect(() => {
-    if (savedGame) {
-      console.log("Loaded saved game:", savedGame);
-    } else {
-      console.log("Starting a new game.");
-    }
-  }, [savedGame]);
+useEffect(() => {
+  if (savedGame && savedGame.id) {
+    console.log("Loaded saved game:", savedGame);
+  } else {
+    console.log("Starting a new game.");
+  }
+}, [savedGame]);
 
    // Handle game actions
    const handleGameAction = (action) => {
     const newAction = {
-      quarter: currentQuarter,
+      quarter: currentQuater,
       actionName: action,
       timestamp: Date.now(),
     };
@@ -109,14 +104,50 @@ const handleUndoLastActionHandler = () => {
 };
 //for saving the gamedata to localstorage
 // Save the game
-const handleSaveGame = () => {
-  if (!gameActions.length) {
-    setAlertMessage("No actions to save!");
-    setTimeout(() => setAlertMessage(""), 2000);
-    return;
-  }
+// const handleSaveGame = () => {
+//   if (!gameActions.length) {
+//     setAlertMessage("No actions to save!");
+//     setTimeout(() => setAlertMessage(""), 2000);
+//     return;
+//   }
 
-  const gameData = {
+//   const gameData = {
+//     id: savedGame?.id || `game_${Date.now()}`,
+//     opponentName,
+//     venue: selectedVenue,
+//     actions: gameActions,
+//     timestamp: new Date().toISOString(),
+//   };
+
+//   console.log("Game Data to Save:", gameData);
+
+//   // Fetch existing saved games
+//   const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
+//   console.log("Previously Saved Games:", savedGames);
+
+//   const updatedGames = savedGame
+//     ? savedGames.map((game) =>
+//         game.id === savedGame.id ? gameData : game // Update game
+//       )
+//     : [...savedGames, gameData]; // Add new game
+
+//   console.log("Updated Games List:", updatedGames);
+
+//   // Try saving to localStorage
+//   try {
+//     localStorage.setItem("savedGames", JSON.stringify(updatedGames));
+//     console.log("Saved to localStorage successfully!");
+//     setAlertMessage("Game saved successfully!");
+//     setTimeout(() => setAlertMessage(""), 3000);
+//   } catch (error) {
+//     console.error("Error saving to localStorage:", error);
+//     setAlertMessage("Error saving game. Please try again.");
+//     setTimeout(() => setAlertMessage(""), 3000);
+//   }
+// };
+const handleSaveGame = () => {
+  // Define a fixed game object for testing
+  const fixedGame = {
     id: savedGame?.id || `game_${Date.now()}`,
     opponentName,
     venue: selectedVenue,
@@ -124,15 +155,29 @@ const handleSaveGame = () => {
     timestamp: new Date().toISOString(),
   };
 
-  const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
-  const updatedGames = savedGame
-    ? savedGames.map((game) => (game.id === savedGame.id ? gameData : game)) // Update existing game
-    : [...savedGames, gameData]; // Add new game
+  console.log("Fixed Game Data to Save:", fixedGame);
 
-  localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-  setAlertMessage("Game saved successfully!");
-  setTimeout(() => setAlertMessage(""), 3000);
+  // Fetch existing saved games from localStorage
+  const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
+  console.log("Previously Saved Games:", savedGames);
+
+  // Add the fixed game object
+  const updatedGames = [...savedGames, fixedGame];
+  console.log("Updated Games List with Fixed Game:", updatedGames);
+
+  // Save to localStorage
+  try {
+    localStorage.setItem("savedGames", JSON.stringify(updatedGames));
+    console.log("Fixed game saved to localStorage successfully!");
+    setAlertMessage("Fixed game saved successfully!");
+    setTimeout(() => setAlertMessage(""), 3000);
+  } catch (error) {
+    console.error("Error saving fixed game to localStorage:", error);
+    setAlertMessage("Error saving fixed game. Please try again.");
+    setTimeout(() => setAlertMessage(""), 3000);
+  }
 };
+
 
 
 
@@ -140,25 +185,35 @@ const handleSaveGame = () => {
 // Render actions on the court
 const handleCourtClick = (e) => {
   if (!actionSelected) {
-    alert("Please select an action before plotting!");
+    setAlertMessage("Please select an action before plotting!");
+    setTimeout(() => setAlertMessage(""), 3000);
     return;
   }
 
   const court = e.currentTarget.getBoundingClientRect();
-  const x = e.clientX - court.left;
-  const y = e.clientY - court.top;
+  const x = e.clientX - court.left; // X relative to court
+  const y = e.clientY - court.top;  // Y relative to court
 
+  // Normalize coordinates to percentages
+  let normalizedX = (x / court.width) * 100 ;
+  let normalizedY = (y / court.height) * 100 ;
+
+  // Save the action
   const newAction = {
-    quarter: currentQuarter,
+    quarter: currentQuater,
     actionName: actionSelected,
-    x: x,
-    y: y,
+    x: normalizedX,
+    y: normalizedY,
   };
 
   setGameActions((prev) => [...prev, newAction]);
+
+  // Show alert
   setAlertMessage(`${actionSelected} recorded!`);
   setTimeout(() => setAlertMessage(""), 3000);
 };
+
+
 
 
 
@@ -260,7 +315,7 @@ const handleCourtClick = (e) => {
     <>
       {/* Top Nav */}
       <div className="container mx-auto bg-gradient-to-b items-center from-black to-gray-900">
-        <div className="top-nav w-full h-[12vh] relative">
+        <div className="top-nav w-full h-[12vh]  relative">
           {/* Alert Message */}
           {alertMessage && (
         <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
@@ -308,20 +363,34 @@ const handleCourtClick = (e) => {
 {/* Court */}
 <div
   onClick={handleCourtClick} // Make the court clickable
-  className={`top-nav w-full relative z-50 h-[55vh] ${
+  className={`top-nav w-full relative z-50  h-[55vh] 
+    ${
     actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
       ? "bg-indigo-400/50" // Highlight outer 3-point area in blue
       : "bg-gray-800" // Default color
-  }`}
+  }
+  
+  `}
 >
-  {/* Court outline */}
-  <div
-    className={`absolute w-[88%] h-[90%] rounded-b-full left-[6%] relative box-border ${
+<div
+    className={`absolute w-[90%] h-[90%] rounded-b-full left-[6%] relative box-border
+      z-auto
+      ${
       actionSelected && ["2 Points", "2Pt Miss"].includes(actionSelected)
         ? "bg-indigo-400/20" // Highlight inner arc in blue for 2-point actions
         : "bg-gray-800" // Default color
-    } border-gray-500 border-2`}
+    }
+    
+    
+    border-gray-500 border-2`}
   >
+    
+
+    {/* <div className="bg-red-600 w-[100%]  h-[50%] absolute"></div>
+    <div className="bg-red-300 w-[76%]  top-[50%] h-[30%] left-[12%] absolute"></div>
+    <div className="bg-red-100 w-[40%]  top-[80%] h-[15%] left-[30%] absolute"></div>
+    <div className="bg-green-100 w-[10%]  top-[95%] h-[5%] left-[45%] absolute"></div> */}
+
     {/* Court Key */}
     <div
       className={`absolute w-1/3 left-1/3 border border-gray-500 h-[60%]`}
@@ -329,35 +398,35 @@ const handleCourtClick = (e) => {
     <div className="absolute w-1/3 left-1/3 border-2 border-gray-500 h-[20%] rounded-b-full top-[60%]"></div>
 
     {/* Render Actions as Dots */}
-    {gameActions
-      .filter(
-        (action) =>
-          !["FT Score", "FT Miss"].includes(action.actionName) &&
-          action.quarter === currentQuater
-      ) // Exclude free throw actions and show only actions for the current quarter
-      .map((action, index) => (
-        <div
-          key={index}
-          className={`absolute w-4 h-4 rounded-full ${
-            ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
-              ? "bg-red-500" // Red for misses
-              : "bg-blue-500" // Blue for other actions
-          }`}
-          style={{
-            top: `${action.y}px`,
-            left: `${action.x}px`,
-            transform: "translate(-50%, -50%)", // Center the dot on the exact click point
-          }}
-          title={`Action: ${action.actionName} | Quarter: ${action.quarter}`} // Tooltip for clarity
-        ></div>
-      ))}
+   
   </div>
+ {/* Render Actions */}
+ {gameActions
+    .filter((action) => action.quarter === currentQuater) // Only filter by quarter
+    .map((action, index) => (
+      <div
+        key={index}
+        className={`absolute w-4 h-4 rounded-full ${
+          ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
+            ? "bg-red-500" // Red for misses
+            : "bg-blue-500" // Blue for successful shots
+        }`}
+        style={{
+          top: `${action.y}%`, // Use percentages for responsive positioning
+          left: `${action.x}%`,
+          transform: "translate(-50%, -50%)", // Center the dot
+        }}
+        title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
+      ></div>
+    ))}
+  {/* Court outline */}
+
 </div>
 
 
 
         {/* Bottom Nav */}
-        <div className="bottom-nav  items-center justify-center w-full h-[33vh] ">
+        <div className="bottom-nav  items-center justify-center w-full  h-[33vh] ">
 {/* Quick Stats Section */}
         <div className="text-white  items-center justify-center text-center flex-row p-2 space-x-4 flex w-full h-1/4">
         <div className="relative w-1/2 flex flex-row  h-full">
