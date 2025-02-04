@@ -18,6 +18,11 @@ export default function InGame() {
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
+// Immediately after your existing state declarations, add:
+const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
+const [showPlayerModal, setShowPlayerModal] = useState(false);
+const [pendingAction, setPendingAction] = useState(null);
+
 
 useEffect(() => {
   if (savedGame && savedGame.id) {
@@ -38,7 +43,30 @@ useEffect(() => {
     setAlertMessage(`${action} recorded.`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
-
+  const handlePlayerSelection = (player) => {
+    if (!pendingAction) return;
+  
+    // Store the action name locally to avoid referencing stale state later
+    const actionName = pendingAction.actionName;
+  
+    const newAction = {
+      ...pendingAction,
+      playerName: player.name,
+      playerNumber: player.number,
+      timestamp: Date.now(),
+    };
+  
+    setGameActions((prev) => [...prev, newAction]);
+  
+    // Close the modal and clear the pending action
+    setShowPlayerModal(false);
+    setPendingAction(null);
+  
+    setAlertMessage(`${actionName} recorded for ${player.name}!`);
+    setTimeout(() => setAlertMessage(""), 3000);
+  };
+  
+  
 //hanlder for going to next period/quarter
 const handleNextPeriodClick =()=>{
   console.log('clicked boii');
@@ -193,25 +221,33 @@ const handleCourtClick = (e) => {
   const court = e.currentTarget.getBoundingClientRect();
   const x = e.clientX - court.left; // X relative to court
   const y = e.clientY - court.top;  // Y relative to court
+  const normalizedX = (x / court.width) * 100;
+  const normalizedY = (y / court.height) * 100;
 
-  // Normalize coordinates to percentages
-  let normalizedX = (x / court.width) * 100 ;
-  let normalizedY = (y / court.height) * 100 ;
-
-  // Save the action
-  const newAction = {
-    quarter: currentQuater,
-    actionName: actionSelected,
-    x: normalizedX,
-    y: normalizedY,
-  };
-
-  setGameActions((prev) => [...prev, newAction]);
-
-  // Show alert
-  setAlertMessage(`${actionSelected} recorded!`);
-  setTimeout(() => setAlertMessage(""), 3000);
+  if (passedLineout) {
+    // If a lineout exists, wait for player selection
+    setPendingAction({
+      actionName: actionSelected,
+      quarter: currentQuater,
+      x: normalizedX,
+      y: normalizedY,
+    });
+    setShowPlayerModal(true);
+  } else {
+    // Otherwise, record action immediately
+    const newAction = {
+      quarter: currentQuater,
+      actionName: actionSelected,
+      x: normalizedX,
+      y: normalizedY,
+      timestamp: Date.now(),
+    };
+    setGameActions((prev) => [...prev, newAction]);
+    setAlertMessage(`${actionSelected} recorded.`);
+    setTimeout(() => setAlertMessage(""), 3000);
+  }
 };
+
 
 
 
@@ -313,6 +349,8 @@ const handleCourtClick = (e) => {
 
   return (
     <>
+    
+    <main className="bg-red-600 bg-gradient-to-b  from-black to-gray-900">
       {/* Top Nav */}
       <div className="container mx-auto bg-gradient-to-b items-center from-black to-gray-900">
         <div className="top-nav w-full h-[12vh]  relative">
@@ -326,6 +364,7 @@ const handleCourtClick = (e) => {
         </div>
       </div>
           )}
+
 
 {/* top  of the top nav contents */}
 <div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
@@ -372,6 +411,51 @@ const handleCourtClick = (e) => {
   
   `}
 >
+{showPlayerModal && (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50"
+    // Optional: clicking the overlay also closes the modal
+    onClick={() => {
+      setShowPlayerModal(false);
+      setPendingAction(null);
+    }}
+  >
+    {/* Modal Overlay */}
+    <div className="absolute inset-0 bg-black opacity-50"></div>
+    {/* Modal Content */}
+    <div
+      className="relative bg-gray-800 p-6 rounded-lg w-72"
+      // Stop propagation so clicks inside the modal don't trigger the overlay onClick
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="text-white text-lg mb-4">Select Player</h3>
+      {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
+        passedLineout.players.map((player, index) => (
+          <button
+            key={index}
+            onClick={() => handlePlayerSelection(player)}
+            className="w-full text-left p-2 mb-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
+          >
+            {player.name} ({player.number})
+          </button>
+        ))
+      ) : (
+        <p className="text-gray-400">No players available.</p>
+      )}
+      <button
+        onClick={() => {
+          setShowPlayerModal(false);
+          setPendingAction(null);
+        }}
+        className="mt-4 w-full p-2 bg-red-600 hover:bg-red-500 text-white rounded"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+
 <div
     className={`absolute w-[90%] h-[90%] rounded-b-full left-[6%] relative box-border
       z-auto
@@ -485,24 +569,36 @@ threepoint.made>0 &&
       key={index}
       onClick={() => {
         if (["FT Score", "FT Miss"].includes(label)) {
-          // Record the free throw action immediately
-          setGameActions((prevActions) => [
-            ...prevActions,
-            {
-              quarter: 1, // Default quarterdkndk
+          if (passedLineout) {
+            // Instead of immediately recording, set pending action and show modal
+            setPendingAction({
               actionName: label,
-              x: 0, // No position required foddddr free throws
+              quarter: currentQuater,
+              x: 0, // For free throws, position is set to 0
               y: 0,
-            },
-          ]);
-
-          // Show an alert message
-          setAlertMessage(`${label} recorded!`);
-          setTimeout(() => setAlertMessage(""), 3000); // Hide alert after 3 seconds
+            });
+            setShowPlayerModal(true);
+          } else {
+            // Record immediately if no lineout is passed
+            setGameActions((prevActions) => [
+              ...prevActions,
+              {
+                quarter: currentQuater,
+                actionName: label,
+                x: 0,
+                y: 0,
+                timestamp: Date.now(),
+              },
+            ]);
+            setAlertMessage(`${label} recorded!`);
+            setTimeout(() => setAlertMessage(""), 3000);
+          }
+          return; // Exit the onClick handler for free throws
         } else {
-          // For other actions, set as selected
+          // For non-free throw actions, set as selected (or you may choose to clear the selection)
           setActionSelected(label);
         }
+        
       }}
       className={`${
         actionSelected === label ? "bg-blue-700" : "bg-gray-800" // Highlight selected action
@@ -550,6 +646,8 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                 </div>
         </div>
       </div>
+
+      </main>
     </>
   );
 }
