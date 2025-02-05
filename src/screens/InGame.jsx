@@ -22,6 +22,38 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [showPlayerModal, setShowPlayerModal] = useState(false);
 const [pendingAction, setPendingAction] = useState(null);
+const [isGameSaved, setIsGameSaved] = useState(false);
+const [showExitModal, setShowExitModal] = useState(false);
+const [showGameStatsModal, setShowGameStatsModal] = useState(false);
+// Compute overall stats for display in the modal header
+// Field Goal: count both 2pt and 3pt attempts and makes.
+const fgAttempts = gameActions.filter(a =>
+  ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(a.actionName)
+).length;
+const fgMade = gameActions.filter(a =>
+  ["2 Points", "3 Points"].includes(a.actionName)
+).length;
+const fgPercentage = fgAttempts ? Math.round((fgMade / fgAttempts) * 100) : 0;
+
+// 3-Point: only count 3pt attempts/makes
+const threePtAttempts = gameActions.filter(a =>
+  ["3 Points", "3Pt Miss"].includes(a.actionName)
+).length;
+const threePtMade = gameActions.filter(a =>
+  a.actionName === "3 Points"
+).length;
+const threePtPercentage = threePtAttempts ? Math.round((threePtMade / threePtAttempts) * 100) : 0;
+
+// Free Throws (same as before)
+const ftAttempts = gameActions.filter(a =>
+  ["FT Score", "FT Miss"].includes(a.actionName)
+).length;
+const ftMade = gameActions.filter(a =>
+  a.actionName === "FT Score"
+).length;
+const ftPercentage = ftAttempts ? Math.round((ftMade / ftAttempts) * 100) : 0;
+
+
 
 
 useEffect(() => {
@@ -174,7 +206,6 @@ const handleUndoLastActionHandler = () => {
 //   }
 // };
 const handleSaveGame = () => {
-  // Define a fixed game object for testing
   const fixedGame = {
     id: savedGame?.id || `game_${Date.now()}`,
     opponentName,
@@ -183,21 +214,14 @@ const handleSaveGame = () => {
     timestamp: new Date().toISOString(),
   };
 
-  console.log("Fixed Game Data to Save:", fixedGame);
-
   // Fetch existing saved games from localStorage
   const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
-  console.log("Previously Saved Games:", savedGames);
-
-  // Add the fixed game object
   const updatedGames = [...savedGames, fixedGame];
-  console.log("Updated Games List with Fixed Game:", updatedGames);
 
-  // Save to localStorage
   try {
     localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-    console.log("Fixed game saved to localStorage successfully!");
     setAlertMessage("Fixed game saved successfully!");
+    setIsGameSaved(true); // Mark the game as saved
     setTimeout(() => setAlertMessage(""), 3000);
   } catch (error) {
     console.error("Error saving fixed game to localStorage:", error);
@@ -205,6 +229,7 @@ const handleSaveGame = () => {
     setTimeout(() => setAlertMessage(""), 3000);
   }
 };
+
 
 
 
@@ -261,8 +286,8 @@ const handleCourtClick = (e) => {
     "3Pt Miss",
     "FT Score",
     "FT Miss",
-   
-
+    "Assist",
+    "Steal",
     "T/O",
     "Block",
   ];
@@ -351,6 +376,7 @@ const handleCourtClick = (e) => {
     <>
     
     <main className="bg-red-600 bg-gradient-to-b  from-black to-gray-900">
+      
       {/* Top Nav */}
       <div className="container mx-auto bg-gradient-to-b items-center from-black to-gray-900">
         <div className="top-nav w-full h-[12vh]  relative">
@@ -371,24 +397,46 @@ const handleCourtClick = (e) => {
 <div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-gray-800 rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
-<button onClick={()=>{
-  navigate('/homedashboard')}} className=" w-1/4 h-full text-center flex items-center bg-gray-900 rounded-lg "><p className="text-center mx-auto">Exit</p></button>
+<button
+  onClick={() => {
+    // If there are unsaved actions and the game hasn't been saved, show the exit modal.
+    if (!isGameSaved && gameActions.length > 0) {
+      setShowExitModal(true);
+    } else {
+      navigate('/homedashboard');
+    }
+  }}
+  className="w-1/4 h-full text-center flex items-center bg-gray-900 rounded-lg"
+>
+  <p className="text-center mx-auto">Exit</p>
+</button>
+
 </div>
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
-<div className=" w-1/4 h-full bg-gray-800 text-sm rounded-lg text-center flex items-center"><p className="text-center mx-auto"> Game Stats</p></div>
 <div 
 // disabled={gameActions===0}
 
   onClick={handleUndoLastActionHandler} 
-  className={`w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
+  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
   ${gameActions==0 ? "bg-gray-800/50 line-through text-gray-400" : "bg-gray-800"}
   `}
 >
-  <p className="text-center mx-auto text-sm">Undo Last Action</p>
+  <p className="text-center mx-auto text-sm flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
+</svg>
+Undo Last Action</p>
 </div >
+<div
+  onClick={() => setShowGameStatsModal(true)}
+  className="w-1/4 h-full bg-gray-800 text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-gray-700 transition"
+>
+  <p className="text-center mx-auto">Game Stats</p>
+</div>
 
-<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Game Settings</p>
+
+
+<div className=" w-1/4 h-full bg-gray-800 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
 </div>
 <div onClick={handleSaveGame} className={` w-1/4 h-full  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-indigo-800"  : "bg-gray-800"  }
@@ -486,23 +534,32 @@ const handleCourtClick = (e) => {
   </div>
  {/* Render Actions */}
  {gameActions
-    .filter((action) => action.quarter === currentQuater) // Only filter by quarter
-    .map((action, index) => (
-      <div
-        key={index}
-        className={`absolute w-4 h-4 rounded-full ${
-          ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
-            ? "bg-red-500" // Red for misses
-            : "bg-blue-500" // Blue for successful shots
-        }`}
-        style={{
-          top: `${action.y}%`, // Use percentages for responsive positioning
-          left: `${action.x}%`,
-          transform: "translate(-50%, -50%)", // Center the dot
-        }}
-        title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
-      ></div>
-    ))}
+  .filter((action) => action.quarter === currentQuater)
+  .map((action, index) => {
+    // Only render a dot if both x and y are valid numbers.
+    if (typeof action.x === "number" && typeof action.y === "number") {
+      return (
+        <div
+          key={index}
+          className={`absolute w-4 h-4 rounded-full ${
+            ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
+              ? "bg-red-500"
+              : "bg-blue-500"
+          }`}
+          style={{
+            top: `${action.y}%`,
+            left: `${action.x}%`,
+            transform: "translate(-50%, -50%)",
+          }}
+          title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
+        ></div>
+      );
+    } else {
+      return null;
+    }
+  })}
+
+
   {/* Court outline */}
 
 </div>
@@ -563,54 +620,55 @@ threepoint.made>0 &&
 
         </div>
         {/* Main Actions Buttons Section */}
-        <div className="grid grid-cols-4 h-2/4 w-full my-auto gap-1 lg:grid-cols-4 xl:grid-cols-6">
-  {actions.map((label, index) => (
-    <button
-      key={index}
-      onClick={() => {
-        if (["FT Score", "FT Miss"].includes(label)) {
-          if (passedLineout) {
-            // Instead of immediately recording, set pending action and show modal
-            setPendingAction({
-              actionName: label,
-              quarter: currentQuater,
-              x: 0, // For free throws, position is set to 0
-              y: 0,
-            });
-            setShowPlayerModal(true);
-          } else {
-            // Record immediately if no lineout is passed
-            setGameActions((prevActions) => [
-              ...prevActions,
-              {
-                quarter: currentQuater,
-                actionName: label,
-                x: 0,
-                y: 0,
-                timestamp: Date.now(),
-              },
-            ]);
-            setAlertMessage(`${label} recorded!`);
-            setTimeout(() => setAlertMessage(""), 3000);
-          }
-          return; // Exit the onClick handler for free throws
+        <div className="grid grid-cols-5 h-2/4 w-full my-auto gap-1 lg:grid-cols-5 mx-auto xl:grid-cols-6">
+        {actions.map((label, index) => (
+  <button
+    key={index}
+    onClick={() => {
+      if (["FT Score", "FT Miss", "Assist", "Steal"].includes(label)) {
+        if (passedLineout) {
+          // Set x and y to null to indicate no court position
+          setPendingAction({
+            actionName: label,
+            quarter: currentQuater,
+            x: null,
+            y: null,
+            timestamp: Date.now(),
+          });
+          setShowPlayerModal(true);
         } else {
-          // For non-free throw actions, set as selected (or you may choose to clear the selection)
-          setActionSelected(label);
+          // Record action immediately without position coordinates
+          setGameActions((prevActions) => [
+            ...prevActions,
+            {
+              quarter: currentQuater,
+              actionName: label,
+              x: null,
+              y: null,
+              timestamp: Date.now(),
+            },
+          ]);
+          setAlertMessage(`${label} recorded!`);
+          setTimeout(() => setAlertMessage(""), 3000);
         }
-        
-      }}
-      className={`${
-        actionSelected === label ? "bg-blue-700" : "bg-gray-800" // Highlight selected action
-      } text-white font-semibold py-2 px-4  rounded-lg shadow hover:bg-blue-700 transition transform hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none ${
-        ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label)
-          ? "text-red-500" // Red text for misses
-          : ""
-      }`}
-    >
-      {label}
-    </button>
-  ))}
+        return; // Exit the onClick handler
+      } else {
+        // For other actions, proceed as before.
+        setActionSelected(label);
+      }
+    }}
+    className={`${
+      actionSelected === label ? "bg-blue-700" : "bg-gray-800"
+    } text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition transform hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none ${
+      ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label)
+        ? "text-red-500"
+        : ""
+    }`}
+  >
+    {label}
+  </button>
+))}
+
 </div>
 {/* Game Quick Settings Section */}
 <div className="text-white   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
@@ -646,6 +704,107 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                 </div>
         </div>
       </div>
+      {showExitModal && (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50"
+    onClick={() => {
+      setShowExitModal(false);
+    }}
+  >
+    {/* Modal Overlay */}
+    <div className="absolute inset-0 bg-black opacity-50"></div>
+    {/* Modal Content */}
+    <div
+      className="relative bg-gray-800 p-6 rounded-lg w-72"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+    >
+      <h3 className="text-white text-lg mb-4">Exit Game?</h3>
+      <p className="text-gray-300 mb-4">
+        Unsaved game data will be lost. Are you sure you want to exit?
+      </p>
+      <div className="flex justify-end space-x-2">
+        <button
+          onClick={() => setShowExitModal(false)}
+          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => navigate('/homedashboard')}
+          className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded"
+        >
+          Exit
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* this is the modal for the game stats  */}
+{showGameStatsModal && (
+  <div
+    className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
+    onClick={() => setShowGameStatsModal(false)} // Clicking outside closes the modal
+  >
+    {/* Modal Content */}
+    <div
+      className="relative bg-gray-800 p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+    >
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex">
+          <h2 className="text-white text-2xl font-bold">Game Stats</h2>
+          <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
+            <div>FG: {fgMade}-{fgAttempts}<span className="text-gray-400">({fgPercentage}%)</span> </div>
+            <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
+            <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowGameStatsModal(false)}
+          className="text-white bg-red-600 hover:bg-red-500 px-4 py-2 rounded"
+        >
+          Close
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-white border-collapse">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 border-b">Quarter</th>
+              <th className="px-4 py-2 border-b">Action</th>
+              <th className="px-4 py-2 border-b">Time</th>
+              <th className="px-4 py-2 border-b">Player</th>
+              {/* <th className="px-4 py-2 border-b">Position</th> */}
+            </tr>
+          </thead>
+          <tbody>
+            {gameActions.map((action, index) => (
+              <tr key={index} className="hover:bg-gray-700">
+                <td className="px-4 py-2 border-b text-center">{action.quarter}</td>
+                <td className="px-4 py-2 border-b text-center">{action.actionName}</td>
+                <td className="px-4 py-2 border-b text-center">
+                  {action.timestamp ? new Date(action.timestamp).toLocaleTimeString() : "-"}
+                </td>
+                <td className="px-4 py-2 border-b text-center">
+                  {action.playerName ? `${action.playerName} (${action.playerNumber})` : "-"}
+                </td>
+                {/* <td className="px-4 py-2 border-b text-center">
+                  {typeof action.x === "number" && typeof action.y === "number"
+                    ? `(${action.x.toFixed(1)}%, ${action.y.toFixed(1)}%)`
+                    : "-"}
+                </td> */}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
 
       </main>
     </>

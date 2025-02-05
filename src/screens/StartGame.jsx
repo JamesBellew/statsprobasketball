@@ -8,8 +8,7 @@ export default function StartGame() {
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");
 
-  // New states for player stats and lineout selection
-  const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
+
   const [lineouts, setLineouts] = useState([]);
   const [selectedLineout, setSelectedLineout] = useState(null);
 
@@ -18,7 +17,8 @@ export default function StartGame() {
     const storedLineouts = JSON.parse(localStorage.getItem("lineouts")) || [];
     setLineouts(storedLineouts);
   }, []);
-
+  // New states for player stats and lineout selection
+  const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
   // When player stats are enabled, if lineouts exist, select the newest one.
   // If none exist, alert the user.
   useEffect(() => {
