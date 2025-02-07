@@ -197,70 +197,102 @@ export default function HomeDashboard() {
     savedLineouts.length > 0 ? savedLineouts[savedLineouts.length - 1] : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white">
+    <div className="min-h-screen  bg-primary-bg text-white">
       {/* Header Section */}
-      <div className="relative flex flex-col items-start justify-center h-[30vh] p-6 bg-gradient-to-r from-purple-800 to-indigo-700 rounded-b-2xl">
-        <div className="container mx-auto">
-          <div className="flex justify-between items-center w-full">
-            <div className="opacity-0">Placeholder Icon</div>
-            <p className="px-3 py-2 bg-white/50 rounded-full">JB</p>
-          </div>
-          <div className="mt-4">
-            <h1 className="text-2xl font-light">Welcome</h1>
-            <h2 className="text-4xl font-bold">James</h2>
-          </div>
-        </div>
-      </div>
+   
+<nav class="bg-secondary-bg  w-100 px-8 md:px-auto">
+	<div class="md:h-16 h-28 mx-auto md:px-4 container flex items-center justify-between flex-wrap md:flex-nowrap">
+
+		<div class="text-primary-cta md:order-1">
+		
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24"
+				stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+					d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+			</svg>
+		</div>
+		<div class="text-gray-500 order-3 w-full md:w-auto md:order-2">
+			<ul class="flex font-semibold justify-between">
+          
+				<li class="md:px-4 md:py-2 text-primary-cta"><a href="#">Home</a></li>
+				<li class="md:px-4 md:py-2 hover:text-indigo-400"><a href="#">Settings</a></li>
+				<li class="md:px-4 md:py-2 hover:text-indigo-400"><a href="#">Subscription</a></li>
+			
+			</ul>
+		</div>
+		<div class="order-2 md:order-3">
+			<button class="px-4 py-2 bg-primary-cta hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
+               
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Logout</span>
+            </button>
+		</div>
+	</div>
+</nav>
 
       <div className="container mx-auto p-6">
+        <h3 className="px-4">Welcome Back , James</h3>
         {/* Bottom Section */}
         <div className="p-6">
           <button
             onClick={handleStartNewGame}
-            className="btn my-5 bg-[#632aed] px-4 py-2 rounded-lg"
+            className="btn my-5 bg-primary-cta px-4 py-2 rounded-lg"
           >
             Start New Game
           </button>
 
           {/* Saved Games Section */}
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h4 className="text-sm font-medium">Saved Games</h4>
-            <p className="text-2xl font-bold">
-              {savedGames.length || "No"} {savedGames.length === 1 ? "Game" : "Games"}
-            </p>
-            <div className="h-[20vh] overflow-auto mt-4">
+          <div className="bg-secondary-bg pb-24   p-8 rounded-lg">
+            <div className="flex items-center text- space-x-3">   <h4 className="text-xl font-medium">Saved Games</h4>
+            <p className="text-sm text-gray-400 font-light">
+             ({savedGames.length || "No"} {savedGames.length === 1 ? "Game" : "Games"})
+            </p></div>
+         
+            <div className="h-auto  overflow-auto mt-4">
               <ul className="grid grid-cols-3  gap-4">
                 {savedGames.length > 0 ? (
                   savedGames.map((game) => (
                     <li
                       key={game.id}
-                      className="bg-gray-700 col-span-3 md:col-span-1  p-3 rounded hover:bg-gray-600  flex flex-col"
+                     
+                      className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg   col-span-3 md:col-span-1  p-3 rounded-lg hover:bg-white/10  flex flex-col"
                     >
                       <div className="mb-2">
                         <p className="text-sm font-medium">{game.opponentName || "Unknown"} ({game.venue})</p>
                         <p className="text-xs text-gray-400"></p>
                       </div>
                       <div className="flex justify-between">
-                        <button
-                          onClick={() => handleGameClick(game)}
-                          className="bg-gray-600 px-3 py-1 rounded text-xs"
+                     
+                        <div className="flex space-x-2">
+                        {/* <button
+                       
+                          className="bg-white/10 px-3 py-1 rounded text-xs"
                         >
                           Open
-                        </button>
-                        <div className="flex space-x-2">
+                        </button> */}
+                         <button
+                            onClick={() => handleGameClick(game)}
+                            className=" px-1 py-1 text-primary-cta font-semibold rounded flex text-md px-4 py-2 items-center "
+                          >Continue 
+             
+
+
+                          </button>
                           <button
                             onClick={() => openGameEditModal(game)}
-                            className="bg-purple-800/50 px-3 py-1 rounded text-xs"
-                          >
-                            Edit
+                            className=" px-1 py-1 rounded flex text-gray-400 items-center text-xs"
+                          >Edit
+             
+
+
                           </button>
                           <button
                             onClick={() => handleDeleteGame(game.id)}
-                            className=" px-3 py-1 rounded text-xs"
+                            className=" px-1 py-1 text-gray-400 rounded text-xs"
                           >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-</svg>
+                  Delete
                           </button>
                           
 
@@ -274,76 +306,83 @@ export default function HomeDashboard() {
               </ul>
             </div>
           </div>
-
-          {/* Lineout Section */}
-          <div className="bg-gray-800 p-4 rounded-lg mt-4">
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-bold">Lineout</p>
-              <button
-                onClick={openLineoutModal}
-                className="btn btn-primary px-5 py-2 bg-[#632aed] rounded-md"
-              >
-                Create
-              </button>
-            </div>
-            {displayedLineout ? (
-              <div className="bg-gray-700 p-3 rounded hover:bg-gray-600 flex justify-between items-center mt-3">
-                <div>
-                  <p className="font-medium">{displayedLineout.name}</p>
-                  <div className="mt-2">
-                    {displayedLineout.players.map((player, index) => (
-                      <p key={index} className="text-xs text-gray-100">
-                        <span className="text-gray-400">({player.number})</span> {player.name}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setActiveDropdown(
-                        activeDropdown === displayedLineout.id ? null : displayedLineout.id
-                      )
-                    }
-                    className="p-2 hover:bg-gray-600 rounded"
-                  >
-                    ⋮
-                  </button>
-                  {activeDropdown === displayedLineout.id && (
-                    <div className="absolute right-0 mt-2 w-28 bg-gray-800 border border-gray-700 rounded shadow-lg z-10">
-                      <button
-                        onClick={() => openEditModal(displayedLineout)}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteLineout(displayedLineout.id)}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-gray-400">No Lineouts Saved</p>
-            )}
-          </div>
-
-          {/* Saved Statistics Section */}
-          <div className="bg-gray-800 p-4 rounded-lg mt-4 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-xl">Saved Statistics</h4>
-            </div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm text-gray-400 font-small">No Saved Stats Yet</h4>
-            </div>
+          <div className="grid grid-cols-2 gap-4 ">
+  {/* Lineout Section */}
+  <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-1 rounded-lg mt-4">
+    <div className="flex items-center justify-between">
+      <p className="text-lg font-bold">Lineout</p>
+      {!savedGames.length >= 1 ? (
+        <button
+          disabled={savedGames.length >= 1}
+          onClick={openLineoutModal}
+          className="btn btn-primary px-5 py-2 bg-primary-cta rounded-md"
+        >
+          Create
+        </button>
+      ) : (
+        " "
+      )}
+    </div>
+    {displayedLineout ? (
+      <div className="bg-secondary-bg shadow-lg border-l-4 border-l-primary-cta p-3 rounded  flex justify-between items-center mt-3">
+        <div className="w-full">
+          <p className="font-medium">{displayedLineout.name}</p>
+          <div className="mt-2">
+            {displayedLineout.players.map((player, index) => (
+              <p key={index} className="text-xs py-2 border-b border-dotted border-white/10 text-gray-200">
+                <span className="text-gray-400">({player.number})</span> {player.name}
+              </p>
+            ))}
           </div>
         </div>
+        {/* Three dot dropdown menu */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() =>
+              setActiveDropdown(
+                activeDropdown === displayedLineout.id ? null : displayedLineout.id
+              )
+            }
+            className="p-2 hover:bg-gray-600 rounded"
+          >
+            ⋮
+          </button>
+          {activeDropdown === displayedLineout.id && (
+            <div className="absolute right-0 mt-2 w-28 bg-gray-800 border border-gray-700 rounded shadow-lg z-10">
+              
+              <button
+                onClick={() => openEditModal(displayedLineout)}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeleteLineout(displayedLineout.id)}
+                className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+    ) : (
+      <p className="text-xs text-gray-400">No Lineouts Saved</p>
+    )}
+  </div>
+  {/* Saved Statistics Section */}
+  <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-1 rounded-lg mt-4 cursor-pointer">
+    <div className="flex items-center justify-between">
+      <h4 className="text-sm font-bold text-xl">Saved Statistics</h4>
+    </div>
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="text-sm text-gray-400 font-small">No Saved Stats Yet</h4>
+    </div>
+  </div>
+</div>
 
+      </div>
+</div>
       {/* Modal for Creating / Editing a Lineout */}
       {showLineoutModal && (
         <>
@@ -412,7 +451,7 @@ export default function HomeDashboard() {
                 </button>
                 <button
                   onClick={handleSaveLineout}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
                 >
                   Save Lineout
                 </button>
@@ -463,7 +502,7 @@ export default function HomeDashboard() {
               </button>
               <button
                 onClick={handleSaveGameEdit}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded"
+                className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
               >
                 Save Game
               </button>
