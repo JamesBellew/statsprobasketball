@@ -251,13 +251,13 @@ export default function HomeDashboard() {
             </p></div>
          
             <div className="h-auto  overflow-auto mt-4">
-              <ul className="grid grid-cols-3  gap-4">
+              <ul className="grid grid-cols-6  gap-4">
                 {savedGames.length > 0 ? (
                   savedGames.map((game) => (
                     <li
                       key={game.id}
                      
-                      className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg   col-span-3 md:col-span-1  p-3 rounded-lg hover:bg-white/10  flex flex-col"
+                      className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg   col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10  flex flex-col"
                     >
                       <div className="mb-2">
                         <p className="text-sm font-medium">{game.opponentName || "Unknown"} ({game.venue})</p>
@@ -274,7 +274,7 @@ export default function HomeDashboard() {
                         </button> */}
                          <button
                             onClick={() => handleGameClick(game)}
-                            className=" px-1 py-1 text-primary-cta font-semibold rounded flex text-md px-4 py-2 items-center "
+                            className="  py-1 text-primary-cta font-semibold rounded flex text-md pl-1 py-1 items-center "
                           >Continue 
              
 
@@ -282,7 +282,7 @@ export default function HomeDashboard() {
                           </button>
                           <button
                             onClick={() => openGameEditModal(game)}
-                            className=" px-1 py-1 rounded flex text-gray-400 items-center text-xs"
+                            className="  py-1 rounded flex text-gray-400 items-center text-xs"
                           >Edit
              
 
@@ -290,7 +290,7 @@ export default function HomeDashboard() {
                           </button>
                           <button
                             onClick={() => handleDeleteGame(game.id)}
-                            className=" px-1 py-1 text-gray-400 rounded text-xs"
+                            className="  py-1 text-gray-400 rounded text-xs"
                           >
                   Delete
                           </button>

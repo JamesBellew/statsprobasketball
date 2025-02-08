@@ -21,11 +21,13 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 // Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 
+
 const [showPlayerModal, setShowPlayerModal] = useState(false);
 const [pendingAction, setPendingAction] = useState(null);
 const [isGameSaved, setIsGameSaved] = useState(false);
 const [showExitModal, setShowExitModal] = useState(false);
 const [showGameStatsModal, setShowGameStatsModal] = useState(false);
+const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
 
 // Compute overall stats for display in the modal header
 // Field Goal: count both 2pt and 3pt attempts and makes.
@@ -55,8 +57,78 @@ const ftMade = gameActions.filter(a =>
 ).length;
 const ftPercentage = ftAttempts ? Math.round((ftMade / ftAttempts) * 100) : 0;
 
+const playersStats = gameActions.reduce((acc, action) => {
+  // Only include actions with an assigned player
+  if (!action.playerName) return acc;
+
+  // Use a unique key for each player (e.g. "James Bellew (10)")
+  const key = `${action.playerName} (${action.playerNumber})`;
+  if (!acc[key]) {
+    acc[key] = {
+      player: key,
+      fgMade: 0,
+      fgAttempts: 0,
+      threePtMade: 0,
+      threePtAttempts: 0,
+      ftMade: 0,
+      ftAttempts: 0,
+      steals: 0,
+      assists: 0,
+      turnovers: 0,
+      blocks: 0,
+    };
+  }
+
+  // Count FG attempts and makes (includes both 2PT and 3PT)
+  if (["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)) {
+    acc[key].fgAttempts += 1;
+    if (["2 Points", "3 Points"].includes(action.actionName)) {
+      acc[key].fgMade += 1;
+    }
+  }
+
+  // Count 3PT attempts and makes (only count 3PT actions)
+  if (["3 Points", "3Pt Miss"].includes(action.actionName)) {
+    acc[key].threePtAttempts += 1;
+    if (action.actionName === "3 Points") {
+      acc[key].threePtMade += 1;
+    }
+  }
+
+  // Count free throw attempts and makes
+  if (["FT Score", "FT Miss"].includes(action.actionName)) {
+    acc[key].ftAttempts += 1;
+    if (action.actionName === "FT Score") {
+      acc[key].ftMade += 1;
+    }
+  }
+
+  // Count other actions
+  if (action.actionName === "Assist") acc[key].assists += 1;
+  if (action.actionName === "Steal") acc[key].steals += 1;
+  if (action.actionName === "T/O") acc[key].turnovers += 1;
+  if (action.actionName === "Block") acc[key].blocks += 1;
+
+  return acc;
+}, {});
+
+const playersStatsArray = Object.values(playersStats);
 
 
+useEffect(() => {
+  // Only auto-save if the game is created (i.e. opponentName is set)
+  // and there are some actions recorded.
+  if (opponentName && gameActions.length > 0) {
+    // Set a timer that will call the save function after 10 seconds of inactivity.
+    const autoSaveTimer = setTimeout(() => {
+      handleSaveGame('save');
+      console.log("Auto-saved game!");
+    }, 10000); // 10 seconds
+
+    // Clear the timer if gameActions changes before 10 seconds are up.
+    return () => clearTimeout(autoSaveTimer);
+  }
+}, [gameActions, opponentName]);
 
 useEffect(() => {
   if (savedGame && savedGame.id) {
@@ -207,7 +279,12 @@ const handleUndoLastActionHandler = () => {
 //     setTimeout(() => setAlertMessage(""), 3000);
 //   }
 // };
-const handleSaveGame = () => {
+const handleSaveGame = (type) => {
+  if(type==='save'){
+    console.log('yep, its a save son');
+    setAlertMessage('Save')
+    
+  }
   // Use the lineout from the savedGame (if it exists) or the current passedLineout
   const gameLineout = savedGame?.lineout || passedLineout;
 
@@ -216,16 +293,28 @@ const handleSaveGame = () => {
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: gameLineout, // <-- include the lineout
+    lineout: gameLineout, // include the lineout
     timestamp: new Date().toISOString(),
   };
 
+  // Get the existing games from localStorage
   const existingGames = JSON.parse(localStorage.getItem("savedGames")) || [];
-  const updatedGames = [...existingGames, fixedGame];
+
+  let updatedGames;
+  if (savedGame && savedGame.id) {
+    // If a game is already loaded (i.e. we're editing an existing game),
+    // update the game that matches the id.
+    updatedGames = existingGames.map((game) =>
+      game.id === savedGame.id ? fixedGame : game
+    );
+  } else {
+    // Otherwise, it's a new game—append it.
+    updatedGames = [...existingGames, fixedGame];
+  }
 
   try {
     localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-    setAlertMessage("Fixed game saved successfully!");
+    setAlertMessage("Saved");
     setIsGameSaved(true); // Mark the game as saved
     setTimeout(() => setAlertMessage(""), 3000);
   } catch (error) {
@@ -234,6 +323,7 @@ const handleSaveGame = () => {
     setTimeout(() => setAlertMessage(""), 3000);
   }
 };
+
 
 
 
@@ -384,15 +474,38 @@ const handleCourtClick = (e) => {
     <main className=" bg-primary-bg">
       
       {/* Top Nav */}
-      <div className="container mx-auto  items-center bg-primary-bg">
-        <div className="top-nav w-full h-[12vh]  relative">
+      <div className="container mx-auto  items-center bg-primary-bg" >
+        <div className="top-nav w-auto h-[12vh]  relative">
           {/* Alert Message */}
           {alertMessage && (
         <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
-        <div class="p-2 h-16 bg-secondary-bg rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
-          <span class="flex rounded-lg bg-primary-cta uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
-          <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
-          <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
+        <div class="p-2 h-auto bg-secondary-bg shadow-lg py-2 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
+        {alertMessage === "Saved" ? (
+          <svg
+  xmlns="http://www.w3.org/2000/svg"
+  className="h-6 w-6 text-primary-cta inline-block"
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+>
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zM12 19v-6h6"
+  />
+</svg>
+
+) : (
+  <>
+  <span class="flex rounded-lg bg-primary-cta uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
+  <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
+  <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
+  </>
+)}
+
+
+       
         </div>
       </div>
           )}
@@ -412,7 +525,7 @@ const handleCourtClick = (e) => {
       navigate('/homedashboard');
     }
   }}
-  className="w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg"
+  className="w-1/4 h-full text-center flex items-center bg-secondary-bg hover:bg-primary-danger/50 rounded-lg"
 >
   <p className="text-center mx-auto">Exit</p>
 </button>
@@ -424,7 +537,7 @@ const handleCourtClick = (e) => {
 // disabled={gameActions===0}
 
   onClick={handleUndoLastActionHandler} 
-  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-gray-700 transition transform hover:scale-105
+  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
   ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg text-primary-cta"}
   `}
 >
@@ -435,16 +548,18 @@ Undo Last Action</p>
 </div >
 <div
   onClick={() => setShowGameStatsModal(true)}
-  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-gray-700 transition"
+  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
 >
   <p className="text-center mx-auto">Game Stats</p>
 </div>
 
 
 
-<div className=" w-1/4 h-full bg-secondary-bg rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
+<div onClick={()=>{
+  setShowPlayerStatsModal(true)
+}} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
 </div>
-<div onClick={handleSaveGame} className={` w-1/4 h-full  rounded-lg text-center flex items-center
+<div onClick={handleSaveGame} className={` w-1/4 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-primary-cta"  : "bg-secondary-bg"  }
   `}>
 <p className="text-center mx-auto text-sm"> {SaveGameBtnText}</p></div>
@@ -501,7 +616,7 @@ Undo Last Action</p>
           setShowPlayerModal(false);
           setPendingAction(null);
         }}
-        className="mt-4 w-full p-2 bg-primary-danger hover:bg-red-500 text-white rounded"
+        className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
       >
         Cancel
       </button>
@@ -631,7 +746,7 @@ threepoint.made>0 &&
   <button
     key={index}
     onClick={() => {
-      if (["FT Score", "FT Miss", "Assist", "Steal"].includes(label)) {
+      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O"].includes(label)) {
         if (passedLineout) {
           // Set x and y to null to indicate no court position
           setPendingAction({
@@ -774,7 +889,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
         </div>
         <button
           onClick={() => setShowGameStatsModal(false)}
-          className="text-white bg-primary-danger hover:bg-red-500 px-4 py-2 rounded"
+          className="text-white bg-primary-danger  px-4 py-2 rounded"
         >
           Close
         </button>
@@ -792,7 +907,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
           </thead>
           <tbody>
             {gameActions.map((action, index) => (
-              <tr key={index} className="hover:bg-gray-700">
+              <tr key={index} className="hover:bg-white/10">
                 <td className="px-4 py-2 border-b text-center">{action.quarter}</td>
                 <td className="px-4 py-2 border-b text-center">{action.actionName}</td>
                 <td className="px-4 py-2 border-b text-center">
@@ -808,6 +923,76 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                 </td> */}
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+{/* this will be the modal for the player stats 
+ */}
+{showPlayerStatsModal && (
+  <div
+    className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
+    onClick={() => setShowPlayerStatsModal(false)} // Clicking outside closes the modal
+  >
+    {/* Modal Content */}
+    <div
+      className="relative bg-secondary-bg p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+    >
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex">
+          <h2 className="text-white text-2xl font-bold">Player Stats</h2>
+     
+        </div>
+        <button
+          onClick={() => setShowPlayerStatsModal(false)}
+          className="text-white bg-primary-danger/50 hover:bg-red-500 px-4 py-2 rounded"
+        >
+          Close
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-white border-collapse">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 border-b  text-left">Player</th>
+              <th className="px-4 py-2 border-b text-left">FG</th>
+              <th className="px-4 py-2 border-b text-left">3PT</th>
+              <th className="px-4 py-2 border-b text-left">FT</th>
+              <th className="px-4 py-2 border-b text-left">Steals</th>
+              <th className="px-4 py-2 border-b text-left">Assists</th>
+              <th className="px-4 py-2 border-b text-left">Blocks</th>
+              <th className="px-4 py-2 border-b text-left">T/O</th>
+            </tr>
+          </thead>
+          <tbody>
+            {playersStatsArray.length > 0 ? (
+              playersStatsArray.map((stat, index) => {
+                const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
+                const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
+                const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
+                return (
+                  <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg  even:bg-white/10 text-white hover:text-primary-bg">
+                    <td className="px-4 py-2 border-b border-b-gray-500">{stat.player}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-gray-700">({fgPct}%)</span></td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({threePct}%)</span></td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({ftPct}%)</span></td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.steals}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.assists}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.blocks}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.turnovers}</td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td className="px-4 py-2 border-b text-center" colSpan="8">
+                  No player stats available.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
