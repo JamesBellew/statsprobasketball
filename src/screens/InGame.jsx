@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { db } from "../db";
 export default function InGame() {
   const navigate = useNavigate();
   const [currentQuater,setCurrentQuarter]=useState(1)
@@ -21,6 +22,27 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 // Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 
+// this is the start of the testing of the new db (glhf)
+// Function to save a game
+async function saveGame(gameData) {
+  try {
+    // Add a new game entry; Dexie returns the generated id.
+    const id = await db.games.add(gameData);
+    console.log("Game saved with id: ", id);
+  } catch (error) {
+    console.error("Failed to save game:", error);
+  }
+}
+
+// Example usage:
+const gameData = {
+  opponentName: "Lakers",
+  venue: "Home",
+  timestamp: new Date().toISOString(),
+  // Add other properties as needed
+};
+
+// this is the end of the testing of the db
 
 const [showPlayerModal, setShowPlayerModal] = useState(false);
 const [pendingAction, setPendingAction] = useState(null);
@@ -62,7 +84,7 @@ const playersStats = gameActions.reduce((acc, action) => {
   if (!action.playerName) return acc;
 
   // Use a unique key for each player (e.g. "James Bellew (10)")
-  const key = `${action.playerName} (${action.playerNumber})`;
+  const key = `(${action.playerNumber}) ${action.playerName} `;
   if (!acc[key]) {
     acc[key] = {
       player: key,
@@ -515,6 +537,10 @@ const handleCourtClick = (e) => {
 <div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
 <div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
+<button onClick={()=>{
+  saveGame(gameData)
+}} className=" px-5 rounded-md bg-primary-cta">Testing push</button>
+
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
 <button
   onClick={() => {
