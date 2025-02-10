@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
+
 import Login from './screens/login';
 import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
@@ -8,9 +9,22 @@ export default function App() {
 
  //UseStates
  const [showLoginModal,setShowLoginModal] = useState(false)
+ if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      })
+      .catch(error => {
+        console.error('Service Worker registration failed:', error);
+      });
+  });
+}
+
 
 
   return (
+    
     <Router>
       <Routes>
         <Route

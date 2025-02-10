@@ -2,23 +2,28 @@ import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
+import { db } from "../db"; // Import your Dexie instance
 
 export default function StartGame() {
   const navigate = useNavigate();
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");
 
-
   const [lineouts, setLineouts] = useState([]);
   const [selectedLineout, setSelectedLineout] = useState(null);
 
-  // Load saved lineouts from localStorage on mount
+  // Load saved lineouts from Dexie on mount
   useEffect(() => {
-    const storedLineouts = JSON.parse(localStorage.getItem("lineouts")) || [];
-    setLineouts(storedLineouts);
+    async function fetchLineouts() {
+      const storedLineouts = await db.lineouts.toArray();
+      setLineouts(storedLineouts);
+    }
+    fetchLineouts();
   }, []);
+
   // New states for player stats and lineout selection
   const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
+
   // When player stats are enabled, if lineouts exist, select the newest one.
   // If none exist, alert the user.
   useEffect(() => {
@@ -47,42 +52,37 @@ export default function StartGame() {
       playerStatsEnabled && selectedLineout
         ? lineouts.find((lineout) => lineout.id === selectedLineout) || null
         : null;
-  
+
     const gameState = {
       opponentName,
       selectedVenue,
       playerStatsEnabled,
       lineout: selectedLineoutData, // will be null if no lineout was chosen
     };
-  
+
     navigate("/ingame", { state: gameState });
   };
-  
 
   return (
-    <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center  ">
-      <div className="container  mx-auto">
-        <div className="w-full   
-        px-10  my-auto flex-row justify-center items-center">
-
-            <label
-              htmlFor="small-input"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Opponent
-            </label>
-            <input
-              required
-              onChange={handleOpponentInputChange}
-              type="text"
-              id="small-input"
-              className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            />
-
+    <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">
+      <div className="container mx-auto">
+        <div className="w-full px-10 my-auto flex-row justify-center items-center">
+          <label
+            htmlFor="small-input"
+            className="block mb-2 text-sm font-medium text-gray-200 dark:text-white"
+          >
+            Opponent
+          </label>
+          <input
+            required
+            onChange={handleOpponentInputChange}
+            type="text"
+            id="small-input"
+            className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          />
 
           {/* Toggle Section for Player Stats and Game Stats */}
-          <div className="grid  grid-cols-4 mt-5 w-full 
-          lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
             {/* Player Stats Toggle */}
             <div className="bg-gray-800 h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
               <label className="inline-flex items-center cursor-pointer">
@@ -92,8 +92,7 @@ export default function StartGame() {
                   onChange={(e) => setPlayerStatsEnabled(e.target.checked)}
                   className="sr-only peer mx-auto"
                 />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full 
-                rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                   Player Stats
                 </span>
@@ -142,7 +141,7 @@ export default function StartGame() {
           </div>
 
           {/* Venue Toggle and Start Game Button */}
-          <div className="grid grid-cols-4  mt-5 w-full lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
             {/* Venue Toggle */}
             <div className="bg-gray-800 col-span-4 lg:col-span-2 flex h-24 rounded-lg relative">
               {/* Slider Background */}

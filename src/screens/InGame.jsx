@@ -96,6 +96,7 @@ const playersStats = gameActions.reduce((acc, action) => {
       ftAttempts: 0,
       steals: 0,
       assists: 0,
+      rebounds: 0,
       turnovers: 0,
       blocks: 0,
     };
@@ -129,6 +130,7 @@ const playersStats = gameActions.reduce((acc, action) => {
   if (action.actionName === "Assist") acc[key].assists += 1;
   if (action.actionName === "Steal") acc[key].steals += 1;
   if (action.actionName === "T/O") acc[key].turnovers += 1;
+  if (action.actionName === "Rebound") acc[key].rebounds += 1;
   if (action.actionName === "Block") acc[key].blocks += 1;
 
   return acc;
@@ -301,49 +303,40 @@ const handleUndoLastActionHandler = () => {
 //     setTimeout(() => setAlertMessage(""), 3000);
 //   }
 // };
-const handleSaveGame = (type) => {
-  if(type==='save'){
-    console.log('yep, its a save son');
-    setAlertMessage('Save')
-    
+const handleSaveGame = async (type) => {
+  if (gameActions.length === 0) {
+    setAlertMessage("No actions to save!");
+    setTimeout(() => setAlertMessage(""), 2000);
+    return;
   }
+
   // Use the lineout from the savedGame (if it exists) or the current passedLineout
   const gameLineout = savedGame?.lineout || passedLineout;
 
-  const fixedGame = {
+  const gameData = {
     id: savedGame?.id || `game_${Date.now()}`,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: gameLineout, // include the lineout
+    lineout: gameLineout, // include the lineout data
     timestamp: new Date().toISOString(),
   };
 
-  // Get the existing games from localStorage
-  const existingGames = JSON.parse(localStorage.getItem("savedGames")) || [];
-
-  let updatedGames;
-  if (savedGame && savedGame.id) {
-    // If a game is already loaded (i.e. we're editing an existing game),
-    // update the game that matches the id.
-    updatedGames = existingGames.map((game) =>
-      game.id === savedGame.id ? fixedGame : game
-    );
-  } else {
-    // Otherwise, it's a new game—append it.
-    updatedGames = [...existingGames, fixedGame];
-  }
-
   try {
-    localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-    setAlertMessage("Saved");
+    if (savedGame && savedGame.id) {
+      // Update the existing game if we're editing one
+      await db.games.put(gameData);
+    } else {
+      // Otherwise, add a new game
+      await db.games.add(gameData);
+    }
+    setAlertMessage("Game saved successfully!");
     setIsGameSaved(true); // Mark the game as saved
-    setTimeout(() => setAlertMessage(""), 3000);
   } catch (error) {
-    console.error("Error saving fixed game to localStorage:", error);
-    setAlertMessage("Error saving fixed game. Please try again.");
-    setTimeout(() => setAlertMessage(""), 3000);
+    console.error("Error saving game:", error);
+    setAlertMessage("Error saving game. Please try again.");
   }
+  setTimeout(() => setAlertMessage(""), 3000);
 };
 
 
@@ -406,8 +399,9 @@ const handleCourtClick = (e) => {
     "FT Miss",
     "Assist",
     "Steal",
-    "T/O",
     "Block",
+    "T/O",
+    "Rebound",
   ];
   useEffect(() => {
     // Overall stats
@@ -537,9 +531,7 @@ const handleCourtClick = (e) => {
 <div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
 <div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
-<button onClick={()=>{
-  saveGame(gameData)
-}} className=" px-5 rounded-md bg-primary-cta">Testing push</button>
+
 
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
 <button
@@ -767,12 +759,12 @@ threepoint.made>0 &&
 
         </div>
         {/* Main Actions Buttons Section */}
-        <div className="grid grid-cols-5 h-2/4 w-full my-auto gap-1 lg:grid-cols-5 mx-auto xl:grid-cols-6">
+        <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
         {actions.map((label, index) => (
   <button
     key={index}
     onClick={() => {
-      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O"].includes(label)) {
+      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O","Rebound"].includes(label)) {
         if (passedLineout) {
           // Set x and y to null to indicate no court position
           setPendingAction({
@@ -907,11 +899,11 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       <div className="flex justify-between items-center mb-4">
         <div className="flex">
           <h2 className="text-white text-2xl font-bold">Game Stats</h2>
-          <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
+          {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
             <div>FG: {fgMade}-{fgAttempts}<span className="text-gray-400">({fgPercentage}%)</span> </div>
             <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
             <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
-          </div>
+          </div> */}
         </div>
         <button
           onClick={() => setShowGameStatsModal(false)}
@@ -920,7 +912,14 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
           Close
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className=" py-3 flex justify-center">
+              <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
+            <div className="bg-white/10 px-4 py-2 rounded-md text-lg font-semibold text-center"><span className="text-gray-400">FG</span><br></br> {fgMade}-{fgAttempts}<span className="text-gray-400 ml-2">({fgPercentage}%)</span> </div>
+            <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
+            <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
+          </div>
+      </div>
+      <div className="overflow-x-auto max-h-80 overflow-auto">
         <table className="min-w-full text-white border-collapse">
           <thead>
             <tr>
@@ -989,6 +988,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
               <th className="px-4 py-2 border-b text-left">FT</th>
               <th className="px-4 py-2 border-b text-left">Steals</th>
               <th className="px-4 py-2 border-b text-left">Assists</th>
+              <th className="px-4 py-2 border-b text-left">Rebounds</th>
               <th className="px-4 py-2 border-b text-left">Blocks</th>
               <th className="px-4 py-2 border-b text-left">T/O</th>
             </tr>
@@ -1007,6 +1007,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({ftPct}%)</span></td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.steals}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.assists}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.rebounds}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.blocks}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.turnovers}</td>
                   </tr>

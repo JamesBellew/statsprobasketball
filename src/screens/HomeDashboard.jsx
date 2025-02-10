@@ -31,10 +31,10 @@ export default function HomeDashboard() {
   const dropdownRef = useRef(null);
 
   // Load saved games from localStorage as before
-  useEffect(() => {
-    const games = JSON.parse(localStorage.getItem("savedGames")) || [];
-    setSavedGames(games);
-  }, []);
+  // useEffect(() => {
+  //   const games = JSON.parse(localStorage.getItem("savedGames")) || [];
+  //   setSavedGames(games);
+  // }, []);
 
   // Load saved lineouts from IndexedDB on component mount
   useEffect(() => {
@@ -44,6 +44,17 @@ export default function HomeDashboard() {
     }
     fetchLineouts();
   }, []);
+// HomeDashboard.jsx (partial)
+useEffect(() => {
+  async function fetchSavedGames() {
+    const games = await db.games.toArray();
+    setSavedGames(games);
+  }
+  fetchSavedGames();
+}, []);
+
+
+
 
   // Close dropdown if click outside
   useEffect(() => {
@@ -77,8 +88,7 @@ export default function HomeDashboard() {
     setActiveDropdown(null);
     setShowGameEditModal(true);
   };
-
-  const handleSaveGameEdit = () => {
+  const handleSaveGameEdit = async () => {
     if (!editedOpponentName.trim() || !editedVenue.trim()) {
       alert("Please fill in both opponent name and venue.");
       return;
@@ -88,23 +98,28 @@ export default function HomeDashboard() {
       opponentName: editedOpponentName,
       venue: editedVenue,
     };
-    const updatedGames = savedGames.map((game) =>
-      game.id === updatedGame.id ? updatedGame : game
-    );
-    localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-    setSavedGames(updatedGames);
+  
+    // Use the correct table: 'games' as defined in your db.js file
+    await db.games.put(updatedGame);
+  
+    // Re-fetch games from Dexie using the correct table
+    const games = await db.games.toArray();
+    setSavedGames(games);
     setShowGameEditModal(false);
     setEditingGame(null);
   };
+  
+  
 
-  const handleDeleteGame = (gameId) => {
+  const handleDeleteGame = async (gameId) => {
     if (window.confirm("Are you sure you want to delete this game?")) {
-      const updatedGames = savedGames.filter((game) => game.id !== gameId);
-      localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-      setSavedGames(updatedGames);
+      await db.games.delete(gameId);
+      const games = await db.games.toArray();
+      setSavedGames(games);
       setActiveDropdown(null);
     }
   };
+  
 
   // --- Lineout Handlers (Using IndexedDB) ---
   const openLineoutModal = () => {
@@ -187,6 +202,7 @@ export default function HomeDashboard() {
       await db.lineouts.clear();
       await db.lineouts.add(newLineout);
     }
+    
     // Re-fetch from DB
     const updatedLineouts = await db.lineouts.toArray();
     setSavedLineouts(updatedLineouts);
