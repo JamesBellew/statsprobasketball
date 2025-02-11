@@ -896,7 +896,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       className="relative bg-secondary-bg p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
     >
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-2">
         <div className="flex">
           <h2 className="text-white text-2xl font-bold">Game Stats</h2>
           {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
@@ -912,12 +912,97 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
           Close
         </button>
       </div>
-      <div className=" py-3 flex justify-center">
-              <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
+      <div className=" py-2 flex justify-center">
+              {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
             <div className="bg-white/10 px-4 py-2 rounded-md text-lg font-semibold text-center"><span className="text-gray-400">FG</span><br></br> {fgMade}-{fgAttempts}<span className="text-gray-400 ml-2">({fgPercentage}%)</span> </div>
             <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
             <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
-          </div>
+          </div> */}
+     
+<div class="flex items-center justify-center w-screen  text-gray-800  ">
+
+    <div class="grid lg:grid-cols-3 md:grid-cols-2 gap-2 w-full max-w-6xl">
+
+
+        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg ">
+            <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
+            <span class="text-xl text-gray-200 font-bold">52%</span>
+            </div>
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-300 font-bold">Field Goal</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">12-24</span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-danger h-14 w-14 ">
+            <span class="text-xl text-gray-200 font-bold">22%</span>
+            </div>
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-100 font-bold">3 Point</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">2-12</span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
+            <span class="text-xl text-gray-200 font-bold">52%</span>
+            </div>
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-100 font-bold">Free Throw</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">18-24</span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+             <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+             <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
+            <span class="text-xl text-gray-200 font-bold">52%</span>
+            </div>
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-100 font-bold">T/O-Steals</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300"><span className="text-primary-danger">12</span>-<span className="text-primary-cta">24</span></span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
+            <span class="text-xl text-gray-200 font-bold">52%</span>
+            </div>
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-100 font-bold">OfRebounds</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300"><span className="text-primary-danger">12</span>-<span className="text-primary-cta">24</span></span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+            {/* <div class="flex flex-shrink-0 items-center justify-center text-primary-cta h-14 w-14 rounded">
+            <span class="text-xl  font-bold">52%</span>
+            </div> */}
+            <div class="flex-grow flex flex-col ml-4">
+                <span class="text-xl text-gray-100 font-bold">Blocks</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">6</span>
+                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
+                </div>
+            </div>
+        </div>
+    
+
+
+    </div>
+
+
+</div>
       </div>
       <div className="overflow-x-auto max-h-80 overflow-auto">
         <table className="min-w-full text-white border-collapse">

@@ -69,7 +69,7 @@ export default function StartGame() {
         <div className="w-full px-10 my-auto flex-row justify-center items-center">
           <label
             htmlFor="small-input"
-            className="block mb-2 text-sm font-medium text-gray-200 dark:text-white"
+            className="block mb-2 text-sm font-medium text-gray-200 "
           >
             Opponent
           </label>
@@ -93,7 +93,7 @@ export default function StartGame() {
                   className="sr-only peer mx-auto"
                 />
                 <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                <span className="ms-3 text-sm font-medium text-gray-300 ">
                   Player Stats
                 </span>
               </label>
@@ -103,7 +103,7 @@ export default function StartGame() {
             <div className="bg-gray-800 h-24 col-span-2 p-2 lg:p-4 hover:bg-indigo-500 cursor-pointer rounded-lg flex items-center justify-center">
               <label className="inline-flex items-center cursor-pointer">
                 <FontAwesomeIcon className="text-white" icon={faPlusMinus} />
-                <span className="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                <span className="ms-3 text-sm font-medium text-gray-300 ">
                   Game Stats
                 </span>
               </label>
@@ -114,7 +114,7 @@ export default function StartGame() {
           <div className="mt-5">
             {playerStatsEnabled ? (
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                <label className="block text-sm font-medium text-white">
                   Select Lineout
                 </label>
                 {lineouts.length > 0 ? (
@@ -135,7 +135,7 @@ export default function StartGame() {
               </div>
             ) : (
               <div>
-                <p className="text-gray-400">Player stats not recorded.</p>
+                <p className="text-gray-300">Player stats not recorded.</p>
               </div>
             )}
           </div>
