@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState } from 'react';
 
-import Login from './screens/login';
+import Login from './screens/Login';
 import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
 import InGame from './screens/InGame';
