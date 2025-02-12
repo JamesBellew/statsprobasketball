@@ -300,7 +300,7 @@ useEffect(() => {
                     </li>
                   ))
                 ) : (
-                  <li className="text-center text-gray-400">No saved games yet.</li>
+                  <li className=" text-gray-400">Nothing Yet</li>
                 )}
               </ul>
             </div>

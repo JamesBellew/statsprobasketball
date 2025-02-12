@@ -21,6 +21,7 @@ const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 // Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
+const [currentGameId, setCurrentGameId] = useState(null);
 
 // this is the start of the testing of the new db (glhf)
 // Function to save a game
@@ -52,6 +53,11 @@ const [showGameStatsModal, setShowGameStatsModal] = useState(false);
 const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
 
 // Compute overall stats for display in the modal header
+// Compute overall stats from gameActions:
+const blocks = gameActions.filter(action => action.actionName === "Block").length;
+const turnovers = gameActions.filter(action => action.actionName === "T/O").length;
+const steals = gameActions.filter(action => action.actionName === "Steal").length;
+
 // Field Goal: count both 2pt and 3pt attempts and makes.
 const fgAttempts = gameActions.filter(a =>
   ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(a.actionName)
@@ -310,28 +316,25 @@ const handleSaveGame = async (type) => {
     return;
   }
 
-  // Use the lineout from the savedGame (if it exists) or the current passedLineout
-  const gameLineout = savedGame?.lineout || passedLineout;
+  // If no game ID exists, generate one; otherwise, use the existing one.
+  const gameId = currentGameId || `game_${Date.now()}`;
 
   const gameData = {
-    id: savedGame?.id || `game_${Date.now()}`,
+    id: gameId,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: gameLineout, // include the lineout data
+    lineout: savedGame?.lineout || passedLineout, // if needed
     timestamp: new Date().toISOString(),
   };
 
   try {
-    if (savedGame && savedGame.id) {
-      // Update the existing game if we're editing one
-      await db.games.put(gameData);
-    } else {
-      // Otherwise, add a new game
-      await db.games.add(gameData);
-    }
+    // Use put so that it updates if the record exists, or adds it if it doesn't.
+    await db.games.put(gameData);
     setAlertMessage("Game saved successfully!");
-    setIsGameSaved(true); // Mark the game as saved
+    setIsGameSaved(true);
+    // Save the game ID so future saves update the same record.
+    setCurrentGameId(gameId);
   } catch (error) {
     console.error("Error saving game:", error);
     setAlertMessage("Error saving game. Please try again.");
@@ -571,7 +574,12 @@ Undo Last Action</p>
   <p className="text-center mx-auto">Game Stats</p>
 </div>
 
-
+{/* <div
+  onClick={() => setShowGameStatsModal(true)}
+  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
+>
+  <p className="text-center mx-auto">Filters</p>
+</div> */}
 
 <div onClick={()=>{
   setShowPlayerStatsModal(true)
@@ -921,85 +929,136 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
      
 <div class="flex items-center justify-center w-screen  text-gray-800  ">
 
-    <div class="grid lg:grid-cols-3 md:grid-cols-2 gap-2 w-full max-w-6xl">
-
-
-        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg ">
-            <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
-            <span class="text-xl text-gray-200 font-bold">52%</span>
-            </div>
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-300 font-bold">Field Goal</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">12-24</span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-danger h-14 w-14 ">
-            <span class="text-xl text-gray-200 font-bold">22%</span>
-            </div>
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-100 font-bold">3 Point</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">2-12</span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
-            <span class="text-xl text-gray-200 font-bold">52%</span>
-            </div>
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-100 font-bold">Free Throw</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">18-24</span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
-             <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-             <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
-            <span class="text-xl text-gray-200 font-bold">52%</span>
-            </div>
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-100 font-bold">T/O-Steals</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300"><span className="text-primary-danger">12</span>-<span className="text-primary-cta">24</span></span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-        <div class="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14 ">
-            <span class="text-xl text-gray-200 font-bold">52%</span>
-            </div>
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-100 font-bold">OfRebounds</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300"><span className="text-primary-danger">12</span>-<span className="text-primary-cta">24</span></span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-            {/* <div class="flex flex-shrink-0 items-center justify-center text-primary-cta h-14 w-14 rounded">
-            <span class="text-xl  font-bold">52%</span>
-            </div> */}
-            <div class="flex-grow flex flex-col ml-4">
-                <span class="text-xl text-gray-100 font-bold">Blocks</span>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">6</span>
-                    {/* <span class="text-green-500 text-sm font-semibold ml-2">12/24</span> */}
-                </div>
-            </div>
-        </div>
+<div className="grid lg:grid-cols-3 md:grid-cols-3 gap-1 w-full max-w-6xl">
+  {/* Field Goal */}
+  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg">
+  <div className={`flex flex-shrink-0 items-center justify-center border-b-2
     
+    ${fgPercentage === 0 
+      ? "border-b-gray" 
+      : (fgPercentage >= 25 
+          ? "border-b-primary-cta" 
+          : "border-b-primary-danger")}
+    
+    
+    h-14 w-14`}>
 
 
+
+      <span className="text-xl text-gray-200 font-bold">{fgPercentage}%</span>
     </div>
+    <div className="flex-grow flex flex-col ml-4">
+      <span className="text-xl text-gray-300 font-bold">Field Goal</span>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300">{fgMade}-{fgAttempts}</span>
+      </div>
+    </div>
+  </div>
+
+  {/* 3 Point */}
+  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className={`flex flex-shrink-0 items-center justify-center border-b-2
+    
+    ${threePtPercentage === 0 
+      ? "border-b-gray" 
+      : (threePtPercentage >= 25 
+          ? "border-b-primary-cta" 
+          : "border-b-primary-danger")}
+    
+    
+    h-14 w-14`}>
+      <span className="text-xl text-gray-200 font-bold">{threePtPercentage}%</span>
+    </div>
+    <div className="flex-grow flex flex-col ml-4">
+      <span className="text-xl text-gray-100 font-bold">3 Point</span>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300">{threePtMade}-{threePtAttempts}</span>
+      </div>
+    </div>
+  </div>
+
+  {/* Free Throw */}
+  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+    <div className={`flex flex-shrink-0 items-center justify-center border-b-2
+    
+    ${ftAttempts === 0 
+      ? "border-b-gray" 
+      : (ftPercentage >= 25 
+          ? "border-b-primary-cta" 
+          : "border-b-primary-danger")}
+    
+    
+    h-14 w-14`}>
+      <span className="text-xl text-gray-200 font-bold">{ftPercentage}%</span>
+    </div>
+    <div className="flex-grow flex flex-col ml-4">
+      <span className="text-xl text-gray-100 font-bold">Free Throw</span>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300">{ftMade}-{ftAttempts}</span>
+      </div>
+    </div>
+  </div>
+
+  {/* T/O-Steals (Example: replace with your dynamic variables) */}
+  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
+    <span className="text-xl text-gray-200 font-bold">{blocks}</span>
+  </div>
+  <div className="flex-grow flex flex-col ml-4">
+    <span className="text-xl text-gray-100 font-bold">Blocks</span>
+    <div className="flex items-center justify-between">
+      <span className="text-gray-300">{blocks}</span>
+    </div>
+  </div>
+</div>
+
+<div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  {/* <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
+    { (turnovers === 0 && steals === 0) ? (
+      <span className="text-xl text-gray-200 font-bold">-</span>
+    ) : (
+      <span className="text-xl text-gray-200 font-bold">{(turnovers/steals)*100}</span>
+    )}
+  </div> */}
+  <div className="flex-grow flex flex-col ml-4">
+    <span className="text-xl text-gray-100 font-bold">T/O – Steals</span>
+    <div className="flex items-center justify-between">
+      <span className="text-gray-300">
+        <span className="text-primary-danger">{turnovers}</span>-
+        <span className="text-primary-cta">{steals}</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+  {/* OfRebounds (Example) */}
+  {/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+    <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
+      <span className="text-xl text-gray-200 font-bold">{rebPercentage ? rebPercentage : 'N/A'}%</span>
+    </div>
+    <div className="flex-grow flex flex-col ml-4">
+      <span className="text-xl text-gray-100 font-bold">OfRebounds</span>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300">
+          <span className="text-primary-danger">{rebMade ? rebMade : '12'}</span>
+          -
+          <span className="text-primary-cta">{rebAttempts ? rebAttempts : '24'}</span>
+        </span>
+      </div>
+    </div>
+  </div> */}
+
+  {/* Blocks (Example) */}
+  {/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+    <div className="flex-grow flex flex-col ml-4">
+      <span className="text-xl text-gray-100 font-bold">Blocks</span>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300">{blocks ? blocks : '6'}</span>
+      </div>
+    </div>
+  </div> */}
+</div>
+
 
 
 </div>
@@ -1084,6 +1143,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                 const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
                 const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
                 const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
+                const blocks = stat.blocks;
                 return (
                   <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg  even:bg-white/10 text-white hover:text-primary-bg">
                     <td className="px-4 py-2 border-b border-b-gray-500">{stat.player}</td>
