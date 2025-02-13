@@ -4,11 +4,14 @@ import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db";
+import { Menu } from '@headlessui/react';
 export default function InGame() {
   const navigate = useNavigate();
+const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
   const [currentQuater,setCurrentQuarter]=useState(1)
   const location = useLocation();
-  const savedGame = location.state; // Access saved game data if navigated from saved games
+  const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
+  
   const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
@@ -22,6 +25,9 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 // Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [currentGameId, setCurrentGameId] = useState(null);
+const [dropdownOpen, setDropdownOpen] = useState(false);
+
+
 
 // this is the start of the testing of the new db (glhf)
 // Function to save a game
@@ -391,7 +397,15 @@ const handleCourtClick = (e) => {
 
 
 
+const filteredActions=[
+  "2 Points",
+  "3 Points",
+  "2Pt Miss",
+  "3Pt Miss",
 
+ 
+
+]
   
   const actions = [
     "2 Points",
@@ -532,7 +546,9 @@ const handleCourtClick = (e) => {
 
 {/* top  of the top nav contents */}
 <div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
-<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} ({selectedVenue})</p></div>
+<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} 
+  {/* ({selectedVenue}) */}
+  </p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
 
 
@@ -551,6 +567,7 @@ const handleCourtClick = (e) => {
   <p className="text-center mx-auto">Exit</p>
 </button>
 
+
 </div>
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
@@ -565,7 +582,7 @@ const handleCourtClick = (e) => {
   <p className="text-center mx-auto text-sm flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
   <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
 </svg>
-Undo Last Action</p>
+Undo </p>
 </div >
 <div
   onClick={() => setShowGameStatsModal(true)}
@@ -585,6 +602,168 @@ Undo Last Action</p>
   setShowPlayerStatsModal(true)
 }} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
 </div>
+
+<Menu as="div" className="relative inline-block text-left w-1/4 h-full">
+  <Menu.Button 
+  
+  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm text-white
+  ${currentGameActionFilter ? "bg-primary-bg border-l-2 border-r-2 border-l-primary-cta border-r-primary-cta rounded-none" : "" }
+
+  
+  `}>
+    {currentGameActionFilter ? currentGameActionFilter : "Filters"}
+  </Menu.Button>
+  <Menu.Items className="absolute right-0 mt-2 w-full origin-top-right  bg-primary-bg divide-y divide-gray-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[9999]">
+    <div className="px-1 py-1">
+
+      {currentGameActionFilter &&
+      <Menu.Item>
+        {({ active }) => (
+          <button
+          onClick={()=>{
+            setCurrentGameActionFilter("Current Q")
+          }}
+            className={`${
+              active ? 'bg-gray-700  text-white' : 'text-gray-200'
+            } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
+          >
+            Current Q
+          </button>
+        )}
+      </Menu.Item>
+}
+
+
+
+      <Menu.Item>
+        {({ active }) => (
+          <button
+          onClick={()=>{
+            setCurrentGameActionFilter('All Game')
+          }}
+            className={`${
+              active ? 'bg-gray-700 text-white' : 'text-gray-200'
+            } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
+          >
+           All Game
+          </button>
+        )}
+      </Menu.Item>
+      <Menu.Item>
+  {({ active }) => (
+    <div
+      className={`relative group flex rounded-md items-center w-full px-2 py-2 text-sm ${
+        active ? "bg-gray-700 text-white" : "text-gray-200"
+      }`}
+    >
+      <span className="flex-1">Action</span>
+      {/* Optional arrow icon */}
+      <svg
+        className="w-4 h-4 ml-auto"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+
+      {/* Sub-menu (hidden by default, visible on hover) */}
+      <div
+        className="hidden group-hover:block absolute left-full top-0 
+                   w-48 bg-secondary-bg border border-gray-700 rounded-md 
+                   shadow-lg z-50"
+      >
+    {filteredActions.map((action) =>
+  <button
+  // key={idx}
+  onClick={()=>{
+    setCurrentGameActionFilter(action)
+  }}
+  className="block w-full text-left px-3 py-2 
+             hover:bg-gray-700 hover:text-white text-gray-200"
+>{action}
+  </button>
+    )}
+      </div>
+    </div>
+  )}
+</Menu.Item>
+<Menu.Item>
+  {({ active }) => (
+    <div
+      className={`relative group flex rounded-md items-center w-full px-2 py-2 text-sm ${
+        active ? "bg-gray-700 text-white" : "text-gray-200"
+      }`}
+    >
+      <span className="flex-1">Player</span>
+      {/* Optional arrow icon */}
+      <svg
+        className="w-4 h-4 ml-auto"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+
+      {/* Sub-menu (hidden by default, visible on hover) */}
+      <div
+        className="hidden group-hover:block absolute left-full top-0 
+                   w-48 bg-secondary-bg border border-gray-700 rounded-md 
+                   shadow-lg z-50"
+      >
+        {passedLineout?.players?.length > 0 ? (
+          passedLineout.players.map((player, idx) => (
+            <button
+            onClick={()=>{
+              setCurrentGameActionFilter(player.name)
+            }}
+              key={idx}
+              className="block w-full text-left px-3 py-2 
+                         hover:bg-gray-700 hover:text-white text-gray-200"
+            >
+              {player.name} ({player.number})
+            </button>
+          ))
+        ) : (
+          <div className="px-3 py-2 text-gray-400">No players found</div>
+        )}
+      </div>
+    </div>
+  )}
+</Menu.Item>
+
+
+{currentGameActionFilter &&
+<>
+  <div className="h-[.5px] w-full bg-primary-danger"></div>
+<Menu.Item>
+  {({ active }) => (
+    <div
+    onClick={()=>{
+      setCurrentGameActionFilter(null)
+    }}
+      className={`relative group mt-1  flex rounded-md items-center w-full px-2 py-2 text-sm ${
+        active ? "bg-gray-700 text-white" : "text-gray-200"
+      }`}
+    >
+      <span className="flex-1">Clear</span>
+      {/* Optional arrow icon */}
+   
+
+    </div>
+  )}
+</Menu.Item>
+</>
+}
+    </div>
+  </Menu.Items>
+  
+</Menu>
+
+
 <div onClick={handleSaveGame} className={` w-1/4 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-primary-cta"  : "bg-secondary-bg"  }
   `}>
