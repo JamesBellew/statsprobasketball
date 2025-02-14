@@ -109,6 +109,7 @@ const playersStats = gameActions.reduce((acc, action) => {
       steals: 0,
       assists: 0,
       rebounds: 0,
+      offRebounds: 0,
       turnovers: 0,
       blocks: 0,
     };
@@ -143,6 +144,7 @@ const playersStats = gameActions.reduce((acc, action) => {
   if (action.actionName === "Steal") acc[key].steals += 1;
   if (action.actionName === "T/O") acc[key].turnovers += 1;
   if (action.actionName === "Rebound") acc[key].rebounds += 1;
+  if (action.actionName === "OffRebound") acc[key].offRebounds += 1;
   if (action.actionName === "Block") acc[key].blocks += 1;
 
   return acc;
@@ -419,6 +421,7 @@ const filteredActions=[
     "Block",
     "T/O",
     "Rebound",
+    "OFF RB",
   ];
   useEffect(() => {
     // Overall stats
@@ -576,42 +579,23 @@ const filteredActions=[
 
   onClick={handleUndoLastActionHandler} 
   className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
-  ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg text-primary-cta"}
+  ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
   `}
 >
-  <p className="text-center mx-auto text-sm flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
+  <p className="text-center mx-auto text-sm flex text-gray-200 items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5 text-primary-cta">
   <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
 </svg>
 Undo </p>
 </div >
-<div
-  onClick={() => setShowGameStatsModal(true)}
-  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
->
-  <p className="text-center mx-auto">Game Stats</p>
-</div>
-
-{/* <div
-  onClick={() => setShowGameStatsModal(true)}
-  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
->
-  <p className="text-center mx-auto">Filters</p>
-</div> */}
-
-<div onClick={()=>{
-  setShowPlayerStatsModal(true)
-}} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
-</div>
-
 <Menu as="div" className="relative inline-block text-left w-1/4 h-full">
   <Menu.Button 
   
-  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm text-white
-  ${currentGameActionFilter ? "bg-primary-bg border-l-2 border-r-2 border-l-primary-cta border-r-primary-cta rounded-none" : "" }
+  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm 
+  ${currentGameActionFilter ? "bg-primary-bg  text-primary-cta  rounded-none" : "text-white" }
 
   
   `}>
-    {currentGameActionFilter ? currentGameActionFilter : "Filters"}
+    {currentGameActionFilter ? currentGameActionFilter  : "Filters"}
   </Menu.Button>
   <Menu.Items className="absolute right-0 mt-2 w-full origin-top-right  bg-primary-bg divide-y divide-gray-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[9999]">
     <div className="px-1 py-1">
@@ -621,10 +605,10 @@ Undo </p>
         {({ active }) => (
           <button
           onClick={()=>{
-            setCurrentGameActionFilter("Current Q")
+            setCurrentGameActionFilter(null)
           }}
             className={`${
-              active ? 'bg-gray-700  text-white' : 'text-gray-200'
+              active ? 'bg-gray-700 bg-red-600 text-white' : 'text-gray-200'
             } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
           >
             Current Q
@@ -659,7 +643,9 @@ Undo </p>
       <span className="flex-1">Action</span>
       {/* Optional arrow icon */}
       <svg
-        className="w-4 h-4 ml-auto"
+        className={`w-4 h-4 ml-auto
+          ${filteredActions.includes(currentGameActionFilter) ? " text-primary-cta" : ""}
+         `}
         fill="none"
         stroke="currentColor"
         strokeWidth={2}
@@ -674,17 +660,28 @@ Undo </p>
                    w-48 bg-secondary-bg border border-gray-700 rounded-md 
                    shadow-lg z-50"
       >
-    {filteredActions.map((action) =>
-  <button
-  // key={idx}
-  onClick={()=>{
-    setCurrentGameActionFilter(action)
-  }}
-  className="block w-full text-left px-3 py-2 
-             hover:bg-gray-700 hover:text-white text-gray-200"
->{action}
-  </button>
-    )}
+{gameActions.length === 0 ? (
+  <div className="px-3 py-2 text-gray-400">No actions recorded</div>
+) : (
+  filteredActions
+    .filter(action => gameActions.some(g => g.actionName === action))
+    .map((action, idx) => (
+      <button
+        key={idx}
+        onClick={() => {
+          setCurrentGameActionFilter(action);
+        }}
+        className={`block w-full text-left px-3 py-2 
+                   hover:bg-gray-700 hover:text-white text-gray-200
+                   ${action === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
+                  `}
+      >
+        {action}
+      </button>
+    ))
+)}
+
+
       </div>
     </div>
   )}
@@ -699,34 +696,40 @@ Undo </p>
       <span className="flex-1">Player</span>
       {/* Optional arrow icon */}
       <svg
-        className="w-4 h-4 ml-auto"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        viewBox="0 0 24 24"
+         className="w-4 h-4 ml-auto"
+         fill="none"
+         stroke="currentColor"
+         strokeWidth={2}
+         viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
       </svg>
 
-      {/* Sub-menu (hidden by default, visible on hover) */}
+      {/* Sub-menu: Only show players with recorded actions */}
       <div
         className="hidden group-hover:block absolute left-full top-0 
                    w-48 bg-secondary-bg border border-gray-700 rounded-md 
                    shadow-lg z-50"
       >
-        {passedLineout?.players?.length > 0 ? (
-          passedLineout.players.map((player, idx) => (
-            <button
-            onClick={()=>{
-              setCurrentGameActionFilter(player.name)
-            }}
-              key={idx}
-              className="block w-full text-left px-3 py-2 
-                         hover:bg-gray-700 hover:text-white text-gray-200"
-            >
-              {player.name} ({player.number})
-            </button>
-          ))
+        {passedLineout?.players?.filter(player =>
+          gameActions.some(action => action.playerName === player.name)
+        ).length > 0 ? (
+          passedLineout.players
+            .filter(player => gameActions.some(action => action.playerName === player.name))
+            .map((player, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setCurrentGameActionFilter(player.name);
+                }}
+                className={`block w-full text-left px-3 py-2 
+                hover:bg-gray-700 hover:text-white text-gray-200
+                ${player.name === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
+                `}
+              >
+                {player.name} ({player.number})
+              </button>
+            ))
         ) : (
           <div className="px-3 py-2 text-gray-400">No players found</div>
         )}
@@ -736,20 +739,24 @@ Undo </p>
 </Menu.Item>
 
 
+
 {currentGameActionFilter &&
 <>
-  <div className="h-[.5px] w-full bg-primary-danger"></div>
+  {/* <div className="h-[.5px] w-full bg-primary-danger"></div> */}
 <Menu.Item>
   {({ active }) => (
     <div
     onClick={()=>{
       setCurrentGameActionFilter(null)
     }}
-      className={`relative group mt-1  flex rounded-md items-center w-full px-2 py-2 text-sm ${
-        active ? "bg-gray-700 text-white" : "text-gray-200"
-      }`}
+      className={`relative group mt-1  flex rounded-md items-center w-full px-2 py-2 text-sm bg-secondary-bg hover:bg-primary-cta hover:text-primary-bg group`}
     >
-      <span className="flex-1">Clear</span>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2 text-primary-cta group-hover:text-primary-bg">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" />
+</svg>
+
+      <span className="flex-1 text-primary-cta group-hover:text-primary-bg">{currentGameActionFilter}</span>
+      <div className=" text-center justify-center items-center text-primary-cta flex group-hover:text-primary-bg">X</div>
       {/* Optional arrow icon */}
    
 
@@ -762,6 +769,26 @@ Undo </p>
   </Menu.Items>
   
 </Menu>
+
+<div
+  onClick={() => setShowGameStatsModal(true)}
+  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
+>
+  <p className="text-center mx-auto">Game Stats</p>
+</div>
+
+{/* <div
+  onClick={() => setShowGameStatsModal(true)}
+  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
+>
+  <p className="text-center mx-auto">Filters</p>
+</div> */}
+
+<div onClick={()=>{
+  setShowPlayerStatsModal(true)
+}} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
+</div>
+
 
 
 <div onClick={handleSaveGame} className={` w-1/4 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
@@ -860,7 +887,14 @@ Undo </p>
   </div>
  {/* Render Actions */}
  {gameActions
-  .filter((action) => action.quarter === currentQuater)
+  .filter((action) => 
+    action.quarter === currentQuater &&
+    (
+      !currentGameActionFilter ||
+      action.actionName === currentGameActionFilter ||
+      action.playerName === currentGameActionFilter
+    )
+  )
   .map((action, index) => {
     // Only render a dot if both x and y are valid numbers.
     if (typeof action.x === "number" && typeof action.y === "number") {
@@ -886,6 +920,7 @@ Undo </p>
   })}
 
 
+
   {/* Court outline */}
 
 </div>
@@ -895,10 +930,22 @@ Undo </p>
         {/* Bottom Nav */}
         <div className="bottom-nav  items-center justify-center w-full  h-[33vh] ">
 {/* Quick Stats Section */}
-        <div className="text-white  items-center justify-center text-center flex-row p-2 space-x-4 flex w-full h-1/4">
-        <div className="relative w-1/2 flex flex-row  h-full">
+        <div className="text-white   items-center justify-center  flex-row p-2 space-x-4 flex w-auto  h-1/4">
+        {currentGameActionFilter &&
+        <div onClick={()=>{
+          setCurrentGameActionFilter(null)
+        }} className="relative w-[20%] items-center group hover:bg-primary-cta  cursor-pointer justify-center bg-secondary-bg px-3 rounded-md  flex flex-row  h-auto py-2">
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2 text-primary-cta group-hover:text-primary-bg">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" />
+</svg>
+        <span className="flex-1 text-primary-cta group-hover:text-primary-bg">{currentGameActionFilter}</span>
+        <div className=" text-center justify-center items-center text-primary-cta flex group-hover:text-primary-bg">X</div>
+</div>
+}
+
+        <div className="relative w-[40%]  flex flex-row  h-full">
         {currentQuater>1 &&
-        <p className="absolute inset-x-0 top-0 text-center text-white">Overall</p>
+        <p className="absolute inset-x-0 top-0 text-center text-gray-400">Overall</p>
 }
 <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
 <p>FG  
@@ -921,9 +968,9 @@ threepoint.made>0 &&
 </div>
 {/* this only needs to be rendered if the current quarter is more than 1 */}
  {/* Current Quarter Stats */}
- {currentQuater > 1 && (
-    <div className="border-l-2 border-r-2 border-primary-cta h-full py-2  flex  w-1/2 relative">
-      <p className="absolute inset-x-0 top-0 text-center text-white">Q{currentQuater}</p>
+ {currentQuater > 1 &&(
+    <div className={`border-l-2 border-r-2 border-primary-cta h-full py-2  flex  w-[40%] relative`}>
+      <p className="absolute inset-x-0 top-0 text-center text-gray-400">Q{currentQuater}</p>
       <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
         <p>
           FG {fieldGoalPercentage.current || 0}%
@@ -951,7 +998,7 @@ threepoint.made>0 &&
   <button
     key={index}
     onClick={() => {
-      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O","Rebound"].includes(label)) {
+      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O","Rebound","OffRebound"].includes(label)) {
         if (passedLineout) {
           // Set x and y to null to indicate no court position
           setPendingAction({
@@ -1305,15 +1352,16 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
         <table className="min-w-full text-white border-collapse">
           <thead>
             <tr>
-              <th className="px-4 py-2 border-b  text-left">Player</th>
+              <th className="px-4 py-2 border-b  text-left">PlayerName</th>
               <th className="px-4 py-2 border-b text-left">FG</th>
               <th className="px-4 py-2 border-b text-left">3PT</th>
               <th className="px-4 py-2 border-b text-left">FT</th>
-              <th className="px-4 py-2 border-b text-left">Steals</th>
-              <th className="px-4 py-2 border-b text-left">Assists</th>
-              <th className="px-4 py-2 border-b text-left">Rebounds</th>
-              <th className="px-4 py-2 border-b text-left">Blocks</th>
+              <th className="px-4 py-2 border-b text-left">AST</th>
+              <th className="px-4 py-2 border-b text-left">RB</th>
+              <th className="px-4 py-2 border-b text-left">BLK</th>
+              <th className="px-4 py-2 border-b text-left">STL</th>
               <th className="px-4 py-2 border-b text-left">T/O</th>
+              <th className="px-4 py-2 border-b text-left">ORB</th>
             </tr>
           </thead>
           <tbody>
@@ -1334,6 +1382,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.rebounds}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.blocks}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.turnovers}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.offRebounds}</td>
                   </tr>
                 );
               })
