@@ -5,6 +5,8 @@ import Login from './screens/Login';
 import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
 import InGame from './screens/InGame';
+import Statistics from './screens/Statistics';
+
 export default function App() {
 
  //UseStates
@@ -105,6 +107,7 @@ export default function App() {
         <Route path="/homedashboard" element={<HomeDashboard />} />
         <Route path="/startgame" element={<StartGame />} />
         <Route path="/ingame" element={<InGame />} />
+        <Route path="/statistics" element={<Statistics />} />
 
   
       </Routes>

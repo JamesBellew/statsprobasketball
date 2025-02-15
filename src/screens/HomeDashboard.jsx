@@ -77,6 +77,12 @@ useEffect(() => {
     navigate("/startgame");
   };
 
+
+  const handleStatisticsClick = (game)=>{
+    console.log('stats for game -> ' , game);
+    navigate("/statistics", {state: game})
+    
+  }
   const handleGameClick = (game) => {
     navigate("/ingame", { state: game });
   };
@@ -281,13 +287,22 @@ useEffect(() => {
                         </p>
                       </div>
                       <div className="flex justify-between">
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2  w-full">
                           <button
                             onClick={() => handleGameClick(game)}
-                            className="py-1 text-primary-cta font-semibold rounded flex items-center text-md pl-1"
+                            className="py-1 bg-white/10 px-4  text-primary-cta font-semibold rounded flex items-center text-md ml-1"
                           >
                             Continue
                           </button>
+                          <button
+                          onClick={()=>{
+                            handleStatisticsClick(game)
+                          }}
+                            className="py-1 bg-primary-cta px-4 text-center font-semibold rounded flex items-center text-md text-secondary-bg"
+                          >
+                            Statistics
+                          </button>
+                          <div className="flex justify-end space-x-2 w-full ">
                           <button
                             onClick={() => openGameEditModal(game)}
                             className="py-1 rounded flex text-gray-400 items-center text-xs"
@@ -300,6 +315,7 @@ useEffect(() => {
                           >
                             Delete
                           </button>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -382,22 +398,12 @@ useEffect(() => {
             {/* Saved Statistics Section */}
             <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-1 rounded-lg mt-4 ">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-xl">Saved Statistics</h4>
+                <h4 className="text-sm font-bold text-xl">Settings</h4>
               </div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm text-gray-400 font-small">No Saved Stats Yet</h4>
+                {/* <h4 className="text-sm text-gray-400 font-small">No Saved Stats Yet</h4> */}
               </div>
-              <button
-            onClick={()=>{
-              setShowAddNewStatisticsModal(true)
-            }}
-            className="btn my-5 bg-primary-cta px-4 py-2  flex justify-center items-center rounded-lg text-primary-bg"
-          >
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-</svg>Add
 
-          </button>
             </div>
           </div>
         </div>
