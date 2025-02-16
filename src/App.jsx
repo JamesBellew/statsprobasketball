@@ -6,6 +6,8 @@ import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
 import InGame from './screens/InGame';
 import Statistics from './screens/Statistics';
+import StatisticsShotMap from './screens/StatisticsShotMap';
+
 
 export default function App() {
 
@@ -108,6 +110,8 @@ export default function App() {
         <Route path="/startgame" element={<StartGame />} />
         <Route path="/ingame" element={<InGame />} />
         <Route path="/statistics" element={<Statistics />} />
+        <Route path="/statisticsShotMap" element={<StatisticsShotMap />} />
+        
 
   
       </Routes>

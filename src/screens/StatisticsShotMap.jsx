@@ -1,133 +1,85 @@
 import { useState, useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router-dom";
-import { db } from "../db"; // Import your Dexie instance
-
 import { useLocation } from "react-router-dom";
 
-export default function Statistics() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
-    console.log(savedGame);
-    const StatsShotMapHandler=()=>{
-        navigate("/statisticsShotMap", { state: savedGame });
-    }
+export default function CourtOnly() {
+  const location = useLocation();
+  const savedGame = location.state;
+  const [gameActions, setGameActions] = useState(savedGame?.actions || []);
+  const [currentQuarter, setCurrentQuarter] = useState(1);
+
   return (
-<main className="bg-primary-bg w-full">
-<div className=" h-screen w-full container mx-auto">
-
-
-{/* this is the start of the home of the stats page  */}
-<div class="grid grid-rows-7  h-full pt-4 pb-24 grid-cols-12 gap-4">
-  <div class="row-span-3 rounded-md col-span-7 bg-secondary-bg text-white   ...">
-    <div className="h-1/4 w-full px-5 ">
-
-
-    <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <h1 className="text-xl  text-center font-bold  p-4">Game Stats</h1>
-    <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead class="text-xs text-gray-200 uppercase bg-white/10">
-            <tr>
-                <th scope="col" class="px-6 py-3">
-                    Stat
-                </th>
-                <th scope="col" class="px-6 py-3">
-                    Attempts
-                </th>
-                <th scope="col" class="px-6 py-3">
-                    %
-                </th>
-        
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                   Field Goal
-                </th>
-                <td class="px-6 py-4">
-                    25-74
-                </td>
-                <td class="px-6 py-4">
-                    42%
-                </td>
-            
-            </tr>
+    <main className="bg-primary-bg">
+        <div className="h-[7vh] bg-primary-bg w-full"></div>
+    <div className="bg-primary-bg h-[86vh]  flex items-center justify-center">
+<div
   
-             
-            
-            
-           
-            <tr class="">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                   3 Point
-                </th>
-                <td class="px-6 py-4">
-                    25-74
-                </td>
-                <td class="px-6 py-4">
-                    42%
-                </td>
-            
-            </tr>
-            <tr class="">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                   Free Throw
-                </th>
-                <td class="px-6 py-4">
-                    25-74
-                </td>
-                <td class="px-6 py-4">
-                    42%
-                </td>
-            
-            </tr>
-        </tbody>
-    </table>
-    
-</div>
-
-
-
-
-    </div>
+  className={`top-nav w-full relative z-50  h-full bg-secondary-bg"
    
+  
+  `}
+>
 
+
+
+<div
+    className={`absolute w-[90%] h-[90%] rounded-b-full left-[6%] relative box-border bg-secondary-bg"
+      z-auto
 
     
+    
+    border-gray-500 border-2`}
+  >
+    
+
+    {/* <div className="bg-primary-danger w-[100%]  h-[50%] absolute"></div>
+    <div className="bg-red-300 w-[76%]  top-[50%] h-[30%] left-[12%] absolute"></div>
+    <div className="bg-red-100 w-[40%]  top-[80%] h-[15%] left-[30%] absolute"></div>
+    <div className="bg-green-100 w-[10%]  top-[95%] h-[5%] left-[45%] absolute"></div> */}
+
+    {/* Court Key */}
+    <div
+      className={`absolute sm:w-1/4 w-1/3 left-1/3 sm:left-[37.5%] border border-gray-500   h-[60%]`}
+    ></div>
+    <div className="absolute sm:w-1/4 w-1/3 left-1/3 sm:left-[37.5%] border-2 border-gray-500  lg:h-[30%] h-[25%] sm:h-[25%] rounded-b-full top-[60%]"></div>
+
+    {/* Render Actions as Dots */}
+   
+  </div>
+ {/* Render Actions */}
+ {gameActions.map((action, index) => {
+  if (typeof action.x === "number" && typeof action.y === "number") {
+    return (
+      <div
+        key={index}
+        className={`absolute w-4 h-4 rounded-full ${
+          ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
+            ? "bg-primary-danger"
+            : "bg-primary-cta"
+        }`}
+        style={{
+          top: `calc(${action.y}% * (65 / 55))`, // Scale Y in the opposite direction
+          left: `${action.x}%`,
+          transform: "translate(-50%, -50%)",
+        }}
+        title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
+      ></div>
+    );
+  } else {
+    return null;
+  }
+})}
+
+
+
+
+  {/* Court outline */}
+
+</div>
     </div>
-  <div class="row-span-2 rounded-md col-span-5 bg-secondary-bg  text-white text-center flex items-center justify-center ...">Free Throws</div>
-
-  <div class="row-span-1 rounded-md col-span-5 bg-secondary-bg text-white text-center p-4 text-center">
-  
-            
-  <div class="flex  w-full my-auto justify-between mb-1">
-  <span class="text-base  text-md font-medium text-blue-700 dark:text-white">Steals</span>
-  <span class="text-md font-medium text-blue-700 dark:text-white">T/O</span>
-</div>
-<div class="flex  w-full my-auto justify-between mb-1">
-  <span class="text-base font-medium text-gray-400 ">12</span>
-  <span class="text-sm font-medium text-gray-400">7</span>
-</div>
-<div class="w-full bg-primary-danger rounded-full h-2.5">
-  <div class="bg-primary-cta h-2.5 rounded-full w-3/4"  ></div>
-</div>
-    </div>
-  <div
-  className="row-span-4 rounded-md col-span-12 bg-secondary-bg text-white text-center flex items-center justify-center"
-
->
-Visuals
-</div>
-
-
-
-</div>
+    <div className="h-[7vh]  w-full">
 
     {/* Bottom Nav Bar Start */}
-<div class="fixed z-50 w-full h-16 max-w-lg -translate-x-1/2  border border-gray-800 rounded-full bottom-4 left-1/2
+<div class="fixed z-50 w-full h-16 mt-2 max-w-lg -translate-x-1/2  border border-gray-800 rounded-full  left-1/2
  bg-secondary-bg">
     <div class="grid h-full max-w-lg grid-cols-5 mx-auto">
         <button onClick={()=>{
@@ -187,7 +139,7 @@ Visuals
     </div>
 </div>
 {/* bottom Navbar End */}
-</div>
-</main>
+    </div>
+    </main>
   );
 }
