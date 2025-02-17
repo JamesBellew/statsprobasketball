@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { Menu } from '@headlessui/react';
+import { v4 as uuidv4 } from 'uuid';  // Install with: npm install uuid
 export default function InGame() {
   const navigate = useNavigate();
 const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
@@ -170,11 +171,14 @@ useEffect(() => {
 
 useEffect(() => {
   if (savedGame && savedGame.id) {
+    setCurrentGameId(savedGame.id);  // Ensure ID persists when reopening
     console.log("Loaded saved game:", savedGame);
   } else {
     console.log("Starting a new game.");
   }
 }, [savedGame]);
+
+
 
    // Handle game actions
    const handleGameAction = (action) => {
@@ -317,39 +321,41 @@ const handleUndoLastActionHandler = () => {
 //     setTimeout(() => setAlertMessage(""), 3000);
 //   }
 // };
-const handleSaveGame = async (type) => {
+const handleSaveGame = async () => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to save!");
     setTimeout(() => setAlertMessage(""), 2000);
     return;
   }
 
-  // If no game ID exists, generate one; otherwise, use the existing one.
-  const gameId = currentGameId || `game_${Date.now()}`;
+  let gameId = currentGameId;
+
+  // If it's a new game, generate a UUID
+  if (!gameId) {
+    gameId = savedGame?.id || uuidv4();  // Use existing ID or create a new one
+    setCurrentGameId(gameId); // Persist the game ID
+  }
 
   const gameData = {
-    id: gameId,
+    id: gameId,  // Unique ID that remains consistent
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: savedGame?.lineout || passedLineout, // if needed
-    timestamp: new Date().toISOString(),
+    lineout: savedGame?.lineout || passedLineout,
+    timestamp: new Date().toISOString(), // Keep timestamp for sorting but NOT as ID
   };
 
   try {
-    // Use put so that it updates if the record exists, or adds it if it doesn't.
-    await db.games.put(gameData);
+    await db.games.put(gameData);  // Upsert instead of creating a new entry
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
-    // Save the game ID so future saves update the same record.
-    setCurrentGameId(gameId);
   } catch (error) {
     console.error("Error saving game:", error);
     setAlertMessage("Error saving game. Please try again.");
   }
+
   setTimeout(() => setAlertMessage(""), 3000);
 };
-
 
 
 
@@ -887,14 +893,15 @@ Undo </p>
   </div>
  {/* Render Actions */}
  {gameActions
-  .filter((action) => 
-    action.quarter === currentQuater &&
-    (
-      !currentGameActionFilter ||
-      action.actionName === currentGameActionFilter ||
-      action.playerName === currentGameActionFilter
-    )
-  )
+.filter((action) => 
+  currentGameActionFilter === "All Game" || action.quarter === currentQuater
+)
+.filter((action) => 
+  !currentGameActionFilter || currentGameActionFilter === "All Game" ||
+  action.actionName === currentGameActionFilter ||
+  action.playerName === currentGameActionFilter
+)
+
   .map((action, index) => {
     // Only render a dot if both x and y are valid numbers.
     if (typeof action.x === "number" && typeof action.y === "number") {
@@ -1379,8 +1386,8 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({ftPct}%)</span></td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.steals}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.assists}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.rebounds}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.blocks}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.rebounds}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.turnovers}</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.offRebounds}</td>
                   </tr>
