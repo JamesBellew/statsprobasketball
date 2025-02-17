@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState,useEffect ,useRef} from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
@@ -12,7 +12,7 @@ const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
   const [currentQuater,setCurrentQuarter]=useState(1)
   const location = useLocation();
   const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
-  
+
   const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
@@ -153,7 +153,6 @@ const playersStats = gameActions.reduce((acc, action) => {
 
 const playersStatsArray = Object.values(playersStats);
 
-
 useEffect(() => {
   // Only auto-save if the game is created (i.e. opponentName is set)
   // and there are some actions recorded.
@@ -194,9 +193,6 @@ useEffect(() => {
   const handlePlayerSelection = (player) => {
     if (!pendingAction) return;
   
-    // Store the action name locally to avoid referencing stale state later
-    const actionName = pendingAction.actionName;
-  
     const newAction = {
       ...pendingAction,
       playerName: player.name,
@@ -206,13 +202,15 @@ useEffect(() => {
   
     setGameActions((prev) => [...prev, newAction]);
   
-    // Close the modal and clear the pending action
+    // Clear the temporary dot
+    setPendingAction(null);
     setShowPlayerModal(false);
     setPendingAction(null);
   
-    setAlertMessage(`${actionName} recorded for ${player.name}!`);
+    setAlertMessage(`${pendingAction.actionName} recorded for ${player.name}!`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
+  
   
   
 //hanlder for going to next period/quarter
@@ -372,34 +370,37 @@ const handleCourtClick = (e) => {
   }
 
   const court = e.currentTarget.getBoundingClientRect();
-  const x = e.clientX - court.left; // X relative to court
-  const y = e.clientY - court.top;  // Y relative to court
-  const normalizedX = (x / court.width) * 100;
-  const normalizedY = (y / court.height) * 100;
+  const x = ((e.clientX - court.left) / court.width) * 100;
+  const y = ((e.clientY - court.top) / court.height) * 100;
+
+  // Store the pending dot position
+  setPendingAction({ x, y });
 
   if (passedLineout) {
-    // If a lineout exists, wait for player selection
+    // If there's a lineout, wait for player selection
     setPendingAction({
       actionName: actionSelected,
       quarter: currentQuater,
-      x: normalizedX,
-      y: normalizedY,
+      x,
+      y,
     });
     setShowPlayerModal(true);
   } else {
-    // Otherwise, record action immediately
+    // If no player selection is needed, plot immediately
     const newAction = {
       quarter: currentQuater,
       actionName: actionSelected,
-      x: normalizedX,
-      y: normalizedY,
+      x,
+      y,
       timestamp: Date.now(),
     };
     setGameActions((prev) => [...prev, newAction]);
     setAlertMessage(`${actionSelected} recorded.`);
+    setPendingAction(null); // Remove temp dot since action is recorded
     setTimeout(() => setAlertMessage(""), 3000);
   }
 };
+
 
 
 
@@ -884,14 +885,33 @@ Undo </p>
 
     {/* Court Key */}
     <div
-      className={`absolute sm:w-1/4 w-1/3 left-1/3 sm:left-[37.5%] border border-gray-500   h-[60%]`}
+      className={`absolute 
+        sm:w-1/3 
+        border-2
+        w-1/3
+         left-1/3 sm:left-1/3 border border-gray-500    h-[60%]`}
     ></div>
-    <div className="absolute sm:w-1/4 w-1/3 left-1/3 sm:left-[37.5%] border-2 border-gray-500  lg:h-[30%] h-[25%] sm:h-[25%] rounded-b-full top-[60%]"></div>
+    <div className="absolute sm:w-1/3 w-1/3 left-1/3 sm:left-1/3 border-2 border-gray-500   lg:h-[30%] h-[25%] sm:h-[25%] rounded-b-full top-[60%]"></div>
 
     {/* Render Actions as Dots */}
    
   </div>
+  
  {/* Render Actions */}
+
+ {pendingAction && (
+  <div
+    className="absolute w-4 h-4 rounded-full bg-blue-500 opacity-75"
+    style={{
+      top: `${pendingAction.y}%`,
+      left: `${pendingAction.x}%`,
+      transform: "translate(-50%, -50%)",
+    }}
+  />
+)}
+
+
+ 
  {gameActions
 .filter((action) => 
   currentGameActionFilter === "All Game" || action.quarter === currentQuater
@@ -1002,57 +1022,50 @@ threepoint.made>0 &&
         {/* Main Actions Buttons Section */}
         <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
         {actions.map((label, index) => (
-  <button
-    key={index}
-    onClick={() => {
-      if (["FT Score", "FT Miss", "Assist", "Steal","Block","T/O","Rebound","OffRebound"].includes(label)) {
-        if (passedLineout) {
-          // Set x and y to null to indicate no court position
-          setPendingAction({
+          <button
+  key={index}
+  onClick={() => {
+    if (["FT Score", "FT Miss", "Assist", "Steal", "Block", "T/O", "Rebound", "OffRebound"].includes(label)) {
+      if (passedLineout) {
+        setPendingAction((prevAction) =>
+          prevAction?.actionName === label ? null : { 
             actionName: label,
             quarter: currentQuater,
             x: null,
             y: null,
             timestamp: Date.now(),
-          });
-          setShowPlayerModal(true);
-        } else {
-          // Record action immediately without position coordinates
-          setGameActions((prevActions) => [
-            ...prevActions,
-            {
-              quarter: currentQuater,
-              actionName: label,
-              x: null,
-              y: null,
-              timestamp: Date.now(),
-            },
-          ]);
-          setAlertMessage(`${label} recorded!`);
-          setTimeout(() => setAlertMessage(""), 3000);
-        }
-        return; // Exit the onClick handler
+          }
+        );
+        setShowPlayerModal(true);
       } else {
-        // For other actions, proceed as before.
-        setActionSelected(label);
+        setGameActions((prevActions) => [
+          ...prevActions,
+          {
+            quarter: currentQuater,
+            actionName: label,
+            x: null,
+            y: null,
+            timestamp: Date.now(),
+          },
+        ]);
+        setAlertMessage(`${label} recorded!`);
+        setTimeout(() => setAlertMessage(""), 3000);
       }
-    }}
-    className={`${
-      actionSelected === label ? "bg-primary-cta" : "bg-secondary-bg"
-      
+      return;
+    } else {
+      // **Deselect action if clicking the same button again**
+      setActionSelected((prevAction) => (prevAction === label ? null : label));
     }
-  
+  }}
+  className={`${
+    actionSelected === label ? "bg-primary-cta" : "bg-secondary-bg"
+  } text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg focus:outline-none ${
+    ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label) ? "text-red-500" : ""
+  }`}
+>
+  {label}
+</button>
 
-     
-    
-  text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg focus:outline-none ${
-      ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label)
-        ? "text-red-500"
-        : ""
-    }`}
-  >
-    {label}
-  </button>
 ))}
 
 </div>
@@ -1360,6 +1373,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
           <thead>
             <tr>
               <th className="px-4 py-2 border-b  text-left">PlayerName</th>
+              <th className="px-4 py-2 border-b  text-left">PTS</th>
               <th className="px-4 py-2 border-b text-left">FG</th>
               <th className="px-4 py-2 border-b text-left">3PT</th>
               <th className="px-4 py-2 border-b text-left">FT</th>
@@ -1367,7 +1381,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
               <th className="px-4 py-2 border-b text-left">RB</th>
               <th className="px-4 py-2 border-b text-left">BLK</th>
               <th className="px-4 py-2 border-b text-left">STL</th>
-              <th className="px-4 py-2 border-b text-left">T/O</th>
+              <th className="px-4 py-2 border-b text-left">TO</th>
               <th className="px-4 py-2 border-b text-left">ORB</th>
             </tr>
           </thead>
@@ -1381,15 +1395,16 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
                 return (
                   <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg  even:bg-white/10 text-white hover:text-primary-bg">
                     <td className="px-4 py-2 border-b border-b-gray-500">{stat.player}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500">15</td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-gray-700">({fgPct}%)</span></td>
                     <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({threePct}%)</span></td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({ftPct}%)</span></td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.steals}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.assists}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.blocks}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.rebounds}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.turnovers}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.offRebounds}</td>
+                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-500 group-hover:text-gray-700">({ftPct}%)</span></td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.assists === 0 ? "text-gray-500" : ""} `}>{stat.assists}</td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.rebounds === 0 ? "text-gray-500" : ""} `}>{stat.rebounds}</td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.blocks === 0 ? "text-gray-500" : ""} `}>{stat.blocks}</td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.steals === 0 ? "text-gray-500" : ""} `}>{stat.steals}</td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.turnovers === 0 ? "text-gray-500" : ""} `}>{stat.turnovers}</td>
+                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.offRebounds === 0 ? "text-gray-500" : ""} `}>{stat.offRebounds}</td>
                   </tr>
                 );
               })
