@@ -329,7 +329,7 @@ useEffect(() => {
 
           <div className="grid grid-cols-2 gap-4">
             {/* Lineout Section */}
-            <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-1 rounded-lg mt-4">
+            <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-2 rounded-lg mt-4">
               <div className="flex items-center justify-between">
                 <p className="text-lg font-bold">Lineout</p>
                 {!displayedLineout && (
@@ -396,15 +396,7 @@ useEffect(() => {
               )}
             </div>
             {/* Saved Statistics Section */}
-            <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-1 rounded-lg mt-4 ">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-xl">Settings</h4>
-              </div>
-              <div className="flex items-center justify-between mb-2">
-                {/* <h4 className="text-sm text-gray-400 font-small">No Saved Stats Yet</h4> */}
-              </div>
-
-            </div>
+         
           </div>
         </div>
       </div>

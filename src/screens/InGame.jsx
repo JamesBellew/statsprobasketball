@@ -12,7 +12,7 @@ const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
   const [currentQuater,setCurrentQuarter]=useState(1)
   const location = useLocation();
   const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
-
+  const [playerPoints, setPlayerPoints] = useState({}); // Store player points
   const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
@@ -27,7 +27,7 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
-
+const [gameStatsExpanded,setGameStatsExpanded] = useState(false)
 
 
 // this is the start of the testing of the new db (glhf)
@@ -154,19 +154,17 @@ const playersStats = gameActions.reduce((acc, action) => {
 const playersStatsArray = Object.values(playersStats);
 
 useEffect(() => {
-  // Only auto-save if the game is created (i.e. opponentName is set)
-  // and there are some actions recorded.
   if (opponentName && gameActions.length > 0) {
-    // Set a timer that will call the save function after 10 seconds of inactivity.
+    // Auto-save every 10 seconds
     const autoSaveTimer = setTimeout(() => {
-      handleSaveGame('save');
+      handleSaveGame('auto-save');  // Now it updates, no duplicate games!
       console.log("Auto-saved game!");
-    }, 10000); // 10 seconds
+    }, 10000);
 
-    // Clear the timer if gameActions changes before 10 seconds are up.
     return () => clearTimeout(autoSaveTimer);
   }
 }, [gameActions, opponentName]);
+
 
 useEffect(() => {
   if (savedGame && savedGame.id) {
@@ -190,24 +188,37 @@ useEffect(() => {
     setAlertMessage(`${action} recorded.`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
+
   const handlePlayerSelection = (player) => {
     if (!pendingAction) return;
+  
+    const actionName = pendingAction.actionName;
+    
+    // Determine how many points this action is worth
+    let points = 0;
+    if (actionName === "2 Points") points = 2;
+    if (actionName === "3 Points") points = 3;
+    if (actionName === "FT Score") points = 1;
   
     const newAction = {
       ...pendingAction,
       playerName: player.name,
       playerNumber: player.number,
+      points, // Add points to the action
       timestamp: Date.now(),
     };
   
     setGameActions((prev) => [...prev, newAction]);
   
-    // Clear the temporary dot
-    setPendingAction(null);
+    // Update the player's total points
+    setPlayerPoints((prevPoints) => ({
+      ...prevPoints,
+      [player.name]: (prevPoints[player.name] || 0) + points, // Add to existing points
+    }));
+  
     setShowPlayerModal(false);
     setPendingAction(null);
-  
-    setAlertMessage(`${pendingAction.actionName} recorded for ${player.name}!`);
+    setAlertMessage(`${actionName} recorded for ${player.name}!`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
   
@@ -319,34 +330,43 @@ const handleUndoLastActionHandler = () => {
 //     setTimeout(() => setAlertMessage(""), 3000);
 //   }
 // };
-const handleSaveGame = async () => {
+const handleSaveGame = async (type) => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to save!");
     setTimeout(() => setAlertMessage(""), 2000);
     return;
   }
 
-  let gameId = currentGameId;
-
-  // If it's a new game, generate a UUID
-  if (!gameId) {
-    gameId = savedGame?.id || uuidv4();  // Use existing ID or create a new one
-    setCurrentGameId(gameId); // Persist the game ID
-  }
+  // If the game already has an ID, use that. Otherwise, generate one on first save.
+  const gameId = currentGameId || savedGame?.id || `game_${opponentName}_${Date.now()}`;
 
   const gameData = {
-    id: gameId,  // Unique ID that remains consistent
+    id: gameId, // Now persistent!
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: savedGame?.lineout || passedLineout,
-    timestamp: new Date().toISOString(), // Keep timestamp for sorting but NOT as ID
+    lineout: savedGame?.lineout || passedLineout, // Keep original lineout if exists
+    timestamp: new Date().toISOString(),
   };
 
   try {
-    await db.games.put(gameData);  // Upsert instead of creating a new entry
+    // Check if the game already exists in the database
+    const existingGame = await db.games.get(gameId);
+
+    if (existingGame) {
+      // Update the existing game
+      await db.games.update(gameId, gameData);
+      console.log("Game updated:", gameData);
+    } else {
+      // Otherwise, add a new game (only happens the first time)
+      await db.games.put(gameData);
+      console.log("New game saved:", gameData);
+    }
+
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
+    setCurrentGameId(gameId); // Keep the ID for future saves
+
   } catch (error) {
     console.error("Error saving game:", error);
     setAlertMessage("Error saving game. Please try again.");
@@ -354,6 +374,7 @@ const handleSaveGame = async () => {
 
   setTimeout(() => setAlertMessage(""), 3000);
 };
+
 
 
 
@@ -1309,8 +1330,22 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
 </div>
       </div>
-      <div className="overflow-x-auto max-h-80 overflow-auto">
-        <table className="min-w-full text-white border-collapse">
+
+      <div className="flex w-full flex-row ">
+        <svg onClick={()=>{
+          setGameStatsExpanded(!gameStatsExpanded)
+        }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2 my-auto text-gray-400">
+
+  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+
+</svg>
+
+
+      <div className={`overflow-x-auto max-h-80 overflow-auto w-full
+      ${gameStatsExpanded ? "h-auto" : " h-10"}
+      
+      `}>
+        <table className="min-w-full  w-full text-white border-collapse">
           <thead>
             <tr>
               <th className="px-4 py-2 border-b">Quarter</th>
@@ -1340,6 +1375,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   </div>
@@ -1386,36 +1422,42 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
             </tr>
           </thead>
           <tbody>
-            {playersStatsArray.length > 0 ? (
-              playersStatsArray.map((stat, index) => {
-                const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
-                const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
-                const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
-                const blocks = stat.blocks;
-                return (
-                  <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg  even:bg-white/10 text-white hover:text-primary-bg">
-                    <td className="px-4 py-2 border-b border-b-gray-500">{stat.player}</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500">15</td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-gray-700">({fgPct}%)</span></td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-gray-700">({threePct}%)</span></td>
-                    <td className="px-4 py-2 border-b border-b-gray-500 ">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-500 group-hover:text-gray-700">({ftPct}%)</span></td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.assists === 0 ? "text-gray-500" : ""} `}>{stat.assists}</td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.rebounds === 0 ? "text-gray-500" : ""} `}>{stat.rebounds}</td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.blocks === 0 ? "text-gray-500" : ""} `}>{stat.blocks}</td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.steals === 0 ? "text-gray-500" : ""} `}>{stat.steals}</td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.turnovers === 0 ? "text-gray-500" : ""} `}>{stat.turnovers}</td>
-                    <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.offRebounds === 0 ? "text-gray-500" : ""} `}>{stat.offRebounds}</td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td className="px-4 py-2 border-b text-center" colSpan="8">
-                  No player stats available.
-                </td>
-              </tr>
-            )}
-          </tbody>
+  {playersStatsArray.length > 0 ? (
+    playersStatsArray.map((stat, index) => {
+      const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
+      const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
+      const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
+
+      // Calculate total points for the player
+      const totalPoints = (stat.fgMade * 2) + (stat.threePtMade * 1) + (stat.ftMade * 1);
+
+
+
+      return (
+        <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg even:bg-white/10 text-white hover:text-primary-bg">
+          <td className="px-4 py-2 border-b border-b-gray-500 "><span className="text-gray-200 group-hover:text-black">{stat.player}</span></td>
+          <td className="px-4 py-2 border-b border-b-gray-500 font-bold text-white"><span className="text-gray-200 group-hover:text-black">{totalPoints}</span></td> {/* Player Points */}
+          <td className="px-4 py-2 border-b border-b-gray-500">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-black">({fgPct}%)</span></td>
+          <td className="px-4 py-2 border-b border-b-gray-500">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-black">({threePct}%)</span></td>
+          <td className="px-4 py-2 border-b border-b-gray-500">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-500 group-hover:text-black">({ftPct}%)</span></td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.assists === 0 ? "text-gray-500" : ""}`}>{stat.assists}</td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.rebounds === 0 ? "text-gray-500" : ""}`}>{stat.rebounds}</td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.blocks === 0 ? "text-gray-500" : ""}`}>{stat.blocks}</td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.steals === 0 ? "text-gray-500" : ""}`}>{stat.steals}</td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.turnovers === 0 ? "text-gray-500" : ""}`}>{stat.turnovers}</td>
+          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.offRebounds === 0 ? "text-gray-500" : ""}`}>{stat.offRebounds}</td>
+        </tr>
+      );
+    })
+  ) : (
+    <tr>
+      <td className="px-4 py-2 border-b text-center" colSpan="8">
+        No player stats available.
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
     </div>
