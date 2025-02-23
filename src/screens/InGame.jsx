@@ -5,10 +5,16 @@ import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { Menu } from '@headlessui/react';
+import head1 from '../assets/steph-curry.webp';
 import { v4 as uuidv4 } from 'uuid';  // Install with: npm install uuid
 export default function InGame() {
   const navigate = useNavigate();
+  //old singular filter feature
+  //! remove when multile is implemented
 const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
+//for the new multiple filters feature
+const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
+
   const [currentQuater,setCurrentQuarter]=useState(1)
   const location = useLocation();
   const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
@@ -191,15 +197,15 @@ useEffect(() => {
 
   const handlePlayerSelection = (player) => {
     if (!pendingAction) return;
-  
+
     const actionName = pendingAction.actionName;
-    
+
     // Determine how many points this action is worth
     let points = 0;
     if (actionName === "2 Points") points = 2;
     if (actionName === "3 Points") points = 3;
     if (actionName === "FT Score") points = 1;
-  
+
     const newAction = {
       ...pendingAction,
       playerName: player.name,
@@ -207,30 +213,30 @@ useEffect(() => {
       points, // Add points to the action
       timestamp: Date.now(),
     };
-  
+
     setGameActions((prev) => [...prev, newAction]);
-  
+
     // Update the player's total points
     setPlayerPoints((prevPoints) => ({
       ...prevPoints,
       [player.name]: (prevPoints[player.name] || 0) + points, // Add to existing points
     }));
-  
+
     setShowPlayerModal(false);
     setPendingAction(null);
     setAlertMessage(`${actionName} recorded for ${player.name}!`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
-  
-  
-  
+
+
+
 //hanlder for going to next period/quarter
 const handleNextPeriodClick =()=>{
   console.log('clicked boii');
 
   //need to check if the current quarter is less then 4 before adding one to it
   if(currentQuater<4){
-    //we can add one to it now, since its less then 4 
+    //we can add one to it now, since its less then 4
     setCurrentQuarter(currentQuater+1)
 //also clear the action selected
 setActionSelected()
@@ -238,7 +244,7 @@ setActionSelected()
   if(currentQuater==3){
     //we need to change the text to finsih game
     console.log(' change text to finsih game ');
-    
+
   }
       // Show an alert message
       setAlertMessage(`Finished Q${currentQuater} !`);
@@ -251,15 +257,15 @@ const handlePreviousPeriodClick =()=>{
 if(currentQuater>1){
   //we good to minus one
   setCurrentQuarter(currentQuater-1);
-  //cheeky alert message 
+  //cheeky alert message
       // Show an alert message
       setAlertMessage(`Back to Q${currentQuater-1} !`);
       setTimeout(() => setAlertMessage(""), 3000);
 }else{
   console.log('we have issue');
-  
+
 }
-  
+
 }
 const handleUndoLastActionHandler = () => {
   if (gameActions.length === 0) {
@@ -377,6 +383,18 @@ const handleSaveGame = async (type) => {
 
 
 
+const handleFilterSelection = (filter) => {
+  setCurrentGameActionFilters((prevFilters) => {
+    // Toggle filter on/off
+    if (prevFilters.includes(filter)) {
+      return prevFilters.filter((f) => f !== filter); // Remove filter if already selected
+    } else {
+      return [...prevFilters, filter]; // Add new filter
+    }
+  });
+};
+
+
 
 
 
@@ -432,11 +450,12 @@ const filteredActions=[
   "3 Points",
   "2Pt Miss",
   "3Pt Miss",
+"All 3pt",
+"All 2pt"
 
- 
 
 ]
-  
+
   const actions = [
     "2 Points",
     "3 Points",
@@ -459,69 +478,69 @@ const filteredActions=[
     const overallFieldGoalMakes = overallFieldGoalAttempts.filter(
       (action) => !action.actionName.includes("Miss")
     );
-  
+
     const overallThreePointAttempts = gameActions.filter((action) =>
       action.actionName.includes("3")
     );
     const overallThreePointMakes = overallThreePointAttempts.filter(
       (action) => !action.actionName.includes("Miss")
     );
-  
+
     setFieldGoal({
       total: overallFieldGoalAttempts.length,
       made: overallFieldGoalMakes.length,
     });
-  
+
     setThreePoint({
       total: overallThreePointAttempts.length,
       made: overallThreePointMakes.length,
     });
-  
+
     setFieldGoalPercentage(
       Math.round((overallFieldGoalMakes.length / overallFieldGoalAttempts.length) * 100) || 0
     );
     setThreePointPercentage(
       Math.round((overallThreePointMakes.length / overallThreePointAttempts.length) * 100) || 0
     );
-  
+
     // Current quarter stats
     const currentQuarterActions = gameActions.filter(
       (action) => action.quarter === currentQuater
     );
-  
+
     const currentFieldGoalAttempts = currentQuarterActions.filter((action) =>
       ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
     );
     const currentFieldGoalMakes = currentFieldGoalAttempts.filter(
       (action) => !action.actionName.includes("Miss")
     );
-  
+
     const currentThreePointAttempts = currentQuarterActions.filter((action) =>
       action.actionName.includes("3")
     );
     const currentThreePointMakes = currentThreePointAttempts.filter(
       (action) => !action.actionName.includes("Miss")
     );
-  
+
     setFieldGoal((prevState) => ({
       ...prevState,
       currentTotal: currentFieldGoalAttempts.length,
       currentMade: currentFieldGoalMakes.length,
     }));
-  
+
     setThreePoint((prevState) => ({
       ...prevState,
       currentTotal: currentThreePointAttempts.length,
       currentMade: currentThreePointMakes.length,
     }));
-  
+
     setFieldGoalPercentage((prevState) => ({
       ...prevState,
       current: Math.round(
         (currentFieldGoalMakes.length / currentFieldGoalAttempts.length) * 100
       ) || 0,
     }));
-  
+
     setThreePointPercentage((prevState) => ({
       ...prevState,
       current: Math.round(
@@ -529,14 +548,15 @@ const filteredActions=[
       ) || 0,
     }));
   }, [gameActions, currentQuater]);
-  
 
 
+  //!testing
+  console.log(currentGameActionFilters);
   return (
     <>
-    
+
     <main className=" bg-primary-bg">
-      
+
       {/* Top Nav */}
       <div className="container mx-auto  items-center bg-primary-bg" >
         <div className="top-nav w-auto h-[12vh]  relative">
@@ -569,15 +589,17 @@ const filteredActions=[
 )}
 
 
-       
+
         </div>
       </div>
           )}
 
 
 {/* top  of the top nav contents */}
+
+
 <div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
-<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName} 
+<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName}
   {/* ({selectedVenue}) */}
   </p></div>
 <div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
@@ -600,12 +622,15 @@ const filteredActions=[
 
 
 </div>
+
+
+
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
-<div 
+<div
 // disabled={gameActions===0}
 
-  onClick={handleUndoLastActionHandler} 
+  onClick={handleUndoLastActionHandler}
   className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
   ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
   `}
@@ -616,14 +641,17 @@ const filteredActions=[
 Undo </p>
 </div >
 <Menu as="div" className="relative inline-block text-left w-1/4 h-full">
-  <Menu.Button 
-  
-  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm 
-  ${currentGameActionFilter ? "bg-primary-bg  text-primary-cta  rounded-none" : "text-white" }
+  <Menu.Button
 
-  
+  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm
+  ${currentGameActionFilters.length >=1 ? "bg-primary-bg  text-primary-cta  rounded-none" : "text-white" }
+
+
   `}>
-    {currentGameActionFilter ? currentGameActionFilter  : "Filters"}
+    {
+    currentGameActionFilters.length ==1 ? currentGameActionFilters :
+    currentGameActionFilters.length ==2 ? "Filters"
+    : "Filter"}
   </Menu.Button>
   <Menu.Items className="absolute right-0 mt-2 w-full origin-top-right  bg-primary-bg divide-y divide-gray-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[9999]">
     <div className="px-1 py-1">
@@ -633,7 +661,8 @@ Undo </p>
         {({ active }) => (
           <button
           onClick={()=>{
-            setCurrentGameActionFilter(null)
+            // setCurrentGameActionFilter(null)   ,
+            handleFilterSelection('Current Q')
           }}
             className={`${
               active ? 'bg-gray-700 bg-red-600 text-white' : 'text-gray-200'
@@ -651,7 +680,8 @@ Undo </p>
         {({ active }) => (
           <button
           onClick={()=>{
-            setCurrentGameActionFilter('All Game')
+            // setCurrentGameActionFilter('All Game'),
+            handleFilterSelection('All Game')
           }}
             className={`${
               active ? 'bg-gray-700 text-white' : 'text-gray-200'
@@ -684,8 +714,8 @@ Undo </p>
 
       {/* Sub-menu (hidden by default, visible on hover) */}
       <div
-        className="hidden group-hover:block absolute left-full top-0 
-                   w-48 bg-secondary-bg border border-gray-700 rounded-md 
+        className="hidden group-hover:block absolute left-full top-0
+                   w-48 bg-secondary-bg border border-gray-700 rounded-md
                    shadow-lg z-50"
       >
 {gameActions.length === 0 ? (
@@ -697,9 +727,10 @@ Undo </p>
       <button
         key={idx}
         onClick={() => {
-          setCurrentGameActionFilter(action);
+          // setCurrentGameActionFilter(action),
+          handleFilterSelection(action)
         }}
-        className={`block w-full text-left px-3 py-2 
+        className={`block w-full text-left px-3 py-2
                    hover:bg-gray-700 hover:text-white text-gray-200
                    ${action === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
                   `}
@@ -735,8 +766,8 @@ Undo </p>
 
       {/* Sub-menu: Only show players with recorded actions */}
       <div
-        className="hidden group-hover:block absolute left-full top-0 
-                   w-48 bg-secondary-bg border border-gray-700 rounded-md 
+        className="hidden group-hover:block absolute left-full top-0
+                   w-48 bg-secondary-bg border border-gray-700 rounded-md
                    shadow-lg z-50"
       >
         {passedLineout?.players?.filter(player =>
@@ -748,9 +779,10 @@ Undo </p>
               <button
                 key={idx}
                 onClick={() => {
-                  setCurrentGameActionFilter(player.name);
+                  // setCurrentGameActionFilter(player.name),
+                  handleFilterSelection(player.name)
                 }}
-                className={`block w-full text-left px-3 py-2 
+                className={`block w-full text-left px-3 py-2
                 hover:bg-gray-700 hover:text-white text-gray-200
                 ${player.name === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
                 `}
@@ -786,7 +818,7 @@ Undo </p>
       <span className="flex-1 text-primary-cta group-hover:text-primary-bg">{currentGameActionFilter}</span>
       <div className=" text-center justify-center items-center text-primary-cta flex group-hover:text-primary-bg">X</div>
       {/* Optional arrow icon */}
-   
+
 
     </div>
   )}
@@ -795,7 +827,7 @@ Undo </p>
 }
     </div>
   </Menu.Items>
-  
+
 </Menu>
 
 <div
@@ -831,13 +863,13 @@ Undo </p>
 {/* Court */}
 <div
   onClick={handleCourtClick} // Make the court clickable
-  className={`top-nav w-full relative z-50  h-[55vh] 
+  className={`top-nav w-full relative z-50  h-[55vh]
     ${
     actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
       ? "bg-white/10" // Highlight outer 3-point area in blue
       : "bg-secondary-bg" // Default color
   }
-  
+
   `}
 >
 {showPlayerModal && (
@@ -865,7 +897,7 @@ Undo </p>
             onClick={() => handlePlayerSelection(player)}
             className="w-full text-left p-2 mb-2 bg-white/10 hover:bg-primary-cta group text-white rounded"
           >
-         <span className="text-gray-400 group-hover:text-black">  ({player.number}) </span>{player.name} 
+         <span className="text-gray-400 group-hover:text-black">  ({player.number}) </span>{player.name}
           </button>
         ))
       ) : (
@@ -893,11 +925,11 @@ Undo </p>
         ? "bg-white/10" // Highlight inner arc in blue for 2-point actions
         : "bg-secondary-bg" // Default color
     }
-    
-    
+
+
     border-gray-500 border-2`}
   >
-    
+
 
     {/* <div className="bg-primary-danger w-[100%]  h-[50%] absolute"></div>
     <div className="bg-red-300 w-[76%]  top-[50%] h-[30%] left-[12%] absolute"></div>
@@ -906,8 +938,8 @@ Undo </p>
 
     {/* Court Key */}
     <div
-      className={`absolute 
-        sm:w-1/3 
+      className={`absolute
+        sm:w-1/3
         border-2
         w-1/3
          left-1/3 sm:left-1/3 border border-gray-500    h-[60%]`}
@@ -915,9 +947,9 @@ Undo </p>
     <div className="absolute sm:w-1/3 w-1/3 left-1/3 sm:left-1/3 border-2 border-gray-500   lg:h-[30%] h-[25%] sm:h-[25%] rounded-b-full top-[60%]"></div>
 
     {/* Render Actions as Dots */}
-   
+
   </div>
-  
+
  {/* Render Actions */}
 
  {pendingAction && (
@@ -932,19 +964,36 @@ Undo </p>
 )}
 
 
- 
- {gameActions
-.filter((action) => 
-  currentGameActionFilter === "All Game" || action.quarter === currentQuater
-)
-.filter((action) => 
-  !currentGameActionFilter || currentGameActionFilter === "All Game" ||
-  action.actionName === currentGameActionFilter ||
-  action.playerName === currentGameActionFilter
-)
+
+{
+
+gameActions.filter((action) => {
+  if (currentGameActionFilters.length === 0) {
+    return action.quarter === currentQuater;
+  }
+
+  const allGameSelected = currentGameActionFilters.includes("All Game");
+  const playerFilters = currentGameActionFilters.filter((f) => !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(f));
+  const actionFilters = currentGameActionFilters.filter((f) => ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(f));
+
+  if (allGameSelected) {
+    // If "All Game" is selected, allow all quarters but filter by actions & player
+    return (
+      (playerFilters.length === 0 || playerFilters.includes(action.playerName)) &&
+      (actionFilters.length === 0 || actionFilters.includes(action.actionName))
+    );
+  }
+
+  // If "All Game" is NOT selected, restrict to current quarter while filtering
+  return (
+    action.quarter === currentQuater &&
+    (playerFilters.length === 0 || playerFilters.includes(action.playerName)) &&
+    (actionFilters.length === 0 || actionFilters.includes(action.actionName))
+  );
+})
+
 
   .map((action, index) => {
-    // Only render a dot if both x and y are valid numbers.
     if (typeof action.x === "number" && typeof action.y === "number") {
       return (
         <div
@@ -962,10 +1011,12 @@ Undo </p>
           title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
         ></div>
       );
-    } else {
-      return null;
     }
+    return null;
   })}
+
+
+
 
 
 
@@ -978,68 +1029,174 @@ Undo </p>
         {/* Bottom Nav */}
         <div className="bottom-nav  items-center justify-center w-full  h-[33vh] ">
 {/* Quick Stats Section */}
-        <div className="text-white   items-center justify-center  flex-row p-2 space-x-4 flex w-auto  h-1/4">
-        {currentGameActionFilter &&
-        <div onClick={()=>{
-          setCurrentGameActionFilter(null)
-        }} className="relative w-[20%] items-center group hover:bg-primary-cta  cursor-pointer justify-center bg-secondary-bg px-3 rounded-md  flex flex-row  h-auto py-2">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2 text-primary-cta group-hover:text-primary-bg">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" />
-</svg>
-        <span className="flex-1 text-primary-cta group-hover:text-primary-bg">{currentGameActionFilter}</span>
-        <div className=" text-center justify-center items-center text-primary-cta flex group-hover:text-primary-bg">X</div>
-</div>
-}
+     {/* Quick Stats Section */}
+{/* Quick Stats Section */}
+<div className={`text-white items-center justify-center flex-row space-x-4 flex 
+  w-auto 
+  ${currentGameActionFilters.some(filter => !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)) ? "h-[33%]" : "h-1/4"}
+`}>
 
-        <div className="relative w-[40%]  flex flex-row  h-full">
-        {currentQuater>1 &&
-        <p className="absolute inset-x-0 top-0 text-center text-gray-400">Overall</p>
-}
-<div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
-<p>FG  
-{
-fieldGoal.made>0 &&
-" "+Math.round((fieldGoal.made/fieldGoal.total)*100)+'%'}
-  </p>
-<p>{fieldGoal.made}-{fieldGoal.total}</p>
-
-</div>
-<div className="h-full flex w-2/4  my-auto flex-col justify-center items-center">
-<p>3PT
-{
-threepoint.made>0 &&
-" "+Math.round((threepoint.made/threepoint.total)*100)+'%'}
-  </p>
-<p>{threepoint.made}-{threepoint.total}</p>
-
-</div>
-</div>
-{/* this only needs to be rendered if the current quarter is more than 1 */}
- {/* Current Quarter Stats */}
- {currentQuater > 1 &&(
-    <div className={`border-l-2 border-r-2 border-primary-cta h-full py-2  flex  w-[40%] relative`}>
-      <p className="absolute inset-x-0 top-0 text-center text-gray-400">Q{currentQuater}</p>
-      <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
-        <p>
-          FG {fieldGoalPercentage.current || 0}%
-        </p>
-        <p className="">
-          {fieldGoal.currentMade}-{fieldGoal.currentTotal}
-        </p>
-      </div>
-      <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
-        <p>
-          3PT {threePointPercentage.current || 0}%
-        </p>
-        <p className="">
-          {threepoint.currentMade}-{threepoint.currentTotal}
-        </p>
-      </div>
+  {/* Display Filters */}
+  {currentGameActionFilters.length > 0 && (
+    <div className="flex flex-wrap gap-x-2 gap-y-1">
+      {currentGameActionFilters.map((filter, index) => (
+        <div
+          key={index}
+          onClick={() => handleFilterSelection(filter)} // Clicking removes it
+          className="relative text-sm px-3 py-1 bg-secondary-bg rounded-md flex items-center group cursor-pointer hover:bg-primary-cta"
+        >
+          <span className="text-gray-400 group-hover:text-primary-bg">{filter}</span>
+          <div className="ml-2 text-center text-primary-cta group-hover:text-primary-bg">X</div>
+        </div>
+      ))}
     </div>
   )}
 
+  {/* Check if a player filter is active */}
+  {(() => {
+    const selectedPlayer = currentGameActionFilters.find(filter =>
+      !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)
+    );
+    const selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
+    // Extract the player number and name separately
+const playerDetails = selectedPlayerStat
+? {
+    number: selectedPlayerStat.player.match(/\((\d+)\)/)?.[1] || "", // Extract number inside parentheses
+    name: selectedPlayerStat.player.replace(/\(\d+\)\s*/, "") || selectedPlayer, // Remove the number part
+  }
+: { number: "", name: selectedPlayer };
+    if (selectedPlayer) {
+      // Get player stats
+      const playerStats = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {
+        player: selectedPlayer, // Default to selected player name
+        fgMade: 0, fgAttempts: 0,
+        threePtMade: 0, threePtAttempts: 0,
+        ftMade: 0, ftAttempts: 0,
+        assists: 0, rebounds: 0,
+        offRebounds: 0, turnovers: 0,
+        steals: 0, blocks: 0,
+      };
 
+      // Extract stats for easy use
+      const {
+        fgMade, fgAttempts, threePtMade, threePtAttempts,
+        ftMade, ftAttempts, assists, rebounds,
+        offRebounds, turnovers, steals, blocks
+      } = playerStats;
+
+      // Calculate percentages
+      const fgPercentage = fgAttempts ? Math.round((fgMade / fgAttempts) * 100) : 0;
+      const threePtPercentage = threePtAttempts ? Math.round((threePtMade / threePtAttempts) * 100) : 0;
+      const ftPercentage = ftAttempts ? Math.round((ftMade / ftAttempts) * 100) : 0;
+
+      return (
+        <div className="relative text-sm w-full rounded-md flex flex-row h-[90%] bg-secondary-bg">
+          {/* Player Image */}
+          <div className="bg-secondary-bg rounded-s-md w-1/5 relative mx-auto h-auto border-r-4 border-r-primary-cta flex items-center justify-center">
+            <img className="w-full h-full rounded-s-md" src={head1} alt="Bordered avatar" />
+          </div>
+
+          {/* Points */}
+          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+          <p className="absolute text-white top-1 ml-9 text-md font-semibold mt-1">
+  <span className="text-gray-400 mr-1">({playerDetails.number})</span> 
+  {playerDetails.name}
+</p>
+            <p className="text-2xl font-semibold">{(fgMade * 2) + (threePtMade * 1) + (ftMade * 1)}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">PTS</p>
+            </div>
+          </div>
+
+          {/* Assists */}
+          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+            <p className="text-2xl font-semibold">{assists}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">AST</p>
+            </div>
+          </div>
+
+          {/* Rebounds */}
+          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+            <p className="text-2xl font-semibold">{rebounds}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">RB</p>
+            </div>
+          </div>
+
+          {/* Steals */}
+          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+            <p className="text-2xl font-semibold">{steals}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-primary-cta px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">STL</p>
+            </div>
+          </div>
+
+          {/* Field Goals */}
+          <div className="w-1/6 flex flex-col text-center justify-center h-full">
+            <p className="text-gray-200 text-lg">{fgPercentage}%</p>
+            <p className="text-gray-200 text-lg">{fgMade}-{fgAttempts}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">Field Goal</p>
+            </div>
+          </div>
+
+          {/* 3PT */}
+          <div className="w-1/6 flex flex-col text-center justify-center h-full">
+            {/* <p className="text-md font-semibold">3PT</p> */}
+            <p className="text-gray-200 text-lg">{threePtPercentage}%</p>
+            <p className="text-gray-200 text-lg">{threePtMade}-{threePtAttempts}</p>
+       
+            <div className="flex justify-center">
+              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">3 Point</p>
+            </div>
+          </div>
         </div>
+      );
+    }
+
+    // ❌ Default Layout (Red & Blue Stats)
+    return (
+      <>
+        {/* All Game Stats */}
+        <div className="relative w-[40%] flex flex-row h-full">
+          {currentQuater > 1 && currentGameActionFilters.length === 0 && (
+            <p className="absolute inset-x-0 top-0 text-center text-gray-400">Overall</p>
+          )}
+          <div className="h-full flex w-2/4 mt-1 my-auto flex-col justify-center items-center">
+            <p>FG {fieldGoal.made > 0 && ` ${Math.round((fieldGoal.made / fieldGoal.total) * 100)}%`}</p>
+            <p>{fieldGoal.made}-{fieldGoal.total}</p>
+          </div>
+          <div className="h-full mt-1 flex w-2/4 my-auto flex-col justify-center items-center">
+            <p>3PT {threepoint.made > 0 && ` ${Math.round((threepoint.made / threepoint.total) * 100)}%`}</p>
+            <p>{threepoint.made}-{threepoint.total}</p>
+          </div>
+        </div>
+
+        {/* Current Quarter Stats */}
+        {(currentQuater > 1 || gameActions.some(action => action.quarter > 1)) &&
+          !currentGameActionFilters.includes("All Game") && (
+            <div className="border-l-2 border-r-2 border-primary-cta h-full py-2 flex w-[40%] relative">
+              <p className="absolute inset-x-0 top-0 text-center text-gray-400">Q{currentQuater}</p>
+              <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
+                <p>FG {fieldGoalPercentage.current || 0}%</p>
+                <p>{fieldGoal.currentMade}-{fieldGoal.currentTotal}</p>
+              </div>
+              <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
+                <p>3PT {threePointPercentage.current || 0}%</p>
+                <p>{threepoint.currentMade}-{threepoint.currentTotal}</p>
+              </div>
+            </div>
+        )}
+      </>
+    );
+  })()}
+</div>
+
+
+
+
+        {/* quick stats end  */}
         {/* Main Actions Buttons Section */}
         <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
         {actions.map((label, index) => (
@@ -1049,7 +1206,7 @@ threepoint.made>0 &&
     if (["FT Score", "FT Miss", "Assist", "Steal", "Block", "T/O", "Rebound", "OffRebound"].includes(label)) {
       if (passedLineout) {
         setPendingAction((prevAction) =>
-          prevAction?.actionName === label ? null : { 
+          prevAction?.actionName === label ? null : {
             actionName: label,
             quarter: currentQuater,
             x: null,
@@ -1092,35 +1249,35 @@ threepoint.made>0 &&
 </div>
 {/* Game Quick Settings Section */}
 <div className="text-white   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
-        
-        <button 
+
+        <button
         disabled={currentQuater ===1}
         onClick={
          handlePreviousPeriodClick
-          
+
         }
         className={`h-full
-          
+
           flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
           ${currentQuater==1 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}
           `}>
-        <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period       
-        
+        <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period
+
         </button>
-        <button  
+        <button
                 disabled={currentQuater ===4}
         onClick={handleNextPeriodClick}
-        
+
         className={`h-full flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
-        
+
            ${currentQuater==4 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}`}>
-Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForward} /> 
-        
+Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForward} />
+
         </button>
-    
-        
-        
-        
+
+
+
+
                 </div>
         </div>
       </div>
@@ -1193,21 +1350,21 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
             <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
             <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
           </div> */}
-     
+
 <div class="flex items-center justify-center w-screen  text-gray-800  ">
 
 <div className="grid lg:grid-cols-3 md:grid-cols-3 gap-1 w-full max-w-6xl">
   {/* Field Goal */}
   <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg">
   <div className={`flex flex-shrink-0 items-center justify-center border-b-2
-    
-    ${fgPercentage === 0 
-      ? "border-b-gray" 
-      : (fgPercentage >= 25 
-          ? "border-b-primary-cta" 
+
+    ${fgPercentage === 0
+      ? "border-b-gray"
+      : (fgPercentage >= 25
+          ? "border-b-primary-cta"
           : "border-b-primary-danger")}
-    
-    
+
+
     h-14 w-14`}>
 
 
@@ -1225,14 +1382,14 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
   {/* 3 Point */}
   <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
   <div className={`flex flex-shrink-0 items-center justify-center border-b-2
-    
-    ${threePtPercentage === 0 
-      ? "border-b-gray" 
-      : (threePtPercentage >= 25 
-          ? "border-b-primary-cta" 
+
+    ${threePtPercentage === 0
+      ? "border-b-gray"
+      : (threePtPercentage >= 25
+          ? "border-b-primary-cta"
           : "border-b-primary-danger")}
-    
-    
+
+
     h-14 w-14`}>
       <span className="text-xl text-gray-200 font-bold">{threePtPercentage}%</span>
     </div>
@@ -1247,14 +1404,14 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
   {/* Free Throw */}
   <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
     <div className={`flex flex-shrink-0 items-center justify-center border-b-2
-    
-    ${ftAttempts === 0 
-      ? "border-b-gray" 
-      : (ftPercentage >= 25 
-          ? "border-b-primary-cta" 
+
+    ${ftAttempts === 0
+      ? "border-b-gray"
+      : (ftPercentage >= 25
+          ? "border-b-primary-cta"
           : "border-b-primary-danger")}
-    
-    
+
+
     h-14 w-14`}>
       <span className="text-xl text-gray-200 font-bold">{ftPercentage}%</span>
     </div>
@@ -1343,7 +1500,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
       <div className={`overflow-x-auto max-h-80 overflow-auto w-full
       ${gameStatsExpanded ? "h-auto" : " h-10"}
-      
+
       `}>
         <table className="min-w-full  w-full text-white border-collapse">
           <thead>
@@ -1380,7 +1537,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
     </div>
   </div>
 )}
-{/* this will be the modal for the player stats 
+{/* this will be the modal for the player stats
  */}
 {showPlayerStatsModal && (
   <div
@@ -1395,7 +1552,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       <div className="flex justify-between items-center mb-4">
         <div className="flex">
           <h2 className="text-white text-2xl font-bold">Player Stats</h2>
-     
+
         </div>
         <button
           onClick={() => setShowPlayerStatsModal(false)}
