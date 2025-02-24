@@ -24,8 +24,9 @@ const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
   const [fieldGoal,setFieldGoal] = useState({total:0,made:0});
   const [threepoint,setThreePoint] = useState({total:0,made:0});
-  const [fieldGoalPercentage,setFieldGoalPercentage]=useState(null);
-  const [threePointPercentage,setThreePointPercentage]=useState(null);
+  const [fieldGoalPercentage, setFieldGoalPercentage] = useState(0);
+
+  const [threePointPercentage,setThreePointPercentage]=useState(0);
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
@@ -549,9 +550,14 @@ const filteredActions=[
     }));
   }, [gameActions, currentQuater]);
 
+  useEffect(() => {
+    if (savedGame?.actions) {
+      console.log("Saved Game Actions on Load:", savedGame.actions);
+      setGameActions(savedGame.actions);
+    }
+  }, [savedGame]);
+  
 
-  //!testing
-  console.log(currentGameActionFilters);
   return (
     <>
 
