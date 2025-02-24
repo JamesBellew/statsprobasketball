@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Login</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.02 (24/02/2025)</h2>
             <form onSubmit={handleLogin}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-600">
