@@ -25,7 +25,7 @@ const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
   const [fieldGoal,setFieldGoal] = useState({total:0,made:0});
   const [threepoint,setThreePoint] = useState({total:0,made:0});
   const [fieldGoalPercentage, setFieldGoalPercentage] = useState(0);
-
+const [showFiltersPlayerStat,setShowFiltersPlayerStat] = useState(true)
   const [threePointPercentage,setThreePointPercentage]=useState(0);
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
@@ -1043,34 +1043,87 @@ gameActions.filter((action) => {
 `}>
 
   {/* Display Filters */}
-  {currentGameActionFilters.length > 0 && (
-    <div className="flex flex-wrap gap-x-2 gap-y-1">
-      {currentGameActionFilters.map((filter, index) => (
-        <div
-          key={index}
-          onClick={() => handleFilterSelection(filter)} // Clicking removes it
-          className="relative text-sm px-3 py-1 bg-secondary-bg rounded-md flex items-center group cursor-pointer hover:bg-primary-cta"
-        >
-          <span className="text-gray-400 group-hover:text-primary-bg">{filter}</span>
-          <div className="ml-2 text-center text-primary-cta group-hover:text-primary-bg">X</div>
-        </div>
-      ))}
+{/* Display Filters */}
+{currentGameActionFilters.length>=1 &&
+<div
+  className={`relative flex flex-col justify-start items-start  gap-y-[2px] py-1 
+    transition-all duration-300 ease-in-out 
+    ${showFiltersPlayerStat ? "w-[25%] opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-2 overflow-hidden"}
+  `}
+>
+  {currentGameActionFilters.map((filter, index) => (
+    <div
+      key={index}
+      onClick={() => handleFilterSelection(filter)} // Clicking removes it
+      className="relative text-sm px-3 py-1 bg-secondary-bg rounded-md flex items-end h-8 group cursor-pointer hover:bg-primary-cta"
+    >
+      <span className="text-gray-400 group-hover:text-primary-bg">{filter}</span>
+      <div className="ml-2 text-center text-primary-cta group-hover:text-primary-bg">X</div>
     </div>
-  )}
+  ))}
+    {/* Toggle Button */}
+{currentGameActionFilters.length >=1 &&
+
+  <button
+    onClick={() => setShowFiltersPlayerStat(!showFiltersPlayerStat)}
+    className="absolute top-1/4 right-0 px-2 h-2/4 "
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      className="size-4 transition-transform duration-300 ease-in-out"
+      style={{
+        transform: showFiltersPlayerStat ? "rotate(0deg)" : "rotate(180deg)"
+      }}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+    </svg>
+  </button>
+}
+</div>
+}
+
 
   {/* Check if a player filter is active */}
   {(() => {
     const selectedPlayer = currentGameActionFilters.find(filter =>
       !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)
     );
-    const selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
+    // const selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
     // Extract the player number and name separately
-const playerDetails = selectedPlayerStat
-? {
-    number: selectedPlayerStat.player.match(/\((\d+)\)/)?.[1] || "", // Extract number inside parentheses
-    name: selectedPlayerStat.player.replace(/\(\d+\)\s*/, "") || selectedPlayer, // Remove the number part
+
+    // let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
+
+    // If selectedPlayerStat is found, get the player details
+    let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {};
+let playerDetails = {
+    number: selectedPlayerStat.player?.match(/\((\d+)\)/)?.[1] || "",
+    name: selectedPlayerStat.player?.replace(/\(\d+\)\s*/, "") || selectedPlayer || "Unknown",
+    image: selectedPlayerStat.image || null, // Default to null if no image is found
+};
+
+    // let playerDetails = selectedPlayerStat
+    //   ? {
+    //       number: selectedPlayerStat.player.match(/\((\d+)\)/)?.[1] || "",
+    //       name: selectedPlayerStat.player.replace(/\(\d+\)\s*/, "") || selectedPlayer,
+    //       image: selectedPlayerStat.image || null, // Default to null if no image is found
+    //     }
+    //   : { number: "", name: selectedPlayer, image: null };
+      
+  // Now, check if the player's image exists in the lineout
+  if (!playerDetails.image && savedGame?.lineout?.players) {
+    const lineoutPlayer = savedGame.lineout.players.find(
+      (p) => p.name.trim() === playerDetails.name.trim() &&
+             p.number.toString() === playerDetails.number.toString()
+    );
+    if (lineoutPlayer?.image) {
+      playerDetails.image = lineoutPlayer.image;
+    }
   }
-: { number: "", name: selectedPlayer };
+  
     if (selectedPlayer) {
       // Get player stats
       const playerStats = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {
@@ -1094,17 +1147,41 @@ const playerDetails = selectedPlayerStat
       const fgPercentage = fgAttempts ? Math.round((fgMade / fgAttempts) * 100) : 0;
       const threePtPercentage = threePtAttempts ? Math.round((threePtMade / threePtAttempts) * 100) : 0;
       const ftPercentage = ftAttempts ? Math.round((ftMade / ftAttempts) * 100) : 0;
+console.log('what player do we have here below');
+
+console.log("Final Selected Player Details:", playerDetails);
+
 
       return (
         <div className="relative text-sm w-full rounded-md flex flex-row h-[90%] bg-secondary-bg">
           {/* Player Image */}
-          <div className="bg-secondary-bg rounded-s-md w-1/5 relative mx-auto h-auto border-r-4 border-r-primary-cta flex items-center justify-center">
-            <img className="w-full h-full rounded-s-md" src={head1} alt="Bordered avatar" />
-          </div>
+        {/* Player Image */}
+        {!showFiltersPlayerStat && currentGameActionFilters.length >1 &&
+        <div className=" w-9 h-full flex justify-center bg-primary-bg">
+
+          <button onClick={()=>{
+            setShowFiltersPlayerStat(!showFiltersPlayerStat)
+          }} className="my-auto ">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mx-auto">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+</svg>
+
+
+          </button>
+        </div>
+    }
+        <div className="bg-secondary-bg rounded-s-md w-[22%] relative mx-auto h-auto border-r-4 border-r-primary-cta flex items-center justify-center">
+          <img
+            className="w-full h-full rounded-s-md"
+            src={playerDetails.image || head1} // Use player's image if available, otherwise fallback to head1
+            alt="Player Avatar"
+          />
+        </div>
+
 
           {/* Points */}
           <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
-          <p className="absolute text-white top-1 ml-9 text-md font-semibold mt-1">
+          <p className="absolute text-white top-1 ml-4 text-md font-semibold mt-1">
   <span className="text-gray-400 mr-1">({playerDetails.number})</span> 
   {playerDetails.name}
 </p>
@@ -1137,13 +1214,14 @@ const playerDetails = selectedPlayerStat
               <p className="text-white bg-primary-cta px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">STL</p>
             </div>
           </div>
+          
 
           {/* Field Goals */}
           <div className="w-1/6 flex flex-col text-center justify-center h-full">
             <p className="text-gray-200 text-lg">{fgPercentage}%</p>
             <p className="text-gray-200 text-lg">{fgMade}-{fgAttempts}</p>
             <div className="flex justify-center">
-              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">Field Goal</p>
+              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">FG</p>
             </div>
           </div>
 
@@ -1154,9 +1232,22 @@ const playerDetails = selectedPlayerStat
             <p className="text-gray-200 text-lg">{threePtMade}-{threePtAttempts}</p>
        
             <div className="flex justify-center">
-              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">3 Point</p>
+              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">3PT</p>
             </div>
           </div>
+           {/* FT */}
+          {!showFiltersPlayerStat &&
+                 
+                  <div className="w-1/6 flex transition-all duration-300 ease-in-out  flex-col text-center justify-center h-full">
+            {/* <p className="text-md font-semibold">3PT</p> */}
+            <p className="text-gray-200 text-lg">{threePtPercentage}%</p>
+            <p className="text-gray-200 text-lg">{threePtMade}-{threePtAttempts}</p>
+       
+            <div className="flex justify-center">
+              <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">FT</p>
+            </div>
+          </div>
+    }
         </div>
       );
     }

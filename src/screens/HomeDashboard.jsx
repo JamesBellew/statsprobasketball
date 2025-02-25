@@ -30,7 +30,7 @@ export default function HomeDashboard() {
   // Dropdown state for inline dropdowns (used for both saved games and lineouts)
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
-
+  const [addPhotos, setAddPhotos] = useState(false); // Toggle for photo upload
   // Load saved games from localStorage as before
   // useEffect(() => {
   //   const games = JSON.parse(localStorage.getItem("savedGames")) || [];
@@ -172,13 +172,28 @@ useEffect(() => {
     }
   };
 
+  // const handlePlayerChange = (index, field, value) => {
+  //   const updatedPlayers = players.map((player, i) =>
+  //     i === index ? { ...player, [field]: value } : player
+  //   );
+  //   setPlayers(updatedPlayers);
+  // };
   const handlePlayerChange = (index, field, value) => {
-    const updatedPlayers = players.map((player, i) =>
-      i === index ? { ...player, [field]: value } : player
-    );
+    const updatedPlayers = [...players];
+    updatedPlayers[index][field] = value;
     setPlayers(updatedPlayers);
   };
-
+  
+  const handleImageUpload = (index, file) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handlePlayerChange(index, "image", reader.result); // Store base64 data
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
   const handleSaveLineout = async () => {
     if (!lineoutName.trim()) {
       setFormError("Please enter a lineout name.");
@@ -375,7 +390,7 @@ useEffect(() => {
                       <div className="absolute right-0 mt-2 w-28 bg-gray-800 border border-gray-700 rounded shadow-lg z-10">
                         <button
                           onClick={() => openEditModal(displayedLineout)}
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
+                          className="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm"
                         >
                           Edit
                         </button>
@@ -383,7 +398,7 @@ useEffect(() => {
                           onClick={() =>
                             handleDeleteLineout(displayedLineout.id)
                           }
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-700 text-sm"
+                          className="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm"
                         >
                           Delete
                         </button>
@@ -403,90 +418,135 @@ useEffect(() => {
 
       {/* Modal for Creating / Editing a Lineout */}
       {showLineoutModal && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg shadow-lg w-11/12 md:w-1/2 p-6">
-              <h2 className="text-2xl font-bold mb-4">
-                {editingLineoutId ? "Edit Lineout" : "Create Lineout"}
-              </h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Lineout Name
-                </label>
-                <input
-                  type="text"
-                  value={lineoutName}
-                  onChange={(e) => setLineoutName(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter lineout name"
-                />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-2">Players</h3>
-                {players.map((player, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-row gap-2 mb-3 items-center"
-                  >
-                    <input
-                      type="text"
-                      value={player.name}
-                      onChange={(e) =>
-                        handlePlayerChange(index, "name", e.target.value)
-                      }
-                      className="flex-1 px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder={`Player ${index + 1} Name`}
-                    />
-                    <input
-                      type="number"
-                      value={player.number}
-                      onChange={(e) =>
-                        handlePlayerChange(index, "number", e.target.value)
-                      }
-                      className="w-24 px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Number"
-                    />
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <button
-                    onClick={addPlayer}
-                    disabled={players.length >= 15}
-                    className="bg-green-600 hover:bg-green-500 px-3 py-2 rounded disabled:opacity-50"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={removePlayer}
-                    disabled={players.length <= 5}
-                    className="bg-red-600 hover:bg-red-500 px-3 py-2 rounded disabled:opacity-50"
-                  >
-                    –
-                  </button>
+      <>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-secondary-bg   rounded-lg shadow-lg w-auto p-6">
+            <h2 className="text-2xl font-bold mb-4">
+              {editingLineoutId ? "Edit Lineout" : "Create Lineout"}
+            </h2>
+
+            {/* ✅ Checkbox to Toggle Image Uploads */}
+            <div className="flex items-center mb-4">
+              {/* <input
+                type="checkbox"
+                id="addPhotos"
+                checked={addPhotos}
+                onChange={() => setAddPhotos(!addPhotos)}
+                className="mr-2"
+              /> */}
+
+
+<label class="inline-flex items-center cursor-pointer">
+  <input    id="addPhotos" type="checkbox" value=""                checked={addPhotos}
+                onChange={() => setAddPhotos(!addPhotos)} class="sr-only peer"/>
+  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-white/10 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Add Player Images</span>
+</label>
+
+
+              {/* <label htmlFor="addPhotos" className="text-sm text-gray-300">
+                Add Player Photos
+              </label> */}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">Players</h3>
+              {players.map((player, index) => (
+                <div key={index} className="flex flex-row gap-2 mb-3 items-center">
+                  
+                  {/* ✅ Player Name Input */}
+                  <input
+                    type="text"
+                    value={player.name}
+                    onChange={(e) => handlePlayerChange(index, "name", e.target.value)}
+                    className="w-3/5 px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder={`Player ${index + 1} Name`}
+                  />
+
+                  {/* ✅ Player Number Input */}
+                  <input
+                    type="number"
+                    value={player.number}
+                    onChange={(e) => handlePlayerChange(index, "number", e.target.value)}
+                    className="w-1/5 px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Number"
+                  />
+
+                  {/* ✅ Conditional Image Upload */}
+                  {addPhotos && (
+                    <>
+                    <div className={`w-1/5 flex flex-col items-center rounded-md
+                      ${player.image ? "bg-primary-bg" : ""}
+                      
+                      `}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(index, e.target.files[0])}
+                        className="hidden"
+                        id={`file-upload-${index}`}
+                      />
+                      <label
+                        htmlFor={`file-upload-${index}`}
+                        className="w-full text-center px-3 py-2 bg-white/10 rounded cursor-pointer hover:bg-gray-600"
+                      >
+                        {player.image ? "Delete" : "Upload"}
+                      </label>
+
+                     
+                    </div>
+                    <div className="w-1/5  h-full">
+                     {/* ✅ Show Image Preview */}
+                     {player.image && (
+                        <img
+                          src={player.image}
+                          alt={`Player ${index + 1}`}
+                          className="w-12 mx-auto h-12 rounded-full mt-2"
+                        />
+                      )}</div>
+                    </>
+                  )}
                 </div>
-              </div>
-              {formError && (
-                <p className="mt-3 text-red-400 text-sm">{formError}</p>
-              )}
-              <div className="mt-6 flex justify-end gap-3">
+              ))}
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setShowLineoutModal(false)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+                  onClick={addPlayer}
+                  disabled={players.length >= 15}
+                  className="bg-green-600 hover:bg-green-500 px-3 py-2 rounded disabled:opacity-50"
                 >
-                  Cancel
+                  +
                 </button>
                 <button
-                  onClick={handleSaveLineout}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
+                  onClick={removePlayer}
+                  disabled={players.length <= 5}
+                  className="bg-red-600 hover:bg-red-500 px-3 py-2 rounded disabled:opacity-50"
                 >
-                  Save Lineout
+                  –
                 </button>
               </div>
             </div>
+
+            {formError && <p className="mt-3 text-red-400 text-sm">{formError}</p>}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowLineoutModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveLineout}
+                className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
+              >
+                Save Lineout
+              </button>
+            </div>
           </div>
-        </>
-      )}
+        </div>
+      </>
+    )}
 
 {showAddNewStatisticsModal && (
         <>
@@ -509,7 +569,7 @@ useEffect(() => {
                           {game.opponentName || "Unknown"} ({game.venue})
                         </p>
                         <input id="bordered-checkbox-1" type="checkbox" value="" name="bordered-checkbox" class="w-8 h-8 text-blue-600
-     bg-gray-100 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 "/>
+     bg-gray-100 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-white/10 "/>
    
                       </div>
                       <div className="flex justify-between">
@@ -584,7 +644,7 @@ useEffect(() => {
                 type="text"
                 value={editedOpponentName}
                 onChange={(e) => setEditedOpponentName(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter opponent name"
               />
             </div>
@@ -596,7 +656,7 @@ useEffect(() => {
                 type="text"
                 value={editedVenue}
                 onChange={(e) => setEditedVenue(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter venue"
               />
             </div>
