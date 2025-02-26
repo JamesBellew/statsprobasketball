@@ -1240,8 +1240,8 @@ console.log("Final Selected Player Details:", playerDetails);
                  
                   <div className="w-1/6 flex transition-all duration-300 ease-in-out  flex-col text-center justify-center h-full">
             {/* <p className="text-md font-semibold">3PT</p> */}
-            <p className="text-gray-200 text-lg">{threePtPercentage}%</p>
-            <p className="text-gray-200 text-lg">{threePtMade}-{threePtAttempts}</p>
+            <p className="text-gray-200 text-lg">{ftPercentage}%</p>
+            <p className="text-gray-200 text-lg">{ftMade}-{ftAttempts}</p>
        
             <div className="flex justify-center">
               <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">FT</p>

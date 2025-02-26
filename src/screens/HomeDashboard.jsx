@@ -449,7 +449,18 @@ useEffect(() => {
                 Add Player Photos
               </label> */}
             </div>
-
+            <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Lineout Name
+                </label>
+                <input
+                  type="text"
+                  value={lineoutName}
+                  onChange={(e) => setLineoutName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Enter lineout name"
+                />
+              </div>
             <div>
               <h3 className="text-lg font-medium mb-2">Players</h3>
               {players.map((player, index) => (

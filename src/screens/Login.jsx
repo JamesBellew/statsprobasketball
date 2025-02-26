@@ -33,6 +33,8 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
     <li className="py-2">Player Pictures feature to add to lineout</li> 
     <li className="py-2">Player filter now available to see okayer scores/missus along with player stats</li> 
     <li className="py-2">Hide the player filter with a button</li> 
+    <hr></hr>
+    <li className="py-2">Added dynamic freethrow stats to the new player stats modal with court</li> 
 
 
     </ul></a>
