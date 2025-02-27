@@ -20,25 +20,35 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.03 (25/02/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.04 (27/02/2025)</h2>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">This is a BETA !!</h2>
-            <form onSubmit={handleLogin}>
-        
+            <form onSubmit={handleLogin} className=" ">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
+        <div className="max-h-[30vh] overflow-auto">
        
 <a href="#" class="block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-100
 ">
 
-<h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
+
 <ul class="list-disc py-2 gap-y-3">
+  <p className="text-gray-400 text-sm">27/02/2025</p>
+<hr></hr>
+<li className="py-2">Offensive rebound now counts as a rebound also</li> 
+<li className="py-2">Player stats new page now shows blocks</li> 
+<li className="py-2">Overall playerstats now sorted by most points</li> 
+<p className="text-gray-400 text-sm">26/02/2025</p>
+<hr></hr>
     <li className="py-2">Player Pictures feature to add to lineout</li> 
     <li className="py-2">Player filter now available to see okayer scores/missus along with player stats</li> 
     <li className="py-2">Hide the player filter with a button</li> 
+    <p className="text-gray-400 text-sm">25/02/2025</p>
     <hr></hr>
     <li className="py-2">Added dynamic freethrow stats to the new player stats modal with court</li> 
 
 
     </ul></a>
 <br></br>
+</div>
               <button
                 type="submit"
                 className="w-full px-3 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700"

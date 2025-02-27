@@ -152,7 +152,10 @@ const playersStats = gameActions.reduce((acc, action) => {
   if (action.actionName === "Steal") acc[key].steals += 1;
   if (action.actionName === "T/O") acc[key].turnovers += 1;
   if (action.actionName === "Rebound") acc[key].rebounds += 1;
-  if (action.actionName === "OffRebound") acc[key].offRebounds += 1;
+  if (action.actionName === "OffRebound") {
+    acc[key].offRebounds += 1;
+    acc[key].rebounds += 1;  // Automatically count it as a general rebound too
+  }
   if (action.actionName === "Block") acc[key].blocks += 1;
 
   return acc;
@@ -185,17 +188,47 @@ useEffect(() => {
 
 
    // Handle game actions
-   const handleGameAction = (action) => {
+  //  const handleGameAction = (action) => {
+  //   const newAction = {
+  //     quarter: currentQuater,
+  //     actionName: action,
+  //     timestamp: Date.now(),
+  //   };
+  //   setGameActions((prev) => [...prev, newAction]);
+  //   setAlertMessage(`${action} recorded.`);
+  //   setTimeout(() => setAlertMessage(""), 3000);
+  // };
+  
+  const handleGameAction = (action) => {
+    if (!actionSelected) {
+      setAlertMessage("Please select an action before plotting!");
+      setTimeout(() => setAlertMessage(""), 3000);
+      return;
+    }
+  
     const newAction = {
       quarter: currentQuater,
       actionName: action,
       timestamp: Date.now(),
     };
+  
     setGameActions((prev) => [...prev, newAction]);
     setAlertMessage(`${action} recorded.`);
+  
+    // **If the action is an Offensive Rebound, also record a general Rebound**
+    if (action === "OffRebound") {
+      const reboundAction = {
+        quarter: currentQuater,
+        actionName: "Rebound",
+        timestamp: Date.now(),
+      };
+      setGameActions((prev) => [...prev, reboundAction]);
+      setAlertMessage(`Offensive Rebound and Rebound recorded.`);
+    }
+  
     setTimeout(() => setAlertMessage(""), 3000);
   };
-
+  
   const handlePlayerSelection = (player) => {
     if (!pendingAction) return;
 
@@ -897,18 +930,20 @@ Undo </p>
     >
       <h3 className="text-white text-lg mb-4">Select Player</h3>
       {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
-        passedLineout.players.map((player, index) => (
-          <button
-            key={index}
-            onClick={() => handlePlayerSelection(player)}
-            className="w-full text-left p-2 mb-2 bg-white/10 hover:bg-primary-cta group text-white rounded"
-          >
-         <span className="text-gray-400 group-hover:text-black">  ({player.number}) </span>{player.name}
-          </button>
-        ))
-      ) : (
-        <p className="text-gray-400">No players available.</p>
-      )}
+  passedLineout.players.map((player, index) => (
+    <button
+      key={index}
+      onClick={() => handlePlayerSelection(player)}
+      className="w-full text-left p-2 mb-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white even:bg-secondary-bg border-l-2 border-l-primary-cta even:border-l-white/10"
+    >
+      <span className="text-gray-400 group-hover:text-black">({player.number}) </span>
+      {player.name}
+    </button>
+  ))
+) : (
+  <p className="text-gray-400">No players available.</p>
+)}
+
       <button
         onClick={() => {
           setShowPlayerModal(false);
@@ -1153,7 +1188,7 @@ console.log("Final Selected Player Details:", playerDetails);
 
 
       return (
-        <div className="relative text-sm w-full rounded-md flex flex-row h-[90%] bg-secondary-bg">
+        <div className="relative text-sm w-full rounded-md flex flex-row h-[90%]  ">
           {/* Player Image */}
         {/* Player Image */}
         {!showFiltersPlayerStat && currentGameActionFilters.length >1 &&
@@ -1170,7 +1205,7 @@ console.log("Final Selected Player Details:", playerDetails);
           </button>
         </div>
     }
-        <div className="bg-secondary-bg rounded-s-md w-[22%] relative mx-auto h-auto border-r-4 border-r-primary-cta flex items-center justify-center">
+        <div className="bg-secondary-bg  rounded-s-md w-[22%] relative mx-auto h-auto border-r-4 border-r-primary-cta flex items-center justify-center">
           <img
             className="w-full h-full rounded-s-md"
             src={playerDetails.image || head1} // Use player's image if available, otherwise fallback to head1
@@ -1180,19 +1215,19 @@ console.log("Final Selected Player Details:", playerDetails);
 
 
           {/* Points */}
-          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+          <div className="w-1/6 bg-secondary-bg text-gray-200 text-center text-sm flex flex-col justify-center h-full">
           <p className="absolute text-white top-1 ml-4 text-md font-semibold mt-1">
   <span className="text-gray-400 mr-1">({playerDetails.number})</span> 
   {playerDetails.name}
 </p>
             <p className="text-2xl font-semibold">{(fgMade * 2) + (threePtMade * 1) + (ftMade * 1)}</p>
-            <div className="flex justify-center">
+            <div className="flex bg-secondary-bg justify-center">
               <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">PTS</p>
             </div>
           </div>
 
           {/* Assists */}
-          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+          <div className="w-1/6 text-gray-200 bg-secondary-bg text-center text-sm flex flex-col justify-center h-full">
             <p className="text-2xl font-semibold">{assists}</p>
             <div className="flex justify-center">
               <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">AST</p>
@@ -1200,7 +1235,7 @@ console.log("Final Selected Player Details:", playerDetails);
           </div>
 
           {/* Rebounds */}
-          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+          <div className="w-1/6 text-gray-200 bg-secondary-bg text-center text-sm flex flex-col justify-center h-full">
             <p className="text-2xl font-semibold">{rebounds}</p>
             <div className="flex justify-center">
               <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">RB</p>
@@ -1208,40 +1243,49 @@ console.log("Final Selected Player Details:", playerDetails);
           </div>
 
           {/* Steals */}
-          <div className="w-1/6 text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+          <div className="w-1/6 text-gray-200 bg-secondary-bg text-center text-sm flex flex-col justify-center h-full">
             <p className="text-2xl font-semibold">{steals}</p>
             <div className="flex justify-center">
               <p className="text-white bg-primary-cta px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">STL</p>
             </div>
           </div>
-          
+             {/* Blocks (conditionaly rendered based on view) */}
+          {!showFiltersPlayerStat &&
+                 
+                    <div className="w-1/6 bg-secondary-bg text-gray-200 text-center text-sm flex flex-col justify-center h-full">
+            <p className="text-2xl font-semibold">{blocks}</p>
+            <div className="flex justify-center">
+              <p className="text-white bg-primary-cta px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">BLK</p>
+            </div>
+          </div>
+    }
 
           {/* Field Goals */}
-          <div className="w-1/6 flex flex-col text-center justify-center h-full">
-            <p className="text-gray-200 text-lg">{fgPercentage}%</p>
-            <p className="text-gray-200 text-lg">{fgMade}-{fgAttempts}</p>
+          <div className="w-1/6 flex flex-col bg-secondary-bg text-center justify-center h-full">
+            <p className="text-white text-lg">{fgPercentage}%</p>
+            <p className="text-gray-200 text-md mb-1">{fgMade}-{fgAttempts}</p>
             <div className="flex justify-center">
               <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">FG</p>
             </div>
           </div>
 
           {/* 3PT */}
-          <div className="w-1/6 flex flex-col text-center justify-center h-full">
+          <div className="w-1/6 flex flex-col bg-secondary-bg text-center justify-center h-full">
             {/* <p className="text-md font-semibold">3PT</p> */}
-            <p className="text-gray-200 text-lg">{threePtPercentage}%</p>
-            <p className="text-gray-200 text-lg">{threePtMade}-{threePtAttempts}</p>
+            <p className="text-white text-lg">{threePtPercentage}%</p>
+            <p className="text-gray-200 text-md mb-1">{threePtMade}-{threePtAttempts}</p>
        
-            <div className="flex justify-center">
+            <div className="flex justify-center bg-secondary-bg">
               <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">3PT</p>
             </div>
           </div>
            {/* FT */}
           {!showFiltersPlayerStat &&
                  
-                  <div className="w-1/6 flex transition-all duration-300 ease-in-out  flex-col text-center justify-center h-full">
+                  <div className="w-1/6 flex transition-all duration-300 ease-in-out  flex-col text-center justify-center h-full bg-secondary-bg rounded-e-md">
             {/* <p className="text-md font-semibold">3PT</p> */}
-            <p className="text-gray-200 text-lg">{ftPercentage}%</p>
-            <p className="text-gray-200 text-lg">{ftMade}-{ftAttempts}</p>
+            <p className="text-white text-lg">{ftPercentage}%</p>
+            <p className="text-gray-300 text-md mb-1">{ftMade}-{ftAttempts}</p>
        
             <div className="flex justify-center">
               <p className="text-white bg-white/10 px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">FT</p>
@@ -1676,8 +1720,14 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
             </tr>
           </thead>
           <tbody>
-  {playersStatsArray.length > 0 ? (
-    playersStatsArray.map((stat, index) => {
+          {playersStatsArray.length > 0 ? (
+  [...playersStatsArray] // Create a copy to avoid mutating the original array
+    .map(stat => ({
+      ...stat,
+      totalPoints: (stat.fgMade * 2) + (stat.threePtMade * 1) + (stat.ftMade * 1)
+    })) // Compute points
+    .sort((a, b) => b.totalPoints - a.totalPoints) // Sort by points (highest first)
+    .map((stat, index) => {
       const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
       const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
       const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
