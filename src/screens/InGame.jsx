@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../db";
 import { Menu } from '@headlessui/react';
 import head1 from '../assets/steph-curry.webp';
+import opponentJerseyDefault from '../assets/jersey.webp';
+import { motion, AnimatePresence } from "framer-motion";
+import ravensLogo from '../assets/logo-bg.png';
 import { v4 as uuidv4 } from 'uuid';  // Install with: npm install uuid
 export default function InGame() {
   const navigate = useNavigate();
@@ -14,8 +17,9 @@ export default function InGame() {
 const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
 //for the new multiple filters feature
 const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
-
+const [opponentScore,setOpponentScore] = useState(0)
   const [currentQuater,setCurrentQuarter]=useState(1)
+  const [leadChanges,setleadChanges] = useState([])
   const location = useLocation();
   const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
   const [playerPoints, setPlayerPoints] = useState({}); // Store player points
@@ -34,8 +38,61 @@ const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
-const [gameStatsExpanded,setGameStatsExpanded] = useState(false)
+const [gameStatsExpanded,setGameStatsExpanded] = useState(false);
+const [showEditOpponentScoreModal,setShowEditOpponentScoreModal] = useState(false);
+const [teamScore, setTeamScore] = useState(0);
+const quarters = [1, 2, 3, 4];
+const quartersNew = ["Q1", "Q2", "Q3", "Q4"];
+const [selectedQuarter, setSelectedQuarter] = useState("All");
+// Get the unique quarters that actually have lead changes
+const availableQuarters = [...new Set(leadChanges.map((lead) => lead.q))].sort((a, b) => a - b);
+const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
+const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
+const [teamScoreChange, setTeamScoreChange] = useState(0);
+const [opponentScoreChange, setOpponentScoreChange] = useState(0);
 
+// Filter lead changes based on selected quarter
+const filteredLeadChanges =
+  selectedQuarter === "All"
+    ? leadChanges.slice().reverse()
+    : leadChanges
+        .slice()
+        .reverse()
+        .filter((lead) => lead.q === parseInt(String(selectedQuarter).replace("Q", "")
+      ));
+      const latestLeadChange = filteredLeadChanges.find(lead => lead.team === "Ravens");
+
+useEffect(() => {
+  const totalPoints = gameActions.reduce((sum, action) => {
+    if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
+      return sum + (action.actionName === "2 Points" ? 2 : action.actionName === "3 Points" ? 3 : 1);
+    }
+    return sum;
+  }, 0);
+  
+  setTeamScore(totalPoints);
+}, [gameActions]); // Recalculate when `gameActions` change
+const calculateQuarterScores = () => {
+  const scores = { 1: 0, 2: 0, 3: 0, 4: 0 }; // Initialize all quarters with 0
+
+  gameActions.forEach((action) => {
+    if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
+      const points = action.actionName === "FT Score" ? 1 : 
+                     action.actionName === "2 Points" ? 2 : 3;
+      scores[action.quarter] += points; // Add points to the respective quarter
+    }
+  });
+
+  return scores;
+};
+
+// Use this function in state:
+const [quarterScores, setQuarterScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
+
+// Update scores whenever gameActions change
+useEffect(() => {
+  setQuarterScores(calculateQuarterScores());
+}, [gameActions]); 
 
 // this is the start of the testing of the new db (glhf)
 // Function to save a game
@@ -48,7 +105,52 @@ async function saveGame(gameData) {
     console.error("Failed to save game:", error);
   }
 }
+// this is the function to track leadchanges to add a new lradchange
+const addNewLeadChange = async (q, team, score) => {
+  const newLeadChanges = [...leadChanges, { q, team, score }];
+  setleadChanges(newLeadChanges);
 
+  try {
+    if (currentGameId) {
+      await db.games.update(currentGameId, { leadChanges: newLeadChanges });
+      console.log("Lead Changes updated in DB:", newLeadChanges);
+    }
+  } catch (error) {
+    console.error("Error updating lead changes:", error);
+  }
+};
+
+const [prevScore, setPrevScore] = useState(teamScore);
+  const [scoreChange, setScoreChange] = useState(0);
+// this is the useeffect for updating the leadvchange history 
+useEffect(() => {
+  if (leadChanges.length === 0) {
+    // If no lead change has been recorded yet, add the first one
+    if (opponentScore > teamScore) {
+      addNewLeadChange(currentQuater, opponentName, `${teamScore}-${opponentScore}`);
+    } else if (teamScore > opponentScore) {
+      addNewLeadChange(currentQuater, "Ravens", `${teamScore}-${opponentScore}`);
+    } else {
+      addNewLeadChange(currentQuater, "Draw", `${teamScore}-${opponentScore}`);
+    }
+  } else {
+    // Get the last recorded lead change
+    const lastLeadChange = leadChanges[leadChanges.length - 1];
+
+    if (opponentScore > teamScore && lastLeadChange.team !== opponentName) {
+      addNewLeadChange(currentQuater, opponentName, `${teamScore}-${opponentScore}`);
+    } else if (teamScore > opponentScore && lastLeadChange.team !== "Ravens") {
+      addNewLeadChange(currentQuater, "Ravens", `${teamScore}-${opponentScore}`);
+    } else if (teamScore === opponentScore && lastLeadChange.team !== "Draw") {
+      addNewLeadChange(currentQuater, "Draw", `${teamScore}-${opponentScore}`);
+    }
+  }
+
+  console.log("useEffect updated for lead history");
+}, [teamScore, opponentScore]);
+
+
+console.log(leadChanges);
 // Example usage:
 const gameData = {
   opponentName: "Lakers",
@@ -162,6 +264,29 @@ const playersStats = gameActions.reduce((acc, action) => {
 }, {});
 
 const playersStatsArray = Object.values(playersStats);
+//preventing accidental refreshing
+useEffect(() => {
+  const handleBeforeUnload = (event) => {
+    event.preventDefault();
+    event.returnValue = ""; // Some browsers require this for the warning to show
+  };
+
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
+}, []);
+
+useEffect(() => {
+  if (savedGame && savedGame.id) {
+    setCurrentGameId(savedGame.id);
+    setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore from DB
+    console.log("Loaded saved game:", savedGame);
+  } else {
+    console.log("Starting a new game.");
+  }
+}, [savedGame]);
 
 useEffect(() => {
   if (opponentName && gameActions.length > 0) {
@@ -185,6 +310,17 @@ useEffect(() => {
   }
 }, [savedGame]);
 
+const updateOpponentScore = async (newScore) => {
+  setOpponentScore(newScore);
+
+  try {
+    // Update in IndexedDB (or whatever DB you're using)
+    await db.games.update(currentGameId, { opponentScore: newScore });
+    console.log("Opponent score updated in DB:", newScore);
+  } catch (error) {
+    console.error("Error updating opponent score:", error);
+  }
+};
 
 
    // Handle game actions
@@ -370,42 +506,39 @@ const handleUndoLastActionHandler = () => {
 //     setTimeout(() => setAlertMessage(""), 3000);
 //   }
 // };
-const handleSaveGame = async (type) => {
+const handleSaveGame = async () => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to save!");
     setTimeout(() => setAlertMessage(""), 2000);
     return;
   }
 
-  // If the game already has an ID, use that. Otherwise, generate one on first save.
   const gameId = currentGameId || savedGame?.id || `game_${opponentName}_${Date.now()}`;
 
   const gameData = {
-    id: gameId, // Now persistent!
+    id: gameId,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    lineout: savedGame?.lineout || passedLineout, // Keep original lineout if exists
+    opponentScore,  // ✅ Save opponentScore
+    leadChanges,    // ✅ Save lead changes history
+    lineout: savedGame?.lineout || passedLineout,
     timestamp: new Date().toISOString(),
   };
 
   try {
-    // Check if the game already exists in the database
     const existingGame = await db.games.get(gameId);
-
     if (existingGame) {
-      // Update the existing game
       await db.games.update(gameId, gameData);
       console.log("Game updated:", gameData);
     } else {
-      // Otherwise, add a new game (only happens the first time)
       await db.games.put(gameData);
       console.log("New game saved:", gameData);
     }
 
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
-    setCurrentGameId(gameId); // Keep the ID for future saves
+    setCurrentGameId(gameId);
 
   } catch (error) {
     console.error("Error saving game:", error);
@@ -414,6 +547,18 @@ const handleSaveGame = async (type) => {
 
   setTimeout(() => setAlertMessage(""), 3000);
 };
+
+useEffect(() => {
+  if (savedGame && savedGame.id) {
+    setCurrentGameId(savedGame.id);
+    setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore
+    setleadChanges(savedGame.leadChanges || []);    // ✅ Load saved lead changes
+    console.log("Loaded saved game:", savedGame);
+  } else {
+    console.log("Starting a new game.");
+  }
+}, [savedGame]);
+
 
 
 
@@ -589,7 +734,25 @@ const filteredActions=[
       setGameActions(savedGame.actions);
     }
   }, [savedGame]);
-  
+  useEffect(() => {
+    if (teamScore > prevScore) {
+      setScoreChange(teamScore - prevScore);
+      setTimeout(() => setScoreChange(0), 1000); // Hide the +2 after 1s
+    }
+    setPrevScore(teamScore);
+  }, [teamScore]);
+  useEffect(() => {
+    if (teamScore > prevTeamScore) {
+      setTeamScoreChange(teamScore - prevTeamScore);
+      setTimeout(() => setTeamScoreChange(0), 1000); // Hide the animation after 1s
+    }
+    if (opponentScore > prevOpponentScore) {
+      setOpponentScoreChange(opponentScore - prevOpponentScore);
+      setTimeout(() => setOpponentScoreChange(0), 1000); // Hide the animation after 1s
+    }
+    setPrevTeamScore(teamScore);
+    setPrevOpponentScore(opponentScore);
+  }, [teamScore, opponentScore]);
 
   return (
     <>
@@ -600,51 +763,111 @@ const filteredActions=[
       <div className="container mx-auto  items-center bg-primary-bg" >
         <div className="top-nav w-auto h-[12vh]  relative">
           {/* Alert Message */}
-          {alertMessage && (
-        <div class="absolute w-full  mx-auto text-center px-10 lg:px-4">
-        <div class="p-2 h-auto bg-secondary-bg shadow-lg py-2 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
-        {alertMessage === "Saved" ? (
-          <svg
-  xmlns="http://www.w3.org/2000/svg"
-  className="h-6 w-6 text-primary-cta inline-block"
-  fill="none"
-  viewBox="0 0 24 24"
-  stroke="currentColor"
->
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth={2}
-    d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zM12 19v-6h6"
-  />
-</svg>
-
-) : (
-  <>
-  <span class="flex rounded-lg bg-primary-cta uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
-  <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
-  <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
-  </>
-)}
-
-
-
-        </div>
-      </div>
-          )}
+      
 
 
 {/* top  of the top nav contents */}
 
 
-<div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full">
-<div className=" w-1/4 h-full text-center flex items-center  rounded-lg"><p className="text-center capitalize mx-auto"> {opponentName}
-  {/* ({selectedVenue}) */}
-  </p></div>
-<div className=" w-2/4 h-full text-center flex items-center rounded-lg "><p className="text-center mx-auto"> Q{currentQuater}</p></div>
+<div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full ">
+<motion.div
+      className="w-1/3 h-full text-center flex items-center rounded-lg px-3"
+      // animate={{
+      //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
+      // }}
+      // transition={{ duration: 0.5 }}
+    >
+      <p className="text-center text-nd capitalize mx-auto">
+        <span className="relative">
+          <span
+            className={`ml-2 text-md font-bold ${
+              opponentScoreChange > 0 ? "text-white" : "text-gray-400"
+            }`}
+          >
+            {opponentName}
+          </span>
+          <AnimatePresence>
+            {opponentScoreChange > 0 && (
+              <motion.span
+                className={`absolute -top-4 left-full text-gray-200 font-bold`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5 }}
+              >
+                +{opponentScoreChange}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+
+        <span className={`ml-2 text-md text-gray-400 font-bold ${
+              opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"
+            }`}>{opponentScore}</span>
+        <span className="ml-2">-</span>
+
+        <span className={`mx-2 text-md font-bold text-gray-400 relative ${
+            teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"
+          }`}>
+          {teamScore}
+          <AnimatePresence>
+            {teamScoreChange > 0 && (
+              <motion.span
+                className={`absolute -top-4 left-full text-green-400 font-bold `}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5 }}
+              >
+                +{teamScoreChange}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+
+        <span
+          className={`ml-2 ${
+            teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"
+          }`}
+        >
+          Ravens
+        </span>
+      </p>
+    </motion.div>
+  <div className="w-1/3 h-full text-center flex space-x-1 px-1 items-center rounded-lg">
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 2)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +2
+  </button>
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 3)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +3
+  </button>
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 1)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +1
+  </button>
+  <button
+    onClick={() => updateOpponentScore(Math.max(0, opponentScore - 1))}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    -1
+  </button>
+</div>
 
 
+{/* <div className="w-1/5 bg-indigo-300 rounded-md"></div> */}
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
+
+<div className="w-2/6 h-full bg-secondary-bg  flex items-center rounded-md">
+<p className="text-center mx-auto"> Q{currentQuater}</p>
+</div>
 <button
   onClick={() => {
     // If there are unsaved actions and the game hasn't been saved, show the exit modal.
@@ -654,12 +877,10 @@ const filteredActions=[
       navigate('/homedashboard');
     }
   }}
-  className="w-1/4 h-full text-center flex items-center bg-secondary-bg hover:bg-primary-danger/50 rounded-lg"
+  className="w-1/6 h-full text-center flex items-center bg-secondary-bg  hover:bg-primary-danger/50 rounded-lg"
 >
   <p className="text-center mx-auto">Exit</p>
 </button>
-
-
 </div>
 
 
@@ -704,7 +925,7 @@ Undo </p>
             handleFilterSelection('Current Q')
           }}
             className={`${
-              active ? 'bg-gray-700 bg-red-600 text-white' : 'text-gray-200'
+              active ? 'bg-gray-700  text-white' : 'text-gray-200'
             } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
           >
             Current Q
@@ -1072,7 +1293,7 @@ gameActions.filter((action) => {
 {/* Quick Stats Section */}
      {/* Quick Stats Section */}
 {/* Quick Stats Section */}
-<div className={`text-white items-center justify-center flex-row space-x-4 flex 
+<div className={`text-white items-center  justify-center flex-row space-x-4 flex 
   w-auto 
   ${currentGameActionFilters.some(filter => !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)) ? "h-[33%]" : "h-1/4"}
 `}>
@@ -1389,8 +1610,39 @@ console.log("Final Selected Player Details:", playerDetails);
 
 </div>
 {/* Game Quick Settings Section */}
-<div className="text-white   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
+<div className="text-white relative   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
+{alertMessage && (
+        <div class="absolute  w-full bg-secondary-bg/10   mx-auto text-center px-10 lg:px-4">
+        <div class="p-2 h-auto bg-secondary-bg shadow-lg py-2 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
+        {alertMessage === "Saved" ? (
+          <svg
+  xmlns="http://www.w3.org/2000/svg"
+  className="h-6 w-6 text-primary-cta inline-block"
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+>
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zM12 19v-6h6"
+  />
+</svg>
 
+) : (
+  <>
+  <span class="flex rounded-lg bg-primary-cta uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
+  <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
+  <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
+  </>
+)}
+
+
+
+        </div>
+      </div>
+          )}
         <button
         disabled={currentQuater ===1}
         onClick={
@@ -1594,42 +1846,231 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       </span>
     </div>
   </div>
+  
+</div>
+<div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className="flex-grow flex flex-col ml-4">
+    <span className="text-xl text-gray-100 font-bold">Lead Change</span>
+    <div className="flex items-center justify-between">
+      <span className="text-gray-300">
+        {(() => {
+          // Check if Ravens are currently leading
+          if (teamScore > opponentScore) {
+            // Find when they LAST took the lead
+            const lastLeadChange = leadChanges
+            .slice()
+            .reverse()
+            .find((lead) => lead.team === "Ravens");
+          
+          if (lastLeadChange) {
+            return (
+              <span className="text-primary-cta">
+                Lead since Q{lastLeadChange.q} ({lastLeadChange.score})
+              </span>
+            );
+          }
+          
+
+            return <span className="text-primary-cta">Currently Leading</span>;
+          }
+
+          // Find the last time Ravens had the lead
+          const lastRavensLead = leadChanges
+          .slice()
+          .reverse()
+          .find((lead, index, arr) => {
+            // Find the last instance where Ravens were in the lead *before* they lost it
+            const nextLead = arr[index - 1]; // The lead change right after it
+            return lead.team === "Ravens" && nextLead && nextLead.team !== "Ravens";
+          });
+        
+        if (lastRavensLead) {
+          return (
+            <span className="text-gray-300">
+              Last lead Q{lastRavensLead.q} ({lastRavensLead.score})
+            </span>
+          );
+        }
+        
+          // If they never led
+          return <span className="text-primary-danger">Never in Lead</span>;
+        })()}
+      </span>
+    </div>
+  </div>
+</div>
 </div>
 
-  {/* OfRebounds (Example) */}
-  {/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-    <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
-      <span className="text-xl text-gray-200 font-bold">{rebPercentage ? rebPercentage : 'N/A'}%</span>
-    </div>
-    <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">OfRebounds</span>
-      <div className="flex items-center justify-between">
-        <span className="text-gray-300">
-          <span className="text-primary-danger">{rebMade ? rebMade : '12'}</span>
-          -
-          <span className="text-primary-cta">{rebAttempts ? rebAttempts : '24'}</span>
-        </span>
-      </div>
-    </div>
-  </div> */}
-
-  {/* Blocks (Example) */}
-  {/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-    <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">Blocks</span>
-      <div className="flex items-center justify-between">
-        <span className="text-gray-300">{blocks ? blocks : '6'}</span>
-      </div>
-    </div>
-  </div> */}
-</div>
-
 
 
 </div>
       </div>
 
-      <div className="flex w-full flex-row ">
+<div className="w-auto   h-auto py-5 flex  ">
+    {/* Score Section */}
+    <div
+  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
+  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 mr-10 "
+>
+  {/* Team Score Row */}
+  <div className="flex items-center w-full">
+    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
+  </div>
+
+  {/* Opponent Score Row */}
+  <div className="flex items-center w-full">
+    <img className="w-10 h-10 rounded-full mr-2" src={head1} alt={opponentName} />
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
+  </div>
+</div>
+
+  
+  <div className="flex flex-col  w-2/5 bg-red-500 ">
+
+
+  <div class="relative overflow-x-auto bg-yellow-200">
+  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+  <thead className="text-xs uppercase bg-primary-bg">
+    <tr>
+      {["Q1", "Q2", "Q3", "Q4"].map((q, index) => {
+        const quarterNumber = index + 1; // Convert Q1, Q2, etc. to numbers (1, 2, 3, 4)
+        return (
+          <th
+            key={index}
+            className={`px-6 py-3 ${index === 0 ? "rounded-s-lg" : ""} 
+            ${index === 3 ? "rounded-e-lg" : ""}
+            ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
+          >
+            {q}
+          </th>
+        );
+      })}
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="bg-secondary-bg">
+      {Object.keys(quarterScores).map((q, index) => {
+        const quarterNumber = parseInt(q); // Convert key from string to number
+        return (
+          <td
+            key={index}
+            className={`px-6 py-4 ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
+          >
+            {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= quarterNumber ? "0" : "-"}
+          </td>
+        );
+      })}
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+</div>
+
+  </div>
+</div>
+
+      
+<div className=" w-full h-auto my-4">
+  <h1 className="text-lg font-semibold mt-2 mb-4">Lead Changes</h1>
+  {/* timeline for lead changes will go here  */}
+  <div className="w-full h-auto ">
+      {/* 🔹 Quarter Navigation */}
+      <div className="flex space-x-2 mb-4 ">
+  {/* Always show "All" button */}
+  <button
+    onClick={() => setSelectedQuarter("All")}
+    className={`px-4 py-2 rounded ${
+      selectedQuarter === "All" ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
+    }`}
+  >
+    All
+  </button>
+
+  {/* Only show quarters that have data */}
+  {availableQuarters.map((q) => (
+    <button
+      key={q}
+      onClick={() => setSelectedQuarter(q)}
+      className={`px-4 py-2 rounded ${
+        selectedQuarter === q ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
+      }`}
+    >
+      Q{q}
+    </button>
+  ))}
+</div>
+
+<div className=" h-28 flex flex-row">
+  <div className="h-28 flex flex-col w-1/12 ">
+  <div className={`w-14 px-2 flex items-center justify-center h-1/2 bg-white/10 rounded-full
+   ${teamScore>opponentScore ? "border-2 border-primary-cta" : ""} `}>
+  <img className="w-10  mx-auto h-10 rounded-full " src={ravensLogo} alt={opponentName} />
+  </div>
+  <div className={`w-14 flex items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
+    
+    ${teamScore<opponentScore ? "border-2 border-gray-400" : ""}`}>
+  <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} />
+  </div>
+  </div>
+  <ul className="timeline flex overflow-x-auto w-11/12 space-x-4 relative">
+  {filteredLeadChanges.map((lead, index) => {
+    const isLatest = lead === latestLeadChange; // Now correctly highlighting the first (left-most) lead
+
+    return (
+      <li key={index} className="flex-shrink-0 relative flex flex-col items-center">
+        {/* Top Score Box (Ravens lead) */}
+        {lead.team === "Ravens" && (
+          <div className={`timeline-start timeline-box ${isLatest ? "bg-green-600 text-white" : "bg-gray-800 text-gray-300"}`}>
+            {lead.score}
+          </div>
+        )}
+
+        {/* Icon + Connecting Line */}
+        <div className={`timeline-middle relative  bg-primary-bg  rounded-full flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
+          {lead.team === "Ravens" ? (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+          </svg>
+          
+          )}
+
+          {/* ✅ Horizontal Line (only if there's another lead change after this one) */}
+          {index !== filteredLeadChanges.length - 1 && (
+            <div className="absolute top-1/2 left-full w-14 h-1 bg-primary-bg"></div>
+          )}
+        </div>
+
+        {/* Bottom Score Box (Opponent lead) */}
+        {lead.team !== "Ravens" && (
+          <div className={`timeline-end timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300"}`}>
+            {lead.score}
+          </div>
+        )}
+      </li>
+    );
+  })}
+</ul>
+
+
+
+
+</div>
+    </div>
+
+
+</div>
+      <div className="flex w-full flex-row  ">
         <svg onClick={()=>{
           setGameStatsExpanded(!gameStatsExpanded)
         }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2 my-auto text-gray-400">
@@ -1656,7 +2097,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
           <tbody>
             {gameActions.map((action, index) => (
               <tr key={index} className="hover:bg-white/10">
-                <td className="px-4 py-2 border-b text-center">{action.quarter}</td>
+                <td className={`px-4 py-2 border-b text-center  `}>{action.quarter}</td>
                 <td className="px-4 py-2 border-b text-center">{action.actionName}</td>
                 <td className="px-4 py-2 border-b text-center">
                   {action.timestamp ? new Date(action.timestamp).toLocaleTimeString() : "-"}
@@ -1690,18 +2131,123 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       className="relative bg-secondary-bg p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
     >
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex">
-          <h2 className="text-white text-2xl font-bold">Player Stats</h2>
+   
+   <div className="flex  justify-between items-center mb-4 p-4 ">
+  {/* Player Stats Header */}
+  {/* <div className="flex">
+    <h2 className="text-white text-2xl font-bold  px-4 py-2">Player Stats</h2>
+  </div> */}
 
-        </div>
-        <button
-          onClick={() => setShowPlayerStatsModal(false)}
-          className="text-white bg-primary-danger/50 hover:bg-red-500 px-4 py-2 rounded"
-        >
-          Close
-        </button>
+  {/* Score Section */}
+  <div
+  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
+  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 bg-red-600"
+>
+  {/* Team Score Row */}
+  <div className="flex items-center w-full">
+    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
+  </div>
+
+  {/* Opponent Score Row */}
+  <div className="flex items-center w-full">
+    <img className="w-10 h-10 rounded-full mr-2" src={head1} alt={opponentName} />
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
+  </div>
+</div>
+
+  
+  <div className="flex flex-col  w-2/5 bg-red-500 ">
+
+
+  <div class="relative overflow-x-auto bg-yellow-200">
+  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+  <thead className="text-xs uppercase bg-primary-bg">
+    <tr>
+      {["Q1", "Q2", "Q3", "Q4"].map((q, index) => {
+        const quarterNumber = index + 1; // Convert Q1, Q2, etc. to numbers (1, 2, 3, 4)
+        return (
+          <th
+            key={index}
+            className={`px-6 py-3 ${index === 0 ? "rounded-s-lg" : ""} 
+            ${index === 3 ? "rounded-e-lg" : ""}
+            ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
+          >
+            {q}
+          </th>
+        );
+      })}
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="bg-secondary-bg">
+      {Object.keys(quarterScores).map((q, index) => {
+        const quarterNumber = parseInt(q); // Convert key from string to number
+        return (
+          <td
+            key={index}
+            className={`px-6 py-4 ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
+          >
+            {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= quarterNumber ? "0" : "-"}
+          </td>
+        );
+      })}
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+</div>
+
+  </div>
+<div className=" h-full">
+  {/* Close Button */}
+  <button
+    onClick={() => setShowPlayerStatsModal(false)}
+    className="text-white bg-primary-danger/50 hover:bg-red-500 px-4 py-2 rounded"
+  >
+    Close
+  </button>
+  </div>
+</div>
+<div>
+{showEditOpponentScoreModal &&
+<>
+<div className="flex  items-center">
+<form className="max-w-56 my-5 px-5">
+    <label htmlFor="number-input" className="block mb-2 text-sm font-medium text-white">
+        {opponentName} Score
+    </label>
+    <input 
+    type="number" 
+    id="number-input" 
+    aria-describedby="helper-text-explanation" 
+    className="bg-primary-bg border border-secondary-bg text-gray-200 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400"
+    placeholder="0" 
+    value={opponentScore} // Bind input value to state
+    onChange={(e) => {
+        let value = e.target.value.replace(/^0+(?=\d)/, ""); // Remove leading zeros
+        setOpponentScore(value === "" ? 0 : Number(value)); // If empty, reset to 0
+    }} 
+    required 
+/>
+
+</form>
+<svg onClick={()=>{
+  setShowEditOpponentScoreModal(!showEditOpponentScoreModal)
+}} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-primary-cta">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+</svg>
+</div>
+</>
+}
+
       </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full text-white border-collapse">
           <thead>
