@@ -769,9 +769,9 @@ const filteredActions=[
 {/* top  of the top nav contents */}
 
 
-<div className="text-white h-2/5 flex-row flex space-x-2 px-2 w-full ">
+<div className="text-white h-2/5 flex-row flex space-x-2  px-2 w-full ">
 <motion.div
-      className="w-1/3 h-full text-center flex items-center rounded-lg px-3"
+      className="w-1/3 h-full text-center flex items-center rounded-lg px-4 bg-secondary-bg"
       // animate={{
       //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
       // }}
@@ -780,7 +780,7 @@ const filteredActions=[
       <p className="text-center text-nd capitalize mx-auto">
         <span className="relative">
           <span
-            className={`ml-2 text-md font-bold ${
+            className={` text-md font-semibold text-white ${
               opponentScoreChange > 0 ? "text-white" : "text-gray-400"
             }`}
           >
@@ -801,7 +801,7 @@ const filteredActions=[
           </AnimatePresence>
         </span>
 
-        <span className={`ml-2 text-md text-gray-400 font-bold ${
+        <span className={`ml-2 text-md text-gray-400 font-semibold ${
               opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"
             }`}>{opponentScore}</span>
         <span className="ml-2">-</span>
@@ -826,7 +826,7 @@ const filteredActions=[
         </span>
 
         <span
-          className={`ml-2 ${
+          className={`ml-2  text-white font-semibold ${
             teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"
           }`}
         >
@@ -1145,36 +1145,39 @@ Undo </p>
     <div className="absolute inset-0 bg-black opacity-50"></div>
     {/* Modal Content */}
     <div
-      className="relative bg-secondary-bg p-6 rounded-lg w-72"
-      // Stop propagation so clicks inside the modal don't trigger the overlay onClick
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 className="text-white text-lg mb-4">Select Player</h3>
-      {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
-  passedLineout.players.map((player, index) => (
-    <button
-      key={index}
-      onClick={() => handlePlayerSelection(player)}
-      className="w-full text-left p-2 mb-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white even:bg-secondary-bg border-l-2 border-l-primary-cta even:border-l-white/10"
-    >
-      <span className="text-gray-400 group-hover:text-black">({player.number}) </span>
-      {player.name}
-    </button>
-  ))
-) : (
-  <p className="text-gray-400">No players available.</p>
-)}
-
-      <button
-        onClick={() => {
-          setShowPlayerModal(false);
-          setPendingAction(null);
-        }}
-        className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
-      >
-        Cancel
-      </button>
+  className="relative p-6 rounded-lg w-1/2 bg-secondary-bg"
+  // Stop propagation so clicks inside the modal don't trigger the overlay onClick
+  onClick={(e) => e.stopPropagation()}
+>
+  <h3 className="text-white text-lg mb-4">Select Player</h3>
+  {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
+    <div className="grid grid-cols-2 gap-2">
+      {passedLineout.players.map((player, index) => (
+        <button
+          key={index}
+          onClick={() => handlePlayerSelection(player)}
+          className="w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white  border-l-2 border-l-primary-cta "
+        >
+          <span className="text-gray-400 group-hover:text-black">({player.number}) </span>
+          {player.name}
+        </button>
+      ))}
     </div>
+  ) : (
+    <p className="text-gray-400">No players available.</p>
+  )}
+
+  <button
+    onClick={() => {
+      setShowPlayerModal(false);
+      setPendingAction(null);
+    }}
+    className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
+  >
+    Cancel
+  </button>
+</div>
+
   </div>
 )}
 
@@ -1928,10 +1931,10 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 </div>
 
   
-  <div className="flex flex-col  w-2/5 bg-red-500 ">
+  <div className="flex flex-col  w-2/5  ">
 
 
-  <div class="relative overflow-x-auto bg-yellow-200">
+  <div class="relative overflow-x-auto ">
   <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
   <thead className="text-xs uppercase bg-primary-bg">
     <tr>
@@ -1977,7 +1980,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
       
 <div className=" w-full h-auto my-4">
-  <h1 className="text-lg font-semibold mt-2 mb-4">Lead Changes</h1>
+  <h1 className="text-xl font-semibold mt-2 mb-4 text-white font-semibold">Lead Changes</h1>
   {/* timeline for lead changes will go here  */}
   <div className="w-full h-auto ">
       {/* 🔹 Quarter Navigation */}
@@ -2026,7 +2029,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       <li key={index} className="flex-shrink-0 relative flex flex-col items-center">
         {/* Top Score Box (Ravens lead) */}
         {lead.team === "Ravens" && (
-          <div className={`timeline-start timeline-box ${isLatest ? "bg-green-600 text-white" : "bg-gray-800 text-gray-300"}`}>
+          <div className={`timeline-start timeline-box ${isLatest ? "bg-green-600 text-white" : "bg-primary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
@@ -2053,7 +2056,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
         {/* Bottom Score Box (Opponent lead) */}
         {lead.team !== "Ravens" && (
-          <div className={`timeline-end timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300"}`}>
+          <div className={`timeline-end timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-primary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
@@ -2141,7 +2144,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
   {/* Score Section */}
   <div
   onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
-  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 bg-red-600"
+  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 "
 >
   {/* Team Score Row */}
   <div className="flex items-center w-full">
