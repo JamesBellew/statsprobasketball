@@ -769,9 +769,9 @@ const filteredActions=[
 {/* top  of the top nav contents */}
 
 
-<div className="text-white h-2/5 flex-row flex space-x-2  px-2 w-full ">
-<motion.div
-      className="w-1/3 h-full text-center flex items-center rounded-lg px-4 bg-secondary-bg"
+<div className="text-white h-2/5 flex-row flex space-x-2  px-2 w-full  ">
+{/* <motion.div
+      className="w-1/3 h-full text-center flex items-center rounded-lg px-4  bg-blue-500"
       // animate={{
       //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
       // }}
@@ -833,65 +833,12 @@ const filteredActions=[
           Ravens
         </span>
       </p>
-    </motion.div>
-  <div className="w-1/3 h-full text-center flex space-x-1 px-1 items-center rounded-lg">
-  <button
-    onClick={() => updateOpponentScore(opponentScore + 2)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +2
-  </button>
-  <button
-    onClick={() => updateOpponentScore(opponentScore + 3)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +3
-  </button>
-  <button
-    onClick={() => updateOpponentScore(opponentScore + 1)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +1
-  </button>
-  <button
-    onClick={() => updateOpponentScore(Math.max(0, opponentScore - 1))}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    -1
-  </button>
-</div>
-
-
-{/* <div className="w-1/5 bg-indigo-300 rounded-md"></div> */}
-{/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
-
-<div className="w-2/6 h-full bg-secondary-bg  flex items-center rounded-md">
-<p className="text-center mx-auto"> Q{currentQuater}</p>
-</div>
-<button
-  onClick={() => {
-    // If there are unsaved actions and the game hasn't been saved, show the exit modal.
-    if (!isGameSaved && gameActions.length > 0) {
-      setShowExitModal(true);
-    } else {
-      navigate('/homedashboard');
-    }
-  }}
-  className="w-1/6 h-full text-center flex items-center bg-secondary-bg  hover:bg-primary-danger/50 rounded-lg"
->
-  <p className="text-center mx-auto">Exit</p>
-</button>
-</div>
-
-
-
-{/* bottom  of the top nav contents */}
-<div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
-<div
+    </motion.div> */}
+    <div
 // disabled={gameActions===0}
 
   onClick={handleUndoLastActionHandler}
-  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
+  className={`w-1/5 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
   ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
   `}
 >
@@ -900,7 +847,14 @@ const filteredActions=[
 </svg>
 Undo </p>
 </div >
-<Menu as="div" className="relative inline-block text-left w-1/4 h-full">
+
+<div
+  onClick={() => setShowGameStatsModal(true)}
+  className="w-1/5 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
+>
+  <p className="text-center mx-auto">Game Stats</p>
+</div>
+<Menu as="div" className="relative inline-block text-left w-1/5 h-full">
   <Menu.Button
 
   className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm
@@ -1090,31 +1044,161 @@ Undo </p>
 
 </Menu>
 
-<div
-  onClick={() => setShowGameStatsModal(true)}
-  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
->
-  <p className="text-center mx-auto">Game Stats</p>
+{/* <div className="w-1/5 bg-indigo-300 rounded-md"></div> */}
+{/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
+
+<div className="w-1/5 h-full bg-secondary-bg  flex items-center rounded-md">
+<p className="text-center mx-auto"> Q{currentQuater}</p>
 </div>
+<button
+  onClick={() => {
+    // If there are unsaved actions and the game hasn't been saved, show the exit modal.
+    if (!isGameSaved && gameActions.length > 0) {
+      setShowExitModal(true);
+    } else {
+      navigate('/homedashboard');
+    }
+  }}
+  className="w-1/5 h-full text-center flex items-center bg-secondary-bg  hover:bg-primary-danger/50 rounded-lg"
+>
+  <p className="text-center mx-auto">Exit</p>
+</button>
+</div>
+
+
+
+{/* bottom  of the top nav contents */}
+<div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
+{/* <div
+// disabled={gameActions===0}
+
+  onClick={handleUndoLastActionHandler}
+  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
+  ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
+  `}
+>
+  <p className="text-center mx-auto text-sm flex text-gray-200 items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5 text-primary-cta">
+  <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
+</svg>
+Undo </p>
+</div > */}
+<motion.div
+      className="w-2/6 h-full text-center flex items-center rounded-lg px-4  bg-secondary-bg"
+      // animate={{
+      //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
+      // }}
+      // transition={{ duration: 0.5 }}
+    >
+      <p className="text-center text-nd capitalize mx-auto">
+        <span className="relative">
+          <span
+            className={` text-md font-semibold text-white ${
+              opponentScoreChange > 0 ? "text-white" : "text-gray-400"
+            }`}
+          >
+            {opponentName}
+          </span>
+          <AnimatePresence>
+            {opponentScoreChange > 0 && (
+              <motion.span
+                className={`absolute -top-4 left-full text-gray-200 font-bold`}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5 }}
+              >
+                +{opponentScoreChange}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+
+        <span className={`ml-2 text-md text-gray-400 font-semibold ${
+              opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"
+            }`}>{opponentScore}</span>
+        <span className="ml-2">-</span>
+
+        <span className={`mx-2 text-md font-bold text-gray-400 relative ${
+            teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"
+          }`}>
+          {teamScore}
+          <AnimatePresence>
+            {teamScoreChange > 0 && (
+              <motion.span
+                className={`absolute -top-4 left-full text-green-400 font-bold `}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5 }}
+              >
+                +{teamScoreChange}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+
+        <span
+          className={`ml-2  text-white font-semibold ${
+            teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"
+          }`}
+        >
+          Ravens
+        </span>
+      </p>
+    </motion.div>
+
 
 {/* <div
   onClick={() => setShowGameStatsModal(true)}
   className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
 >
-  <p className="text-center mx-auto">Filters</p>
+  <p className="text-center mx-auto">Game Stats</p>
 </div> */}
-
+{showFiltersPlayerStat &&
+<>
+  <div className="w-2/6 h-full text-center flex space-x-1 px-1 items-center rounded-lg ">
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 2)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +2
+  </button>
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 3)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +3
+  </button>
+  <button
+    onClick={() => updateOpponentScore(opponentScore + 1)}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    +1
+  </button>
+  <button
+    onClick={() => updateOpponentScore(Math.max(0, opponentScore - 1))}
+    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
+  >
+    -1
+  </button>
+</div>
 <div onClick={()=>{
   setShowPlayerStatsModal(true)
 }} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
 </div>
 
-
-
 <div onClick={handleSaveGame} className={` w-1/4 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
   ${currentQuater===4 ? "bg-primary-cta"  : "bg-secondary-bg"  }
   `}>
 <p className="text-center mx-auto text-sm"> {SaveGameBtnText}</p></div>
+</>
+}
+
+
+
+
+
+
 
 </div>
 
@@ -1924,7 +2008,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
   {/* Opponent Score Row */}
   <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={head1} alt={opponentName} />
+    <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} />
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
   </div>
@@ -2021,7 +2105,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
   <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} />
   </div>
   </div>
-  <ul className="timeline flex overflow-x-auto w-11/12 space-x-4 relative">
+  <ul className="timeline flex overflow-x-auto w-11/12 space-x-2 relative">
   {filteredLeadChanges.map((lead, index) => {
     const isLatest = lead === latestLeadChange; // Now correctly highlighting the first (left-most) lead
 
@@ -2029,20 +2113,20 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
       <li key={index} className="flex-shrink-0 relative flex flex-col items-center">
         {/* Top Score Box (Ravens lead) */}
         {lead.team === "Ravens" && (
-          <div className={`timeline-start timeline-box ${isLatest ? "bg-green-600 text-white" : "bg-primary-bg text-gray-300"}`}>
+          <div className={`timeline-start timeline-box border-none ${isLatest ? "bg-green-600 text-white" : "bg-primary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
 
         {/* Icon + Connecting Line */}
-        <div className={`timeline-middle relative  bg-primary-bg  rounded-full flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
+        <div className={`timeline-middle relative  bg-primary-bg p-2  rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
           {lead.team === "Ravens" ? (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
       </svg>
       
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
           </svg>
           
@@ -2056,7 +2140,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
         {/* Bottom Score Box (Opponent lead) */}
         {lead.team !== "Ravens" && (
-          <div className={`timeline-end timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-primary-bg text-gray-300"}`}>
+          <div className={`timeline-end border-none timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-primary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
@@ -2073,7 +2157,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
 
 </div>
-      <div className="flex w-full flex-row  ">
+      <div className="flex w-full flex-row  mt-10 ">
         <svg onClick={()=>{
           setGameStatsExpanded(!gameStatsExpanded)
         }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2 my-auto text-gray-400">
@@ -2155,7 +2239,7 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
   {/* Opponent Score Row */}
   <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={head1} alt={opponentName} />
+    <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} />
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
   </div>

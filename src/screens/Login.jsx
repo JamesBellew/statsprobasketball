@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.11 (05/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.12 (05/03/2025)</h2>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">This is a BETA !!</h2>
             <form onSubmit={handleLogin} className=" ">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
@@ -31,6 +31,12 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3">
+<p className="text-gray-400 text-sm">05/03/2025</p>
+<hr></hr>
+<li className="py-2">Minor UX/UI improvements</li> 
+<li className="py-2">Switched layout of top nav buttons for reporting reasons</li> 
+<li className="py-2">Score now dynamically shows alone when a player stat is showing</li> 
+<li className="py-2">more bg-yellow removals</li> 
 <p className="text-gray-400 text-sm">05/03/2025</p>
 <hr></hr>
 <li className="py-2">Few bg-red-600 left in for testing now removed</li> 
