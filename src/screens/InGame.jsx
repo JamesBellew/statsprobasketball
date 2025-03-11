@@ -8,8 +8,11 @@ import { Menu } from '@headlessui/react';
 import head1 from '../assets/steph-curry.webp';
 import opponentJerseyDefault from '../assets/jersey.webp';
 import { motion, AnimatePresence } from "framer-motion";
-import ravensLogo from '../assets/logo-bg.png';
+import ravensLogo from '../assets/logo.jpg';
 import { v4 as uuidv4 } from 'uuid';  // Install with: npm install uuid
+import { ResponsiveLine } from '@nivo/line';
+import { ResponsivePie } from '@nivo/pie';
+import { ResponsiveBar } from '@nivo/bar';
 export default function InGame() {
   const navigate = useNavigate();
   //old singular filter feature
@@ -18,6 +21,7 @@ const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
 //for the new multiple filters feature
 const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
 const [opponentScore,setOpponentScore] = useState(0)
+
   const [currentQuater,setCurrentQuarter]=useState(1)
   const [leadChanges,setleadChanges] = useState([])
   const location = useLocation();
@@ -33,6 +37,8 @@ const [showFiltersPlayerStat,setShowFiltersPlayerStat] = useState(true)
   const [threePointPercentage,setThreePointPercentage]=useState(0);
 const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
 const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
+const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
+
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 // Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
@@ -50,6 +56,8 @@ const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
 const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
+const [opponentActions, setOpponentActions] = useState([]);
+
 
 // Filter lead changes based on selected quarter
 const filteredLeadChanges =
@@ -72,19 +80,27 @@ useEffect(() => {
   
   setTeamScore(totalPoints);
 }, [gameActions]); // Recalculate when `gameActions` change
+//4 overtimes added
 const calculateQuarterScores = () => {
-  const scores = { 1: 0, 2: 0, 3: 0, 4: 0 }; // Initialize all quarters with 0
+  const scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 , 6: 0 , 7: 0 , 8: 0 }; // ✅ Add OT1 (Q5)
 
   gameActions.forEach((action) => {
     if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
-      const points = action.actionName === "FT Score" ? 1 : 
-                     action.actionName === "2 Points" ? 2 : 3;
-      scores[action.quarter] += points; // Add points to the respective quarter
+      const points =
+        action.actionName === "FT Score" ? 1 :
+        action.actionName === "2 Points" ? 2 :
+        3;
+      scores[action.quarter] += points; // ✅ Ensure Q5 is updated
     }
   });
 
   return scores;
 };
+
+useEffect(() => {
+  setQuarterScores(calculateQuarterScores());
+}, [gameActions]);
+
 
 // Use this function in state:
 const [quarterScores, setQuarterScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
@@ -150,7 +166,6 @@ useEffect(() => {
 }, [teamScore, opponentScore]);
 
 
-console.log(leadChanges);
 // Example usage:
 const gameData = {
   opponentName: "Lakers",
@@ -262,6 +277,35 @@ const playersStats = gameActions.reduce((acc, action) => {
 
   return acc;
 }, {});
+const customTheme = {
+  axis: {
+    ticks: {
+      text: { fill: "#FFFFFF" } // X and Y axis text
+    },
+    legend: {
+      text: { fill: "#FFFFFF" } // Axis legend text
+    }
+  },
+  grid: {
+    line: {
+      stroke: "#16181A",
+      strokeWidth: 1
+    }
+  },
+  labels: {
+    text: { fill: "#FFFFFF" } // Ensure labels (point numbers) are white
+  },
+  tooltip: {
+    container: {
+      background: "#222",
+      color: "#fff",
+      fontSize: "14px",
+      borderRadius: "5px",
+      padding: "8px"
+    }
+  }
+};
+
 
 const playersStatsArray = Object.values(playersStats);
 //preventing accidental refreshing
@@ -278,15 +322,15 @@ useEffect(() => {
   };
 }, []);
 
-useEffect(() => {
-  if (savedGame && savedGame.id) {
-    setCurrentGameId(savedGame.id);
-    setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore from DB
-    console.log("Loaded saved game:", savedGame);
-  } else {
-    console.log("Starting a new game.");
-  }
-}, [savedGame]);
+// useEffect(() => {
+//   if (savedGame && savedGame.id) {
+//     setCurrentGameId(savedGame.id);
+//     setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore from DB
+//     console.log("Loaded saved game:", savedGame);
+//   } else {
+//     console.log("Starting a new game.");
+//   }
+// }, [savedGame]);
 
 useEffect(() => {
   if (opponentName && gameActions.length > 0) {
@@ -301,40 +345,38 @@ useEffect(() => {
 }, [gameActions, opponentName]);
 
 
-useEffect(() => {
-  if (savedGame && savedGame.id) {
-    setCurrentGameId(savedGame.id);  // Ensure ID persists when reopening
-    console.log("Loaded saved game:", savedGame);
-  } else {
-    console.log("Starting a new game.");
-  }
-}, [savedGame]);
+// useEffect(() => {
+//   if (savedGame && savedGame.id) {
+//     setCurrentGameId(savedGame.id);  // Ensure ID persists when reopening
+//     console.log("Loaded saved game:", savedGame);
+//   } else {
+//     console.log("Starting a new game.");
+//   }
+// }, [savedGame]);
 
-const updateOpponentScore = async (newScore) => {
+const updateOpponentScore = async (newScore, points) => {
+  // Create the new action object
+  const newAction = { quarter: currentQuater, points, score: newScore, timestamp: Date.now() };
+  
+  // First update the state
+  const updatedActions = [...opponentActions, newAction];
+  setOpponentActions(updatedActions);
+  
+  // Update the opponent score
   setOpponentScore(newScore);
-
+  
   try {
-    // Update in IndexedDB (or whatever DB you're using)
-    await db.games.update(currentGameId, { opponentScore: newScore });
+    // Save to database with the updated actions array
+    await db.games.update(currentGameId, {
+      opponentScore: newScore,
+      opponentActions: updatedActions,
+    });
     console.log("Opponent score updated in DB:", newScore);
   } catch (error) {
     console.error("Error updating opponent score:", error);
   }
 };
 
-
-   // Handle game actions
-  //  const handleGameAction = (action) => {
-  //   const newAction = {
-  //     quarter: currentQuater,
-  //     actionName: action,
-  //     timestamp: Date.now(),
-  //   };
-  //   setGameActions((prev) => [...prev, newAction]);
-  //   setAlertMessage(`${action} recorded.`);
-  //   setTimeout(() => setAlertMessage(""), 3000);
-  // };
-  
   const handleGameAction = (action) => {
     if (!actionSelected) {
       setAlertMessage("Please select an action before plotting!");
@@ -399,18 +441,21 @@ const updateOpponentScore = async (newScore) => {
   };
 
 
-
+// this is the handler for entering the OT
+const handleOTClick = ()=>{
+  console.log('lets start OT');
+  
+}
 //hanlder for going to next period/quarter
 const handleNextPeriodClick =()=>{
   console.log('clicked boii');
 
-  //need to check if the current quarter is less then 4 before adding one to it
-  if(currentQuater<4){
+
     //we can add one to it now, since its less then 4
     setCurrentQuarter(currentQuater+1)
 //also clear the action selected
 setActionSelected()
-  }
+  
   if(currentQuater==3){
     //we need to change the text to finsih game
     console.log(' change text to finsih game ');
@@ -463,49 +508,23 @@ const handleUndoLastActionHandler = () => {
   setAlertMessage("Last action undone!");
   setTimeout(() => setAlertMessage(""), 3000);
 };
-//for saving the gamedata to localstorage
-// Save the game
-// const handleSaveGame = () => {
-//   if (!gameActions.length) {
-//     setAlertMessage("No actions to save!");
-//     setTimeout(() => setAlertMessage(""), 2000);
-//     return;
-//   }
-
-//   const gameData = {
-//     id: savedGame?.id || `game_${Date.now()}`,
-//     opponentName,
-//     venue: selectedVenue,
-//     actions: gameActions,
-//     timestamp: new Date().toISOString(),
-//   };
-
-//   console.log("Game Data to Save:", gameData);
-
-//   // Fetch existing saved games
-//   const savedGames = JSON.parse(localStorage.getItem("savedGames")) || [];
-//   console.log("Previously Saved Games:", savedGames);
-
-//   const updatedGames = savedGame
-//     ? savedGames.map((game) =>
-//         game.id === savedGame.id ? gameData : game // Update game
-//       )
-//     : [...savedGames, gameData]; // Add new game
-
-//   console.log("Updated Games List:", updatedGames);
-
-//   // Try saving to localStorage
-//   try {
-//     localStorage.setItem("savedGames", JSON.stringify(updatedGames));
-//     console.log("Saved to localStorage successfully!");
-//     setAlertMessage("Game saved successfully!");
-//     setTimeout(() => setAlertMessage(""), 3000);
-//   } catch (error) {
-//     console.error("Error saving to localStorage:", error);
-//     setAlertMessage("Error saving game. Please try again.");
-//     setTimeout(() => setAlertMessage(""), 3000);
-//   }
-// };
+const fetchOpponentGameActions = async () => {
+  try {
+    const gameData = await db.games.get(currentGameId);
+    if (gameData && gameData.opponentActions) {  // Change from opponentGameActions to opponentActions
+      setOpponentActions(gameData.opponentActions);
+    }else {
+      setOpponentActions([]); // Ensure it's an empty array if no data exists
+    }
+  } catch (error) {
+    console.error("Error fetching opponent game actions:", error);
+  }
+};
+useEffect(() => {
+  if (currentGameId) {
+    fetchOpponentGameActions();
+  }
+}, [currentGameId]);
 const handleSaveGame = async () => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to save!");
@@ -515,15 +534,19 @@ const handleSaveGame = async () => {
 
   const gameId = currentGameId || savedGame?.id || `game_${opponentName}_${Date.now()}`;
 
+
+
   const gameData = {
     id: gameId,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
     opponentScore,  // ✅ Save opponentScore
+    opponentActions,  // ✅ NOW SAVING opponentActions to DB
     leadChanges,    // ✅ Save lead changes history
     lineout: savedGame?.lineout || passedLineout,
     timestamp: new Date().toISOString(),
+    opponentLogo,   // ✅ Save opponent logo
   };
 
   try {
@@ -548,12 +571,28 @@ const handleSaveGame = async () => {
   setTimeout(() => setAlertMessage(""), 3000);
 };
 
+
+// useEffect(() => {
+//   if (savedGame && savedGame.id) {
+//     setCurrentGameId(savedGame.id);
+//     setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore
+//     setOpponentActions(savedGame.opponentActions || []); // ✅ Load opponentActions
+//     setleadChanges(savedGame.leadChanges || []);    // ✅ Load saved lead changes
+//     setOpponentLogo(savedGame.opponentLogo || null); // ✅ Load saved logo
+//     console.log("Loaded saved game:", savedGame);
+//   } else {
+//     console.log("Starting a new game.");
+//   }
+// }, [savedGame]);
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
-    setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore
-    setleadChanges(savedGame.leadChanges || []);    // ✅ Load saved lead changes
+    setOpponentScore(savedGame.opponentScore || 0);
+    setOpponentActions(savedGame.opponentActions || []);
+    setleadChanges(savedGame.leadChanges || []);
+    setOpponentLogo(savedGame.opponentLogo || null);
     console.log("Loaded saved game:", savedGame);
+    console.log("Opponent Actions Loaded:", savedGame.opponentActions);
   } else {
     console.log("Starting a new game.");
   }
@@ -635,20 +674,152 @@ const filteredActions=[
 
 ]
 
-  const actions = [
-    "2 Points",
-    "3 Points",
-    "2Pt Miss",
-    "3Pt Miss",
-    "FT Score",
-    "FT Miss",
-    "Assist",
-    "Steal",
-    "Block",
-    "T/O",
-    "Rebound",
-    "OffRebound",
-  ];
+const actions = [
+  {
+    id: "2 Points",
+    name: "2",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    
+    ),
+  },
+  {
+    id: "3 Points",
+    name: "3",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "assist",
+    name: "AST",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "Rebound",
+    name: "RB",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "OffRebound",
+    name: "O RB",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "FT Score",
+    name: "FT",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "2Pt Miss",
+    name: "2",
+    category: "minus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+</svg>
+
+    ),
+  },
+  {
+    id: "3Pt Miss",
+    name: "3",
+    category: "minus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "Steal",
+    name: "Steal",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },
+  {
+    id: "Block",
+    name: "BLK",
+    category: "plus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+</svg>
+
+
+    ),
+  },  
+  {
+    id: "T/O",
+    name: "T/O",
+    category: "minus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+</svg>
+
+
+    ),
+  },  {
+    id: "FT Miss",
+    name: "FT",
+    category: "minus",
+    displayIcon: (
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+</svg>
+
+
+    ),
+  }
+];
+
   useEffect(() => {
     // Overall stats
     const overallFieldGoalAttempts = gameActions.filter((action) =>
@@ -735,6 +906,13 @@ const filteredActions=[
     }
   }, [savedGame]);
   useEffect(() => {
+    if (savedGame && savedGame.id) {
+      setOpponentActions(savedGame.opponentActions || []);
+      console.log("Opponent Actions Loaded:", savedGame.opponentActions);
+    }
+  }, [savedGame]);
+  
+  useEffect(() => {
     if (teamScore > prevScore) {
       setScoreChange(teamScore - prevScore);
       setTimeout(() => setScoreChange(0), 1000); // Hide the +2 after 1s
@@ -754,6 +932,143 @@ const filteredActions=[
     setPrevOpponentScore(opponentScore);
   }, [teamScore, opponentScore]);
 
+
+
+
+  //! this is the chart render logic
+  const transformGameActionsToLineData = (gameActions, opponentActions, currentQuarter) => {
+    const quarterPoints = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
+    const quarterOpponentPoints = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
+    
+    // Team actions
+    gameActions.forEach(action => {
+      if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
+        const points = action.actionName === "2 Points" ? 2 : action.actionName === "3 Points" ? 3 : 1;
+        quarterPoints[action.quarter] += points;
+      }
+    });
+    
+    // Opponent actions - use a single loop
+    if (Array.isArray(opponentActions)) {
+      opponentActions.forEach(action => {
+        if (action && action.quarter && action.points) {
+          quarterOpponentPoints[action.quarter] += action.points;
+        }
+      });
+    }
+    
+    // Console log for debugging
+    console.log("Quarter points for team:", quarterPoints);
+    console.log("Quarter points for opponent:", quarterOpponentPoints);
+    
+    // Filtered quarters logic...
+    const filteredQuarters = [1, 2, 3, 4].concat(
+      currentQuarter > 4 ? Array.from({ length: currentQuarter - 4 }, (_, i) => i + 5) : []
+    );
+    
+    return [
+      {
+        id: "Ravens",
+        color: "#007AFF",
+        data: filteredQuarters.map(quarter => ({
+          x: `Q${quarter}`,
+          y: quarterPoints[quarter]
+        }))
+      },
+      {
+        id: "Opponent",
+        color: "#FF5733",
+        data: filteredQuarters.map(quarter => ({
+          x: `Q${quarter}`,
+          y: quarterOpponentPoints[quarter]
+        }))
+      }
+    ];
+  };
+
+  
+  
+  // Function to process gameActions into Pie Chart data
+  const transformGameActionsToPieData = (gameActions) => {
+    let twoPoints = 0;
+    let threePoints = 0;
+    let freeThrows = 0;
+  
+    gameActions.forEach(action => {
+      if (action.actionName === "2 Points") {
+        twoPoints += 2;
+      } else if (action.actionName === "3 Points") {
+        threePoints += 3;
+      } else if (action.actionName === "FT Score") {
+        freeThrows += 1;
+      }
+    });
+  
+    return [
+      { id: "2PT", label: "2PT", value: twoPoints, color: "#6366F1" },  // Tailwind bg-indigo-500
+      { id: "3PT", label: "3PT", value: threePoints, color: "#04B075" }, // Your CTA color
+      { id: "FT", label: "FT", value: freeThrows, color: "#207DFA" }     // Free Throw color
+    ];
+  };
+  const transformGameActionsToBarData = (gameActions) => {
+    let shotData = {
+      "FG": { attempts: 0, makes: 0, misses: 0 }, // Includes both 2PT and 3PT
+      "2PT": { attempts: 0, makes: 0, misses: 0 },
+      "3PT": { attempts: 0, makes: 0, misses: 0 },
+      "FT": { attempts: 0, makes: 0, misses: 0 }
+    };
+
+    gameActions.forEach(action => {
+        if (["2 Points", "2Pt Miss"].includes(action.actionName)) {
+            shotData["FG"].attempts += 1;  // 2PT attempts count as FG attempts
+            shotData["2PT"].attempts += 1;
+
+            if (action.actionName === "2 Points") {
+                shotData["FG"].makes += 1;  
+                shotData["2PT"].makes += 1;
+            } else {
+                shotData["2PT"].misses += 1;
+            }
+        }
+        if (["3 Points", "3Pt Miss"].includes(action.actionName)) {
+            shotData["FG"].attempts += 1;  // 3PT attempts count as FG attempts
+            shotData["3PT"].attempts += 1;
+
+            if (action.actionName === "3 Points") {
+                shotData["FG"].makes += 1;
+                shotData["3PT"].makes += 1;
+            } else {
+                shotData["3PT"].misses += 1;
+            }
+        }
+        if (["FT Score", "FT Miss"].includes(action.actionName)) {
+            shotData["FT"].attempts += 1;
+
+            if (action.actionName === "FT Score") {
+                shotData["FT"].makes += 1;
+            } else {
+                shotData["FT"].misses += 1;
+            }
+        }
+    });
+
+    return [
+        { shotType: "FG", makes: shotData["FG"].makes, misses: shotData["FG"].misses, attempts: shotData["FG"].attempts },
+        { shotType: "2PT", makes: shotData["2PT"].makes, misses: shotData["2PT"].misses, attempts: shotData["2PT"].attempts },
+        { shotType: "3PT", makes: shotData["3PT"].makes, misses: shotData["3PT"].misses, attempts: shotData["3PT"].attempts },
+        { shotType: "FT", makes: shotData["FT"].makes, misses: shotData["FT"].misses, attempts: shotData["FT"].attempts }
+    ];
+};
+
+
+
+  
+  // Update the line chart data with opponentActions
+  // const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
+  const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
+  console.log("Line chart data:", gameLineChartData);  const pieData = transformGameActionsToPieData(gameActions);
+  const barData = transformGameActionsToBarData(gameActions);
+
   return (
     <>
 
@@ -761,100 +1076,47 @@ const filteredActions=[
 
       {/* Top Nav */}
       <div className="container mx-auto  items-center bg-primary-bg" >
-        <div className="top-nav w-auto h-[12vh]  relative">
+        <div className="top-nav w-auto h-[12vh]  relative ">
           {/* Alert Message */}
       
 
 
 {/* top  of the top nav contents */}
-
-
-<div className="text-white h-2/5 flex-row flex space-x-2  px-2 w-full  ">
-{/* <motion.div
-      className="w-1/3 h-full text-center flex items-center rounded-lg px-4  bg-blue-500"
-      // animate={{
-      //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
-      // }}
-      // transition={{ duration: 0.5 }}
-    >
-      <p className="text-center text-nd capitalize mx-auto">
-        <span className="relative">
-          <span
-            className={` text-md font-semibold text-white ${
-              opponentScoreChange > 0 ? "text-white" : "text-gray-400"
-            }`}
-          >
-            {opponentName}
-          </span>
-          <AnimatePresence>
-            {opponentScoreChange > 0 && (
-              <motion.span
-                className={`absolute -top-4 left-full text-gray-200 font-bold`}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-              >
-                +{opponentScoreChange}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-
-        <span className={`ml-2 text-md text-gray-400 font-semibold ${
-              opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"
-            }`}>{opponentScore}</span>
-        <span className="ml-2">-</span>
-
-        <span className={`mx-2 text-md font-bold text-gray-400 relative ${
-            teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"
-          }`}>
-          {teamScore}
-          <AnimatePresence>
-            {teamScoreChange > 0 && (
-              <motion.span
-                className={`absolute -top-4 left-full text-green-400 font-bold `}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-              >
-                +{teamScoreChange}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-
-        <span
-          className={`ml-2  text-white font-semibold ${
-            teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"
-          }`}
-        >
-          Ravens
-        </span>
-      </p>
-    </motion.div> */}
+<div className="text-white h-1/2 items-center   flex-row flex space-x-1  px-2 w-full  ">
     <div
-// disabled={gameActions===0}
-
   onClick={handleUndoLastActionHandler}
-  className={`w-1/5 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
+  className={`w-[10%] h-full  rounded-lg text-center flex items-center mt-1 z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
   ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
   `}
 >
-  <p className="text-center mx-auto text-sm flex text-gray-200 items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5 text-primary-cta">
+  <p className="text-center mx-auto text-sm flex text-gray-200 items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" 
+    class="size-6  text-primary-cta">
   <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
 </svg>
-Undo </p>
+ </p>
 </div >
-
+<div className="w-1/5  h-full bg-secondary-bg mt-1 flex items-center rounded-md overflow-hidden relative">
+  <AnimatePresence mode="wait">
+    <motion.p
+      key={currentQuater} // Ensures animation triggers when quarter changes
+      initial={{ x: 50, opacity: 0 }} // New quarter slides in from right
+      animate={{ x: 0, opacity: 1 }} // Comes to center
+      exit={{ x: -50, opacity: 0 }} // Old quarter slides out left
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+      className="absolute w-full text-center"
+    >
+      {currentQuater > 4 ? `OT ${currentQuater - 4}` : `Q${currentQuater}`}
+    </motion.p>
+  </AnimatePresence>
+</div>
 <div
   onClick={() => setShowGameStatsModal(true)}
-  className="w-1/5 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
+  className="w-1/5 bg-secondary-bg h-full mt-1  text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
 >
   <p className="text-center mx-auto">Game Stats</p>
 </div>
-<Menu as="div" className="relative inline-block text-left w-1/5 h-full">
+<Menu as="div" className="relative inline-block mt-1 text-left w-1/5 h-full">
   <Menu.Button
 
   className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm
@@ -1047,9 +1309,13 @@ Undo </p>
 {/* <div className="w-1/5 bg-indigo-300 rounded-md"></div> */}
 {/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
 
-<div className="w-1/5 h-full bg-secondary-bg  flex items-center rounded-md">
-<p className="text-center mx-auto"> Q{currentQuater}</p>
-</div>
+
+
+<div onClick={()=>{
+  setShowPlayerStatsModal(true)
+}} className=" w-1/5 bg-secondary-bg h-full  mt-1 cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
+</div> 
+
 <button
   onClick={() => {
     // If there are unsaved actions and the game hasn't been saved, show the exit modal.
@@ -1059,138 +1325,126 @@ Undo </p>
       navigate('/homedashboard');
     }
   }}
-  className="w-1/5 h-full text-center flex items-center bg-secondary-bg  hover:bg-primary-danger/50 rounded-lg"
+  className="w-[10%] h-full text-center   justify-center mt-1 flex items-center bg-secondary-bg  hover:bg-primary-danger/50 rounded-lg"
 >
-  <p className="text-center mx-auto">Exit</p>
+  {/* <p className="text-center mx-auto">Exit</p> */}
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+</svg>
+
 </button>
 </div>
 
 
 
 {/* bottom  of the top nav contents */}
-<div className=" flex flex-row  text-white mb-2 space-x-2 px-2 p-1 h-3/5 w-full">
-{/* <div
-// disabled={gameActions===0}
+<div className=" flex flex-row  text-white space-x-1 px-2 p-1 h-1/2 items-center    w-full">
+<motion.div className="w-[45%] px-7 h-full text-center flex items-center rounded-lg   bg-secondary-bg">
+  <p className="text-center text-nd capitalize mx-auto flex items-center">
+    
+    {/* Away Team (Opponent) */}
+    <img 
+      className="w-8 h-8 rounded-full mr-2"
+      src={opponentLogo || opponentJerseyDefault} 
+      alt={opponentName} 
+    />
 
-  onClick={handleUndoLastActionHandler}
-  className={`w-1/4 h-full bg-blue-900 rounded-lg text-center flex items-center z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
-  ${gameActions==0 ? "bg-secondary-bg/50 line-through text-gray-400" : "bg-secondary-bg "}
-  `}
->
-  <p className="text-center mx-auto text-sm flex text-gray-200 items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5 text-primary-cta">
-  <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5V4.499" />
-</svg>
-Undo </p>
-</div > */}
-<motion.div
-      className="w-2/6 h-full text-center flex items-center rounded-lg px-4  bg-secondary-bg"
-      // animate={{
-      //   backgroundColor: teamScoreChange > 0 ? "#16A34A" : "#1F2122", // Green flash when Ravens score
-      // }}
-      // transition={{ duration: 0.5 }}
-    >
-      <p className="text-center text-nd capitalize mx-auto">
-        <span className="relative">
-          <span
-            className={` text-md font-semibold text-white ${
-              opponentScoreChange > 0 ? "text-white" : "text-gray-400"
-            }`}
+    <span className="relative">
+      <span className={`text-md font-semibold text-white ${opponentScoreChange > 0 ? "text-white" : "text-gray-400"}`}>
+        {opponentName}
+      </span>
+      <AnimatePresence>
+        {opponentScoreChange > 0 && (
+          <motion.span
+            className="absolute -top-4 left-full text-gray-200 font-bold"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
           >
-            {opponentName}
-          </span>
-          <AnimatePresence>
-            {opponentScoreChange > 0 && (
-              <motion.span
-                className={`absolute -top-4 left-full text-gray-200 font-bold`}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-              >
-                +{opponentScoreChange}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
+            +{opponentScoreChange}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
 
-        <span className={`ml-2 text-md text-gray-400 font-semibold ${
-              opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"
-            }`}>{opponentScore}</span>
-        <span className="ml-2">-</span>
+    <span className={`ml-2 text-md text-gray-400 font-semibold ${opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"}`}>
+      {opponentScore}
+    </span>
+    
+    <span className="mx-2">-</span>
 
-        <span className={`mx-2 text-md font-bold text-gray-400 relative ${
-            teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"
-          }`}>
-          {teamScore}
-          <AnimatePresence>
-            {teamScoreChange > 0 && (
-              <motion.span
-                className={`absolute -top-4 left-full text-green-400 font-bold `}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.5 }}
-              >
-                +{teamScoreChange}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
+    <span className={` text-md font-bold text-gray-400 relative ${teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"}`}>
+      {teamScore}
+      <AnimatePresence>
+        {teamScoreChange > 0 && (
+          <motion.span
+            className="absolute -top-4 left-full text-green-400 font-bold"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
+          >
+            +{teamScoreChange}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
 
-        <span
-          className={`ml-2  text-white font-semibold ${
-            teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"
-          }`}
-        >
-          Ravens
-        </span>
-      </p>
-    </motion.div>
+    {/* Home Team (Ravens) */}
+    <img 
+      className="w-8 h-8 rounded-full ml-2"
+      src={ravensLogo} 
+      alt="Ravens" 
+    />
 
+    <span className={`text-white ml-2 font-semibold ${teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"}`}>
+      Ravens
+    </span>
 
-{/* <div
-  onClick={() => setShowGameStatsModal(true)}
-  className="w-1/4 h-full bg-secondary-bg text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
->
-  <p className="text-center mx-auto">Game Stats</p>
-</div> */}
+  </p>
+</motion.div>
+
 {showFiltersPlayerStat &&
 <>
-  <div className="w-2/6 h-full text-center flex space-x-1 px-1 items-center rounded-lg ">
+
+  <div className="w-[45%]  h-full text-center flex space-x-1 px-1 items-center rounded-lg ">
   <button
-    onClick={() => updateOpponentScore(opponentScore + 2)}
+   onClick={() => updateOpponentScore(opponentScore + 2, 2)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +2
   </button>
   <button
-    onClick={() => updateOpponentScore(opponentScore + 3)}
+   onClick={() => updateOpponentScore(opponentScore + 3, 3)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +3
   </button>
   <button
-    onClick={() => updateOpponentScore(opponentScore + 1)}
+onClick={() => updateOpponentScore(opponentScore + 1, 1)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +1
   </button>
   <button
-    onClick={() => updateOpponentScore(Math.max(0, opponentScore - 1))}
+onClick={() => updateOpponentScore(opponentScore -1 , -1)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     -1
   </button>
 </div>
-<div onClick={()=>{
-  setShowPlayerStatsModal(true)
-}} className=" w-1/4 h-full bg-secondary-bg cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
-</div>
 
-<div onClick={handleSaveGame} className={` w-1/4 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
-  ${currentQuater===4 ? "bg-primary-cta"  : "bg-secondary-bg"  }
+
+
+
+<div onClick={handleSaveGame} className={` w-[10%] px-5 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
+ text-primary-cta bg-secondary-bg
   `}>
-<p className="text-center mx-auto text-sm"> {SaveGameBtnText}</p></div>
+<p className="text-center mx-auto text-sm"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.923a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z" />
+</svg>
+</p></div>
 </>
 }
 
@@ -1626,7 +1880,11 @@ console.log("Final Selected Player Details:", playerDetails);
         {(currentQuater > 1 || gameActions.some(action => action.quarter > 1)) &&
           !currentGameActionFilters.includes("All Game") && (
             <div className="border-l-2 border-r-2 border-primary-cta h-full py-2 flex w-[40%] relative">
-              <p className="absolute inset-x-0 top-0 text-center text-gray-400">Q{currentQuater}</p>
+              <p className="absolute inset-x-0 top-0 text-center text-gray-400">
+                {currentQuater<=4 ? "Q"+currentQuater : "OT"+(currentQuater-4)}
+                {/* Q{currentQuater} */}
+                
+                </p>
               <div className="h-full flex w-2/4 my-auto flex-col justify-center items-center">
                 <p>FG {fieldGoalPercentage.current || 0}%</p>
                 <p>{fieldGoal.currentMade}-{fieldGoal.currentTotal}</p>
@@ -1648,88 +1906,92 @@ console.log("Final Selected Player Details:", playerDetails);
         {/* quick stats end  */}
         {/* Main Actions Buttons Section */}
         <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
-        {actions.map((label, index) => (
-          <button
-  key={index}
-  onClick={() => {
-    if (["FT Score", "FT Miss", "Assist", "Steal", "Block", "T/O", "Rebound", "OffRebound"].includes(label)) {
-      if (passedLineout) {
-        setPendingAction((prevAction) =>
-          prevAction?.actionName === label ? null : {
-            actionName: label,
-            quarter: currentQuater,
-            x: null,
-            y: null,
-            timestamp: Date.now(),
+  {actions.map((action, index) => (
+    <button
+      key={index}
+      onClick={() => {
+        if (["FT Score", "FT Miss", "Assist", "Steal", "Block", "T/O", "Rebound", "OffRebound"].includes(action.id)) {
+          if (passedLineout) {
+            setPendingAction((prevAction) =>
+              prevAction?.actionName === action.id ? null : {
+                actionName: action.id,
+                quarter: currentQuater,
+                x: null,
+                y: null,
+                timestamp: Date.now(),
+              }
+            );
+            setShowPlayerModal(true);
+          } else {
+            setGameActions((prevActions) => [
+              ...prevActions,
+              {
+                quarter: currentQuater,
+                actionName: action.id,
+                x: null,
+                y: null,
+                timestamp: Date.now(),
+              },
+            ]);
+            setAlertMessage(`${action.name} recorded!`);
+            setTimeout(() => setAlertMessage(""), 3000);
           }
-        );
-        setShowPlayerModal(true);
-      } else {
-        setGameActions((prevActions) => [
-          ...prevActions,
-          {
-            quarter: currentQuater,
-            actionName: label,
-            x: null,
-            y: null,
-            timestamp: Date.now(),
-          },
-        ]);
-        setAlertMessage(`${label} recorded!`);
-        setTimeout(() => setAlertMessage(""), 3000);
-      }
-      return;
-    } else {
-      // **Deselect action if clicking the same button again**
-      setActionSelected((prevAction) => (prevAction === label ? null : label));
-    }
-  }}
-  className={`${
-    actionSelected === label ? "bg-primary-cta" : "bg-secondary-bg"
-  } text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg focus:outline-none ${
-    ["FT Miss", "2Pt Miss", "3Pt Miss"].includes(label) ? "text-red-500" : ""
-  }`}
->
-  {label}
-</button>
-
-))}
-
+          return;
+        } else {
+          // **Deselect action if clicking the same button again**
+          setActionSelected((prevAction) => (prevAction === action.id ? null : action.id));
+        }
+      }}
+      className={`${
+        actionSelected === action.id ? "bg-primary-cta text-white" : "bg-secondary-bg"
+      }  font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg 
+      
+      
+      ${action.category === "plus" ? "text-primary-cta" : "text-gray-200"}
+      flex items-center justify-center `}
+    >
+      {action.displayIcon}
+      <span className="ml-1 font-bold text-2xl text-white">{action.name}</span>
+    </button>
+  ))}
 </div>
-{/* Game Quick Settings Section */}
-<div className="text-white relative   text-center flex-row p-2 space-x-4 flex w-full h-1/4">
-{alertMessage && (
-        <div class="absolute  w-full bg-secondary-bg/10   mx-auto text-center px-10 lg:px-4">
-        <div class="p-2 h-auto bg-secondary-bg shadow-lg py-2 rounded-lg items-center text-indigo-100 leading-none lg:rounded-md mx-10 flex z-50 lg:inline-flex" role="alert">
-        {alertMessage === "Saved" ? (
-          <svg
-  xmlns="http://www.w3.org/2000/svg"
-  className="h-6 w-6 text-primary-cta inline-block"
-  fill="none"
-  viewBox="0 0 24 24"
-  stroke="currentColor"
->
-  <path
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth={2}
-    d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zM12 19v-6h6"
-  />
-</svg>
 
-) : (
-  <>
-  <span class="flex rounded-lg bg-primary-cta uppercase px-2 py-1 text-xs font-bold mr-3">New</span>
-  <span class="font-semibold mr-2 text-left flex-auto">{alertMessage}</span>
-  <svg class="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z"/></svg>
-  </>
+{/* Game Quick Settings Section */}
+<div className="text-white relative   text-center flex-row p-2 space-x-4 flex w-full flex items-center justify-center h-1/4">
+{alertMessage && (
+  <motion.div
+    className="absolute bottom-8 left-1/4 w-2/4 transform -translate-x-1/2 bg-primary-bg text-white px-5 py-3 rounded-lg shadow-lg flex items-center space-x-3"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 20 }}
+    transition={{ duration: 0.3 }}
+  >
+    {/* Icon */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5 text-primary-cta"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+
+    {/* Message */}
+    <p className="text-sm font-medium">{alertMessage}</p>
+
+    {/* Close Button */}
+    <button
+      className="text-gray-400 hover:text-white"
+      onClick={() => setAlertMessage("")}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 9l-3-3a1 1 0 011.414-1.414L10 6.586l3-3a1 1 0 011.414 1.414L11.414 8l3 3a1 1 0 01-1.414 1.414L10 9.414l-3 3a1 1 0 01-1.414-1.414l3-3z" clipRule="evenodd" />
+      </svg>
+    </button>
+  </motion.div>
 )}
 
-
-
-        </div>
-      </div>
-          )}
         <button
         disabled={currentQuater ===1}
         onClick={
@@ -1744,19 +2006,42 @@ console.log("Final Selected Player Details:", playerDetails);
         <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period
 
         </button>
+       
         <button
-                disabled={currentQuater ===4}
+          disabled={currentQuater ===8}
         onClick={handleNextPeriodClick}
 
         className={`h-full flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
 
-           ${currentQuater==4 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}`}>
-Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForward} />
+           ${currentQuater==4 ? "  bg-secondary-bg text-gray-200" : ""}
+           
+              ${currentQuater === 8  ? "line-through text-gray-500" : ""}
+           `}
+
+           >
+
+
+            {currentQuater<=3 ? "Next Period" : "OT "+ (currentQuater-3)}
+
+          
+{/* Next Period  */}
+          <FontAwesomeIcon className={` ml-2 ${currentQuater===4 ? "   text-primary-cta" : "text-white"}`}
+            icon={faForward} />
 
         </button>
 
+{/* {currentQuater ===4 &&
+        <button
+                disabled={currentQuater !=4}
+        onClick={handleNextPeriodClick}
 
+        className={`h-full flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
 
+           ${currentQuater!=4 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}`}>
+Overtime       
+
+        </button>
+} */}
 
                 </div>
         </div>
@@ -1803,26 +2088,135 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
     className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
     onClick={() => setShowGameStatsModal(false)} // Clicking outside closes the modal
   >
+    
     {/* Modal Content */}
     <div
-      className="relative bg-secondary-bg p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
+      className="relative bg-secondary-bg items-end right-0 p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
     >
-      <div className="flex justify-between items-center mb-2">
+              <button
+          onClick={() => setShowGameStatsModal(false)}
+          className="text-white absolute right-5 top-2 bg-primary-danger  px-2 py-2 rounded"
+        >
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+</svg>
+
+
+        </button>
+      <div className="w-auto   h-auto py-5 flex  ">
+    {/* Score Section */}
+    <div
+  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
+  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 mr-10 "
+>
+  {/* Team Score Row */}
+  <div className="flex items-center w-full">
+    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
+  </div>
+
+  {/* Opponent Score Row */}
+  <div className="flex items-center w-full">
+    {/* <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} /> */}
+    <img 
+  className="w-10 h-10 rounded-full mr-2"
+  src={opponentLogo || opponentJerseyDefault} 
+  alt={opponentName} 
+/>
+
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
+    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
+  </div>
+</div>
+
+  
+  <div className="flex flex-col  w-2/5  ">
+
+
+  <div class="relative overflow-x-auto ">
+  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+  <thead className="text-xs uppercase bg-primary-bg">
+    <tr>
+      {/* Render Q1-Q4 */}
+      {[1, 2, 3, 4].map((q) => (
+        <th
+          key={q}
+          className={`px-6 py-3 ${q === 1 ? "rounded-s-lg" : ""} 
+          ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""} 
+          ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+        >
+          Q{q}
+        </th>
+      ))}
+
+      {/* Render OT dynamically if currentQuater > 4 */}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 1;
+          return (
+            <th
+              key={`OT${otNumber}`}
+              className={`px-6 py-3 ${currentQuater === otNumber + 4 ? "text-white" : "text-gray-400"} 
+              ${otNumber + 4 === currentQuater ? "rounded-e-lg" : ""}`}
+            >
+              OT{otNumber}
+            </th>
+          );
+        })}
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="bg-secondary-bg">
+      {/* Render Q1-Q4 scores */}
+      {[1, 2, 3, 4].map((q) => (
+        <td
+          key={q}
+          className={`px-6 py-4 ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+        >
+          {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= q ? "0" : "-"}
+        </td>
+      ))}
+
+      {/* Render OT scores dynamically */}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 5; // OT starts from Q5 (1st OT)
+          return (
+            <td
+              key={`OT${otNumber}`}
+              className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}
+            >
+              {quarterScores[otNumber] > 0 ? quarterScores[otNumber] : "0"}
+            </td>
+          );
+        })}
+    </tr>
+  </tbody>
+</table>
+
+
+
+
+
+
+</div>
+
+  </div>
+  
+</div>
+
+      <div className="flex justify-between items-center mb-2 ">
         <div className="flex">
-          <h2 className="text-white text-2xl font-bold">Game Stats</h2>
+          {/* <h2 className="text-white text-2xl font-bold">Game Stats</h2> */}
           {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
             <div>FG: {fgMade}-{fgAttempts}<span className="text-gray-400">({fgPercentage}%)</span> </div>
             <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
             <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
           </div> */}
         </div>
-        <button
-          onClick={() => setShowGameStatsModal(false)}
-          className="text-white bg-primary-danger  px-4 py-2 rounded"
-        >
-          Close
-        </button>
+
       </div>
       <div className=" py-2 flex justify-center">
               {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
@@ -1993,78 +2387,11 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 </div>
       </div>
 
-<div className="w-auto   h-auto py-5 flex  ">
-    {/* Score Section */}
-    <div
-  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
-  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 mr-10 "
->
-  {/* Team Score Row */}
-  <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
-  </div>
 
-  {/* Opponent Score Row */}
-  <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} />
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
-  </div>
-</div>
-
-  
-  <div className="flex flex-col  w-2/5  ">
-
-
-  <div class="relative overflow-x-auto ">
-  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-  <thead className="text-xs uppercase bg-primary-bg">
-    <tr>
-      {["Q1", "Q2", "Q3", "Q4"].map((q, index) => {
-        const quarterNumber = index + 1; // Convert Q1, Q2, etc. to numbers (1, 2, 3, 4)
-        return (
-          <th
-            key={index}
-            className={`px-6 py-3 ${index === 0 ? "rounded-s-lg" : ""} 
-            ${index === 3 ? "rounded-e-lg" : ""}
-            ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
-          >
-            {q}
-          </th>
-        );
-      })}
-    </tr>
-  </thead>
-  <tbody>
-    <tr className="bg-secondary-bg">
-      {Object.keys(quarterScores).map((q, index) => {
-        const quarterNumber = parseInt(q); // Convert key from string to number
-        return (
-          <td
-            key={index}
-            className={`px-6 py-4 ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
-          >
-            {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= quarterNumber ? "0" : "-"}
-          </td>
-        );
-      })}
-    </tr>
-  </tbody>
-</table>
-
-
-
-
-</div>
-
-  </div>
-</div>
 
       
 <div className=" w-full h-auto my-4">
-  <h1 className="text-xl font-semibold mt-2 mb-4 text-white font-semibold">Lead Changes</h1>
+  <h1 className="text-xl font-semibold mt-2 mb-4 text-white font-semibold">Lead Changes boii</h1>
   {/* timeline for lead changes will go here  */}
   <div className="w-full h-auto ">
       {/* 🔹 Quarter Navigation */}
@@ -2082,27 +2409,34 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
   {/* Only show quarters that have data */}
   {availableQuarters.map((q) => (
     <button
-      key={q}
-      onClick={() => setSelectedQuarter(q)}
-      className={`px-4 py-2 rounded ${
-        selectedQuarter === q ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
-      }`}
-    >
-      Q{q}
-    </button>
+  key={q}
+  onClick={() => setSelectedQuarter(q)}
+  className={`px-4 py-2 rounded ${
+    selectedQuarter === q ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
+  }`}
+>
+  {q > 4 ? `OT${q - 4}` : `Q${q}`}
+</button>
+
   ))}
 </div>
 
-<div className=" h-28 flex flex-row">
+<div className=" h-28 flex flex-row ">
   <div className="h-28 flex flex-col w-1/12 ">
   <div className={`w-14 px-2 flex items-center justify-center h-1/2 bg-white/10 rounded-full
    ${teamScore>opponentScore ? "border-2 border-primary-cta" : ""} `}>
   <img className="w-10  mx-auto h-10 rounded-full " src={ravensLogo} alt={opponentName} />
   </div>
-  <div className={`w-14 flex items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
+  <div className={`w-14 flex  items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
     
-    ${teamScore<opponentScore ? "border-2 border-gray-400" : ""}`}>
-  <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} />
+    ${teamScore<opponentScore ? "border-2 border-[#207DFA]" : ""}`}>
+  {/* <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} /> */}
+  <img 
+  className="w-10 h-10 mx-auto rounded-full "
+  src={opponentLogo || opponentJerseyDefault} 
+  alt={opponentName} 
+/>
+
   </div>
   </div>
   <ul className="timeline flex overflow-x-auto w-11/12 space-x-2 relative">
@@ -2119,24 +2453,40 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
         )}
 
         {/* Icon + Connecting Line */}
-        <div className={`timeline-middle relative  bg-primary-bg p-2  rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
-          {lead.team === "Ravens" ? (
+  {/* Icon + Connecting Line */}
+<div className={`timeline-middle relative bg-primary-bg p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
+  {(() => {
+    // Extract the scores from the lead.score string (assuming format like "6-5")
+    const scoreParts = lead.score.split('-');
+    const homeScore = parseInt(scoreParts[0], 10);
+    const awayScore = parseInt(scoreParts[1], 10);
+    const isTied = homeScore === awayScore;
+    
+    if (lead.team === "Ravens") {
+      return (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-      </svg>
-      
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
-          </svg>
-          
-          )}
-
-          {/* ✅ Horizontal Line (only if there's another lead change after this one) */}
-          {index !== filteredLeadChanges.length - 1 && (
-            <div className="absolute top-1/2 left-full w-14 h-1 bg-primary-bg"></div>
-          )}
-        </div>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+      );
+    } else if (isTied) {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 text-secondary-cta">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+        </svg>
+      );
+    }
+  })()}
+  {/* ✅ Horizontal Line (only if there's another lead change after this one) */}
+  {index !== filteredLeadChanges.length - 1 && (
+    <div className="absolute top-1/2 left-full w-14 h-1 bg-primary-bg"></div>
+  )}
+</div>
 
         {/* Bottom Score Box (Opponent lead) */}
         {lead.team !== "Ravens" && (
@@ -2155,7 +2505,123 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 </div>
     </div>
 
+<div className=" rounded-xl p-2" style={{ height: "200px", width: "100%",marginTop:"40px" }}>
+<ResponsiveLine
+  animate={true} 
+  motionConfig={{ mass: 1, tension: 250, friction: 20 }}
+  data={gameLineChartData}
+  margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
+  xScale={{ type: "point" }}
+  yScale={{
+    type: "linear",
+    min: 0,
+    max: "auto",
+    stacked: false,
+    nice: true
+  }}
+  axisBottom={{
+    tickSize: 5,
+    tickPadding: 5,
+    tickRotation: 0,
+    legend: "Quarter",
+    legendOffset: 36,
+    legendPosition: "middle"
+  }}
+  theme={customTheme}
+  axisLeft={{
+    tickValues: Array.from({ length: 21 }, (_, i) => i * 5), // Steps of 5 (0, 5, 10, 15, 20, etc.)
+    legend: "Score",
+    legendOffset: -40,
+    legendPosition: "middle"
+  }}
+  pointLabelColor="#FFFFFFF" // Explicitly setting it
+  colors={({ id }) => (id === "Ravens" ? "#04B075" : "#207DFA")}
+  pointColor={({ id }) => (id === "Opponent" ? "#207DFA" : "#04B075")}
+  pointSize={10}
+  pointBorderWidth={2}
+  pointBorderColor={{ from: "serieColor" }} // Make sure border color is correct
+  enablePointLabel={true}
+  pointLabel="y"
+  pointLabelYOffset={-12}
+  useMesh={true}
+/>
 
+  </div>
+  <div className="w-full flex flex-row">
+  <div className=" rounded-md   w-1/2" style={{ height: "200px" }}>
+      <ResponsivePie
+        data={pieData}
+        margin={{ top: 20, right: 80, bottom: 80, left: 80 }}
+        innerRadius={0.5}
+        padAngle={0.7}
+        cornerRadius={3}
+        colors={({ data }) => data.color}
+        borderWidth={2}
+        borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+        enableArcLabels={true}
+        arcLabelsSkipAngle={10}
+        arcLabelsTextColor="#FFFFFF"
+        theme={customTheme}
+        legends={[
+          {
+            anchor: "bottom",
+            direction: "row",
+            translateY: 56,
+            itemsSpacing: 10,
+            itemWidth: 100,
+            itemHeight: 18,
+            itemTextColor: "#fff",
+            symbolSize: 18,
+            symbolShape: "circle"
+          }
+        ]}
+      />
+    </div>
+    <div className="w-1/2  ">
+
+    <ResponsiveBar
+  data={[{ category: "Possessions", steals: steals, turnovers: turnovers }]} // Example data
+  keys={["steals", "turnovers"]}
+  indexBy="category"
+  layout="horizontal" // ✅ Horizontal bar
+  margin={{ top: 20, right: 20, bottom: 50, left: 20 }} // Extra space for legend
+  padding={0.5}
+  colors={["#04B075", "#4285F4"]} // ✅ Yellow (steals) & Blue (turnovers)
+  axisLeft={null} // ✅ No left axis labels
+  axisBottom={null} // ✅ No bottom axis labels
+  enableGridX={false} // ✅ No gridlines
+  borderRadius={5} // ✅ Rounded corners
+  labelSkipWidth={10} // ✅ Only show label if bar is wide enough
+  labelSkipHeight={10}
+  labelTextColor="black" // ✅ Numbers inside bars
+  theme={{
+    axis: { ticks: { text: { fill: "#fff" } } }
+  }}
+  legends={[
+    {
+      data: [
+        { id: "steals", label: "Steals", color: "#04B075" },
+        { id: "turnovers", label: "Turnovers", color: "#4285F4" }
+      ],
+      anchor: "bottom",
+      direction: "row",
+      justify: false,
+      translateY: 40, // ✅ Space below for legend
+      itemsSpacing: 10,
+      itemWidth: 80,
+      itemHeight: 20,
+      itemDirection: "left-to-right",
+      symbolSize: 15,
+      symbolShape: "square",
+      itemTextColor: "#fff"
+    }
+  ]}
+/>
+
+
+    </div>
+
+    </div>
 </div>
       <div className="flex w-full flex-row  mt-10 ">
         <svg onClick={()=>{
@@ -2239,51 +2705,81 @@ Next Period           <FontAwesomeIcon className="text-white ml-2 " icon={faForw
 
   {/* Opponent Score Row */}
   <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} />
+  <img 
+  className="w-10 h-10 mx-auto rounded-full mr-2"
+  src={opponentLogo || opponentJerseyDefault} 
+  alt={opponentName} 
+/>
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
     <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
   </div>
 </div>
 
   
-  <div className="flex flex-col  w-2/5 bg-red-500 ">
+  <div className="flex flex-col  w-2/5  ">
 
 
-  <div class="relative overflow-x-auto bg-yellow-200">
+  <div class="relative overflow-x-auto ">
   <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
   <thead className="text-xs uppercase bg-primary-bg">
     <tr>
-      {["Q1", "Q2", "Q3", "Q4"].map((q, index) => {
-        const quarterNumber = index + 1; // Convert Q1, Q2, etc. to numbers (1, 2, 3, 4)
-        return (
-          <th
-            key={index}
-            className={`px-6 py-3 ${index === 0 ? "rounded-s-lg" : ""} 
-            ${index === 3 ? "rounded-e-lg" : ""}
-            ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
-          >
-            {q}
-          </th>
-        );
-      })}
+      {/* Render Q1-Q4 dynamically */}
+      {[1, 2, 3, 4].map((q) => (
+        <th
+          key={q}
+          className={`px-6 py-3 ${q === 1 ? "rounded-s-lg" : ""} 
+          ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""} 
+          ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+        >
+          Q{q}
+        </th>
+      ))}
+
+      {/* Render OT dynamically if currentQuater > 4 */}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 1;
+          return (
+            <th
+              key={`OT${otNumber}`}
+              className={`px-6 py-3 ${currentQuater === otNumber + 4 ? "text-white" : "text-gray-400"} 
+              ${otNumber + 4 === currentQuater ? "rounded-e-lg" : ""}`}
+            >
+              OT{otNumber}
+            </th>
+          );
+        })}
     </tr>
   </thead>
   <tbody>
     <tr className="bg-secondary-bg">
-      {Object.keys(quarterScores).map((q, index) => {
-        const quarterNumber = parseInt(q); // Convert key from string to number
-        return (
-          <td
-            key={index}
-            className={`px-6 py-4 ${quarterNumber === currentQuater ? "text-white" : "text-gray-400"}`}
-          >
-            {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= quarterNumber ? "0" : "-"}
-          </td>
-        );
-      })}
+      {/* Render Q1-Q4 scores dynamically */}
+      {[1, 2, 3, 4].map((q) => (
+        <td
+          key={q}
+          className={`px-6 py-4 ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+        >
+          {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= q ? "0" : "-"}
+        </td>
+      ))}
+
+      {/* Render OT scores dynamically */}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 5; // OT starts from Q5 (1st OT)
+          return (
+            <td
+              key={`OT${otNumber}`}
+              className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}
+            >
+              {quarterScores[otNumber] > 0 ? quarterScores[otNumber] : "0"}
+            </td>
+          );
+        })}
     </tr>
   </tbody>
 </table>
+
 
 
 
