@@ -322,15 +322,7 @@ useEffect(() => {
   };
 }, []);
 
-// useEffect(() => {
-//   if (savedGame && savedGame.id) {
-//     setCurrentGameId(savedGame.id);
-//     setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore from DB
-//     console.log("Loaded saved game:", savedGame);
-//   } else {
-//     console.log("Starting a new game.");
-//   }
-// }, [savedGame]);
+
 
 useEffect(() => {
   if (opponentName && gameActions.length > 0) {
@@ -345,14 +337,6 @@ useEffect(() => {
 }, [gameActions, opponentName]);
 
 
-// useEffect(() => {
-//   if (savedGame && savedGame.id) {
-//     setCurrentGameId(savedGame.id);  // Ensure ID persists when reopening
-//     console.log("Loaded saved game:", savedGame);
-//   } else {
-//     console.log("Starting a new game.");
-//   }
-// }, [savedGame]);
 
 const updateOpponentScore = async (newScore, points) => {
   // Create the new action object
@@ -572,18 +556,6 @@ const handleSaveGame = async () => {
 };
 
 
-// useEffect(() => {
-//   if (savedGame && savedGame.id) {
-//     setCurrentGameId(savedGame.id);
-//     setOpponentScore(savedGame.opponentScore || 0); // ✅ Load opponentScore
-//     setOpponentActions(savedGame.opponentActions || []); // ✅ Load opponentActions
-//     setleadChanges(savedGame.leadChanges || []);    // ✅ Load saved lead changes
-//     setOpponentLogo(savedGame.opponentLogo || null); // ✅ Load saved logo
-//     console.log("Loaded saved game:", savedGame);
-//   } else {
-//     console.log("Starting a new game.");
-//   }
-// }, [savedGame]);
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
@@ -701,7 +673,7 @@ const actions = [
     ),
   },
   {
-    id: "assist",
+    id: "Assist",
     name: "AST",
     category: "plus",
     displayIcon: (
@@ -905,12 +877,14 @@ const actions = [
       setGameActions(savedGame.actions);
     }
   }, [savedGame]);
-  useEffect(() => {
-    if (savedGame && savedGame.id) {
-      setOpponentActions(savedGame.opponentActions || []);
-      console.log("Opponent Actions Loaded:", savedGame.opponentActions);
-    }
-  }, [savedGame]);
+
+
+  // useEffect(() => {
+  //   if (savedGame && savedGame.id) {
+  //     setOpponentActions(savedGame.opponentActions || []);
+  //     console.log("Opponent Actions Loaded:", savedGame.opponentActions);
+  //   }
+  // }, [savedGame]);
   
   useEffect(() => {
     if (teamScore > prevScore) {
@@ -1545,9 +1519,30 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
         sm:w-1/3
         border-2
         w-1/3
-         left-1/3 sm:left-1/3 border border-gray-500    h-[60%]`}
+         left-1/3 sm:left-1/3 border border-gray-500    h-[65%]`}
     ></div>
-    <div className="absolute sm:w-1/3 w-1/3 left-1/3 sm:left-1/3 border-2 border-gray-500   lg:h-[30%] h-[25%] sm:h-[25%] rounded-b-full top-[60%]"></div>
+    <div className="absolute 
+    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
+    
+    border-2 border-gray-500 
+      lg:h-[25%] h-[25%] sm:h-[25%] rounded-b-full top-[65%]"></div>
+       <div className="absolute 
+    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
+    
+    border-2 border-gray-500 
+      lg:h-[20%] h-[20%] sm:h-[20%] rounded-b-full top-[45%] border-dashed rotate-180"></div>
+    {/* <div className="absolute 
+    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
+    border-dashed
+    border-2 border-gray-500 
+      lg:h-[25%] h-[20%] sm:h-[20%] rounded-b-full top-[45%] rotate-180"
+    style={{ 
+      borderStyle: 'dashed', 
+      borderDashoffset: '0',
+      borderDasharray: '3 2'  // Format is "dash-length space-length"
+    }}></div> */}
+{/* semi key */}
+<div className="absolute w-[15%] left-[42.5%] rounded-t-full h-16 border-t-2 border-t-gray-500 top-[25%] rotate-180"></div>
 
     {/* Render Actions as Dots */}
 
