@@ -56,7 +56,8 @@ const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
 const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
-const [opponentActions, setOpponentActions] = useState([]);
+// const [opponentActions, setOpponentActions] = useState([]);
+const [opponentActions, setOpponentActions] = useState(savedGame?.opponentActions || []);
 
 
 // Filter lead changes based on selected quarter
@@ -492,13 +493,51 @@ const handleUndoLastActionHandler = () => {
   setAlertMessage("Last action undone!");
   setTimeout(() => setAlertMessage(""), 3000);
 };
+// const fetchOpponentGameActions = async () => {
+//   try {
+//     const gameData = await db.games.get(currentGameId);
+//     if (gameData && gameData.opponentActions) {  // Change from opponentGameActions to opponentActions
+//       setOpponentActions(gameData.opponentActions);
+//     }else {
+//       setOpponentActions([]); // Ensure it's an empty array if no data exists
+//     }
+//   } catch (error) {
+//     console.error("Error fetching opponent game actions:", error);
+//   }
+// };
 const fetchOpponentGameActions = async () => {
   try {
+    console.log("Fetching opponent actions for game ID:", currentGameId);
     const gameData = await db.games.get(currentGameId);
-    if (gameData && gameData.opponentActions) {  // Change from opponentGameActions to opponentActions
-      setOpponentActions(gameData.opponentActions);
-    }else {
-      setOpponentActions([]); // Ensure it's an empty array if no data exists
+    console.log("Fetched game data:", gameData);
+    
+    // Check for both potential property names
+    if (gameData) {
+      if (gameData.opponentActions && gameData.opponentActions.length > 0) {
+        console.log("Found opponentActions:", gameData.opponentActions);
+        setOpponentActions(gameData.opponentActions);
+      } else if (gameData.opponentGameActions && gameData.opponentGameActions.length > 0) {
+        console.log("Found opponentGameActions:", gameData.opponentGameActions);
+        setOpponentActions(gameData.opponentGameActions);
+        
+        // Optionally migrate the data to the correct property name
+        try {
+          await db.games.update(currentGameId, {
+            opponentActions: gameData.opponentGameActions
+          });
+          console.log("Migrated opponentGameActions to opponentActions");
+        } catch (migrationError) {
+          console.error("Error migrating actions:", migrationError);
+        }
+      } else {
+        console.log("No opponent actions found in game data");
+        // Don't reset if we already have data loaded - only set empty for new games
+        if (opponentActions.length === 0) {
+          setOpponentActions([]);
+        } else {
+          console.log("Keeping existing opponent actions:", opponentActions);
+        }
+      }
     }
   } catch (error) {
     console.error("Error fetching opponent game actions:", error);
