@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.23 (14/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.3 (18/03/2025)</h2>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">This is a BETA(calm down) !!</h2>
             <form onSubmit={handleLogin} className=" ">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
@@ -31,6 +31,15 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3">
+<p className="text-gray-400 text-sm">18/03/2025</p>
+<hr></hr>
+<li className="py-2">4 new charts displayed in the game stats page</li> 
+<li className="py-2">Opponent score now more stable, can still leak</li> 
+<li className="py-2">Dynamic player stats displayed when viewing all game plaer stats</li> 
+<li className="py-2">Can now complete games and dynamically renders out the actions if game is complete</li> 
+<li className="py-2">Major UX/UI improvements</li> 
+<li className="py-2">Auto save for opponents actions</li> 
+<li className="py-2">Navigation re-ordering to make more sense UX wise</li> 
 <p className="text-gray-400 text-sm">14/03/2025</p>
 <hr></hr>
 <li className="py-2">More checks to debbug opponenet scoring nullification</li> 

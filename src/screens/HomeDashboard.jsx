@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { db } from "../db";
 
+import { faCheck, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
+
 export default function HomeDashboard() {
   // Dashboard states
   const [isExpanded, setIsExpanded] = useState(true);
@@ -11,7 +13,8 @@ export default function HomeDashboard() {
   // We now load all saved lineouts from the DB and display only one (the most recent)
   const [savedLineouts, setSavedLineouts] = useState([]);
   const navigate = useNavigate();
-
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [gameToComplete, setGameToComplete] = useState(null);
   // Modal & Form states for Lineout creation/editing
   const [showLineoutModal, setShowLineoutModal] = useState(false);
   const [showAddNewStatisticsModal,setShowAddNewStatisticsModal] = useState(false);
@@ -20,22 +23,17 @@ export default function HomeDashboard() {
   const [formError, setFormError] = useState("");
   // If editing, store the id of the lineout being edited; if null, we're creating a new one.
   const [editingLineoutId, setEditingLineoutId] = useState(null);
-
+  const [gameToReopen, setGameToReopen] = useState(null);
   // New states for editing a saved game
   const [showGameEditModal, setShowGameEditModal] = useState(false);
   const [editingGame, setEditingGame] = useState(null);
   const [editedOpponentName, setEditedOpponentName] = useState("");
   const [editedVenue, setEditedVenue] = useState("");
-
+  const [showReopenModal, setShowReopenModal] = useState(false);
   // Dropdown state for inline dropdowns (used for both saved games and lineouts)
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const [addPhotos, setAddPhotos] = useState(false); // Toggle for photo upload
-  // Load saved games from localStorage as before
-  // useEffect(() => {
-  //   const games = JSON.parse(localStorage.getItem("savedGames")) || [];
-  //   setSavedGames(games);
-  // }, []);
 
   // Load saved lineouts from IndexedDB on component mount
   useEffect(() => {
@@ -44,6 +42,7 @@ export default function HomeDashboard() {
       setSavedLineouts(lineouts);
     }
     fetchLineouts();
+    
   }, []);
 // HomeDashboard.jsx (partial)
 useEffect(() => {
@@ -53,8 +52,24 @@ useEffect(() => {
   }
   fetchSavedGames();
 }, []);
+console.log(savedGames);
 
 
+
+const handleCompleteGameClick = (game) => {
+  setGameToComplete(game);
+  setShowCompleteModal(true);
+};
+
+const handleConfirmCompleteGame = async () => {
+  if (!gameToComplete) return;
+  const updatedGame = { ...gameToComplete, isComplete: true };
+  await db.games.put(updatedGame);
+  const games = await db.games.toArray();
+  setSavedGames(games);
+  setShowCompleteModal(false);
+  setGameToComplete(null);
+};
 
 
   // Close dropdown if click outside
@@ -150,7 +165,20 @@ useEffect(() => {
     setShowLineoutModal(true);
     setActiveDropdown(null);
   };
+  const handleReopenGameClick = (game) => {
+    setGameToReopen(game);
+    setShowReopenModal(true);
+  };
 
+  const handleConfirmReopenGame = async () => {
+    if (!gameToReopen) return;
+    const updatedGame = { ...gameToReopen, isComplete: false };
+    await db.games.put(updatedGame);
+    const games = await db.games.toArray();
+    setSavedGames(games);
+    setShowReopenModal(false);
+    setGameToReopen(null);
+  };
   const handleDeleteLineout = async (lineoutId) => {
     setActiveDropdown(null);
     if (window.confirm("Are you sure you want to delete this lineout?")) {
@@ -239,12 +267,39 @@ useEffect(() => {
     
   }
 
+
+  
   // For display, only show the most recent (or only) lineout.
   const displayedLineout =
     savedLineouts.length > 0 ? savedLineouts[savedLineouts.length - 1] : null;
-
+    const handleSetInProgress = async (game) => {
+      const updatedGame = { ...game, isComplete: false };
+      await db.games.put(updatedGame);
+      const games = await db.games.toArray();
+      setSavedGames(games);
+    };
+    
   return (
     <div className="min-h-screen bg-primary-bg text-white">
+       {/* Completion Confirmation Modal */}
+       {showCompleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black opacity-50"></div>
+          <div className="relative bg-secondary-bg p-6 rounded-lg w-96 shadow-lg text-center">
+            <h2 className="text-2xl font-bold mb-2">Complete Game?</h2>
+            <p className="text-sm text-gray-400 mb-4">This can always be undone.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setShowCompleteModal(false)} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded">
+                Cancel
+              </button>
+              <button onClick={handleConfirmCompleteGame} className="px-4 py-2 bg-secondary-cta hover:bg-primary-cta rounded">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <nav className="bg-secondary-bg w-full px-8">
         <div className="container mx-auto flex items-center justify-between h-16">
@@ -280,67 +335,130 @@ useEffect(() => {
             Start New Game
           </button>
 
-          {/* Saved Games Section */}
-          <div className="bg-secondary-bg pb-24 p-8 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <h4 className="text-xl font-medium">Saved Games</h4>
-              <p className="text-sm text-gray-400 font-light">
-                ({savedGames.length || "No"} {savedGames.length === 1 ? "Game" : "Games"})
-              </p>
-            </div>
-            <div className="h-auto overflow-auto mt-4">
-              <ul className="grid grid-cols-6 gap-4">
-                {savedGames.length > 0 ? (
-                  savedGames.map((game) => (
-                    <li
-                      key={game.id}
-                      className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col"
+{/* Saved Games Section */}
+<div className="bg-primary-bg pb-24 p-8 rounded-lg">
+  <div className="flex items-center space-x-3">
+    <h4 className="text-xl font-medium">Saved Games</h4>
+    <p className="text-sm text-gray-400 font-light">
+      ({savedGames.length || "No"} {savedGames.length === 1 ? "Game" : "Games"})
+    </p>
+  </div>
+
+  {/* In Progress Section */}
+  <div className="border-l-4 px-5 border-l-secondary-cta">
+    <h3 className="mt-8 mb-3">In Progress</h3>
+  </div>
+  <div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
+    <ul className="grid grid-cols-6 gap-4">
+      {savedGames.filter(game => !game.isComplete).length > 0 ? (
+        savedGames
+          .filter(game => !game.isComplete)
+          .map((game) => (
+            <li
+              key={game.id}
+              className="bg-white/5 border-l-secondary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col"
+            >
+              <div className="mb-2">
+                <p className="text-sm font-medium">
+                  {game.opponentName || "Unknown"} ({game.venue})
+                </p>
+              </div>
+              <div className="flex justify-between">
+                <div className="flex space-x-2 w-full">
+                  <button
+                    onClick={() => handleGameClick(game)}
+                    className="py-1 bg-white/10 px-4 text-secondary-cta font-semibold rounded flex items-center text-md ml-1"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    onClick={() => handleCompleteGameClick(game)}
+                    className="py-1 bg-secondary-cta px-4 text-center font-semibold rounded flex items-center text-md text-secondary-bg"
+                  >
+                    <FontAwesomeIcon icon={faCheck} className="mr-2" /> Complete
+                  </button>
+                  <div className="flex justify-end space-x-2 w-full">
+                    <button
+                      onClick={() => openGameEditModal(game)}
+                      className="py-1 rounded flex text-gray-400 items-center text-xs"
                     >
-                      <div className="mb-2">
-                        <p className="text-sm font-medium">
-                          {game.opponentName || "Unknown"} ({game.venue})
-                        </p>
-                      </div>
-                      <div className="flex justify-between">
-                        <div className="flex space-x-2  w-full">
-                          <button
-                            onClick={() => handleGameClick(game)}
-                            className="py-1 bg-white/10 px-4  text-primary-cta font-semibold rounded flex items-center text-md ml-1"
-                          >
-                            Continue
-                          </button>
-                          <button
-                          onClick={()=>{
-                            handleStatisticsClick(game)
-                          }}
-                            className="py-1 bg-primary-cta px-4 text-center font-semibold rounded flex items-center text-md text-secondary-bg"
-                          >
-                            Stats
-                          </button>
-                          <div className="flex justify-end space-x-2 w-full ">
-                          <button
-                            onClick={() => openGameEditModal(game)}
-                            className="py-1 rounded flex text-gray-400 items-center text-xs"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteGame(game.id)}
-                            className="py-1 text-gray-400 rounded text-xs"
-                          >
-                            Delete
-                          </button>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <li className=" text-gray-400">Nothing Yet</li>
-                )}
-              </ul>
-            </div>
-          </div>
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGame(game.id)}
+                      className="py-1 text-gray-400 rounded text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))
+      ) : (
+        <li className="text-gray-400 w-44 ">No games in progress</li>
+      )}
+    </ul>
+  </div>
+
+  {/* Completed Section */}
+  <div className="border-l-4 px-5 border-l-primary-cta mt-8">
+    <h3 className="mt-8 mb-3">Completed</h3>
+  </div>
+  <div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
+    <ul className="grid grid-cols-6 gap-4">
+      {savedGames.filter(game => game.isComplete).length > 0 ? (
+        savedGames
+          .filter(game => game.isComplete)
+          .map((game) => (
+            <li
+              key={game.id}
+              className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col"
+            >
+              <div className="mb-2">
+                <p className="text-sm font-medium">
+                  {game.opponentName || "Unknown"} ({game.venue})
+                </p>
+              </div>
+              <div className="flex justify-between">
+                <div className="flex space-x-2 w-full">
+                <button
+                    onClick={() => handleGameClick(game)}
+                    className="py-1 bg-white/10 px-4 text-primary-cta font-semibold rounded flex items-center text-md ml-1"
+                  >
+                    Open
+                  </button>
+                  {/* <button
+                    onClick={() => handleSetInProgress(game)}
+                    className="p-2 w-auto px-4 bg-white/10 hover:bg-gray-500 rounded text-white"
+                  >
+                    Restore
+                  </button> */}
+                  <div className="flex justify-end space-x-2 w-full">
+                    <button
+                      onClick={() => handleSetInProgress(game)}
+                      className="py-1 rounded flex text-gray-400 items-center text-xs"
+                    >
+                      Restore
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGame(game.id)}
+                      className="py-1 text-gray-400 rounded text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))
+      ) : (
+        <li className="text-gray-400">No completed games</li>
+      )}
+    </ul>
+  </div>
+</div>
+
 
           <div className="grid grid-cols-2 gap-4">
             {/* Lineout Section */}
@@ -407,7 +525,7 @@ useEffect(() => {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">No Lineouts Saved</p>
+                <p className="text-xs w-44 text-gray-400">No Lineouts Saved</p>
               )}
             </div>
             {/* Saved Statistics Section */}

@@ -1,4 +1,4 @@
-import { useState,useEffect ,useRef} from "react";
+import { useState,useEffect ,useRef,useCallback} from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
@@ -294,7 +294,11 @@ const customTheme = {
     }
   },
   labels: {
-    text: { fill: "#FFFFFF" } // Ensure labels (point numbers) are white
+    text: {
+      fill: "#ffffff", // White text
+      fontSize: 14,
+      fontWeight: "bold",
+    },
   },
   tooltip: {
     container: {
@@ -357,6 +361,8 @@ const updateOpponentScore = async (newScore, points) => {
       opponentActions: updatedActions,
     });
     console.log("Opponent score updated in DB:", newScore);
+    //calling the save game 
+    handleSaveGame();
   } catch (error) {
     console.error("Error updating opponent score:", error);
   }
@@ -493,18 +499,7 @@ const handleUndoLastActionHandler = () => {
   setAlertMessage("Last action undone!");
   setTimeout(() => setAlertMessage(""), 3000);
 };
-// const fetchOpponentGameActions = async () => {
-//   try {
-//     const gameData = await db.games.get(currentGameId);
-//     if (gameData && gameData.opponentActions) {  // Change from opponentGameActions to opponentActions
-//       setOpponentActions(gameData.opponentActions);
-//     }else {
-//       setOpponentActions([]); // Ensure it's an empty array if no data exists
-//     }
-//   } catch (error) {
-//     console.error("Error fetching opponent game actions:", error);
-//   }
-// };
+
 const fetchOpponentGameActions = async () => {
   try {
     console.log("Fetching opponent actions for game ID:", currentGameId);
@@ -918,12 +913,6 @@ const actions = [
   }, [savedGame]);
 
 
-  // useEffect(() => {
-  //   if (savedGame && savedGame.id) {
-  //     setOpponentActions(savedGame.opponentActions || []);
-  //     console.log("Opponent Actions Loaded:", savedGame.opponentActions);
-  //   }
-  // }, [savedGame]);
   
   useEffect(() => {
     if (teamScore > prevScore) {
@@ -945,9 +934,74 @@ const actions = [
     setPrevOpponentScore(opponentScore);
   }, [teamScore, opponentScore]);
 
+  const selectedPlayer = currentGameActionFilters.find(filter =>
+    !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)
+  );
+  console.log('goon to a goblin',gameActions);
+  
+  let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {};
+  const twoPtMade = selectedPlayerStat.fgMade - selectedPlayerStat.threePtMade;
+  const points = (2 * twoPtMade) + (3 * selectedPlayerStat.threePtMade) + selectedPlayerStat.ftMade;
+  
+  // console.log('ddedededede');
+  
+  // console.log(points);
+  
+  
+// const tsPercentage = (points / (2 * (selectedPlayerStat.fgAttempts + (0.44 * selectedPlayerStat.ftAttempts)))) * 100;
+   const tsPercentage = (points / (2 * (selectedPlayerStat.fgAttempts + (0.44 * selectedPlayerStat.ftAttempts)))) * 100;
+let trueShootingPercentage = tsPercentage ? tsPercentage.toFixed(1) : '0.0';
 
 
 
+
+// Set up the state properly
+const [selectedPlayerQuarterScores, setSelectedPlayerQuarterScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 });
+
+if (selectedPlayerStat && selectedPlayerStat.player) {
+  const cleanedPlayerName = selectedPlayerStat.player.trim(); // Remove extra spaces safely
+
+  gameActions.forEach((action) => {
+    if (action.playerName && action.playerName.trim() === cleanedPlayerName) {
+      selectedPlayerQuarterScores[action.quarter] = 
+        (selectedPlayerQuarterScores[action.quarter] || 0) + action.points;
+    }
+  });
+
+  console.log("Selected Player Quarter Scores:", selectedPlayerQuarterScores); // Debugging
+} else {
+  console.log("No selected player found.");
+}
+
+
+console.log("Selected Player Quarter Scores:", selectedPlayerQuarterScores);
+
+// This function calculates quarter scores for a selected player
+const calculateSelectedPlayerQuarterScores = () => {
+  // Initialize scores object with all quarters set to 0
+  const quarterScores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
+  
+  // Make sure gameActions is an array and selectedPlayer exists
+  if (!Array.isArray(gameActions) || !selectedPlayer) {
+    return quarterScores;
+  }
+  
+  // Filter actions for the selected player and calculate points
+// Temporary debugging change - hardcode to look for Aaron L
+gameActions.forEach((action) => {
+  if (action.playerName && action.playerName === "Aaron L") {
+    selectedPlayerQuarterScores[action.quarter] = 
+      (selectedPlayerQuarterScores[action.quarter] || 0) + action.points;
+  }
+});
+
+
+
+
+  console.log("Player quarter scores:", quarterScores);
+  return quarterScores;
+};
+  
   //! this is the chart render logic
   const transformGameActionsToLineData = (gameActions, opponentActions, currentQuarter) => {
     const quarterPoints = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
@@ -1079,8 +1133,110 @@ const actions = [
   // Update the line chart data with opponentActions
   // const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
   const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
-  console.log("Line chart data:", gameLineChartData);  const pieData = transformGameActionsToPieData(gameActions);
   const barData = transformGameActionsToBarData(gameActions);
+  const pieData = transformGameActionsToPieData(gameActions);
+  const testdata = [
+    {
+      quarter: 'Q1',
+      percentage: 45,
+    },
+    {
+      quarter: 'Q2',
+      percentage: 50,
+    },
+    {
+      quarter: 'Q3',
+      percentage: 25,
+    },
+    {
+      quarter: 'Q4',
+      percentage: 21,
+    },
+  ]
+console.log(gameActions);
+console.log("Current quarter:", currentQuater);
+console.log("Player quarter scores before render:", selectedPlayerQuarterScores);
+// 2. Log a sample of player names from actions (with quotes)
+gameActions.forEach((action, index) => {
+  if (index < 3) { // Just log a few to avoid cluttering the console
+    console.log("Action player name:", `"${action.playerName}"`);
+  }
+});
+
+// 3. Test the comparison directly
+// Create a clean function to calculate and update scores
+const updatePlayerScores = useCallback(() => {
+  // Create a new object (important for React to detect changes)
+  const newScores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  
+  // Debug log to check inputs
+  console.log(`Calculating scores for ${selectedPlayer} from ${gameActions.length} actions`);
+  
+  // Process all matching actions
+  gameActions.forEach((action) => {
+    if (action.playerName === selectedPlayer) {
+      // Convert to numbers to ensure proper addition
+      const quarter = Number(action.quarter);
+      const points = Number(action.points);
+      
+      if (!isNaN(quarter) && quarter >= 1 && quarter <= 6 && !isNaN(points)) {
+        newScores[quarter] += points;
+        console.log(`Adding ${points} points to Q${quarter}. New total: ${newScores[quarter]}`);
+      }
+    }
+  });
+  
+  console.log("Final scores:", newScores);
+  setSelectedPlayerQuarterScores(newScores);
+}, [selectedPlayer, gameActions]);
+
+
+
+// Call this function whenever dependencies change
+useEffect(() => {
+  updatePlayerScores();
+}, [updatePlayerScores]);
+
+
+const quarterStats = {
+  1: { made: 0, attempted: 0 },
+  2: { made: 0, attempted: 0 },
+  3: { made: 0, attempted: 0 },
+  4: { made: 0, attempted: 0 },
+}
+
+
+gameActions.forEach(action => {
+  const q = action.quarter;
+  
+  // Count FGA
+  if (["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)) {
+    quarterStats[q].attempted++;
+  }
+  
+  // Count FGM
+  if (["2 Points", "3 Points"].includes(action.actionName)) {
+    quarterStats[q].made++;
+  }
+});
+
+
+const fgPercentages = Object.keys(quarterStats).map(q => {
+  const { made, attempted } = quarterStats[q];
+  const percentage = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
+
+  return {
+    quarter: `Q${q}`,
+    percentage
+  };
+});
+
+
+
+
+//!MAIN -----------------------------------------------------
+//!RETURN ---------------------------------------------------
+//!JSX     --------------------------------------------------
 
   return (
     <>
@@ -1096,6 +1252,7 @@ const actions = [
 
 {/* top  of the top nav contents */}
 <div className="text-white h-1/2 items-center   flex-row flex space-x-1  px-2 w-full  ">
+{!savedGame.isComplete ?
     <div
   onClick={handleUndoLastActionHandler}
   className={`w-[10%] h-full  rounded-lg text-center flex items-center mt-1 z-0 cursor-pointer hover:bg-white/10 transition transform hover:scale-105
@@ -1109,6 +1266,10 @@ const actions = [
 </svg>
  </p>
 </div >
+: <div className="h-full w-[10%] bg-secondary-bg flex items-center justify-center rounded-md">
+  <p>Logo here</p>
+  </div>
+}
 <div className="w-1/5  h-full bg-secondary-bg mt-1 flex items-center rounded-md overflow-hidden relative">
   <AnimatePresence mode="wait">
     <motion.p
@@ -1418,10 +1579,12 @@ const actions = [
   </p>
 </motion.div>
 
-{showFiltersPlayerStat &&
+{showFiltersPlayerStat ?
 <>
+{!savedGame.isComplete ?
+  <div className={`w-[45%]
 
-  <div className="w-[45%]  h-full text-center flex space-x-1 px-1 items-center rounded-lg ">
+     h-full text-center flex space-x-1 px-1 items-center rounded-lg `}>
   <button
    onClick={() => updateOpponentScore(opponentScore + 2, 2)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
@@ -1447,11 +1610,14 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
     -1
   </button>
 </div>
+:<div className='w-[45%] h-full bg-secondary-bg flex items-center justify-center'>
+  <p>BarChart here</p>
+</div>
+}
 
 
 
-
-<div onClick={handleSaveGame} className={` w-[10%] px-5 h-full cursor-pointer hover:bg-primary-cta  rounded-lg text-center flex items-center
+<div onClick={handleSaveGame} className={` w-[10%] px-5 h-full cursor-pointer hover:bg-primary-cta hover:text-black rounded-lg text-center flex items-center
  text-primary-cta bg-secondary-bg
   `}>
 <p className="text-center mx-auto text-sm"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -1459,6 +1625,68 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
 </svg>
 </p></div>
 </>
+:
+<div className=" bg-primary-bg w-[55%] space-x-1 grid grid-cols-3 h-full rounded-md">
+
+<div className="bg-primary-bg col-span-2">
+<table className="w-full text-sm text-left h-full rtl:text-right rounded-md text-gray-500 dark:text-gray-400">
+      <thead className="text-xs rounded-md uppercase bg-secondary-bg shadow-md">
+        <tr>
+          {/* Render Q1-Q4 */}
+          {[1, 2, 3, 4].map((q) => (
+            <th
+              key={q}
+              className={`px-6 py-1 ${q === 1 ? "rounded-s-lg" : ""}
+                ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""}
+                ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+            >
+              Q{q}
+            </th>
+          ))}
+          {/* Render OT dynamically if currentQuater > 4 */}
+          {currentQuater > 4 &&
+            [...Array(currentQuater - 4)].map((_, index) => {
+              const otNumber = index + 5; // OT starts from Q5 (1st OT)
+              return (
+                <th
+                  key={`OT${otNumber}`}
+                  className={`px-6 py-1 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}
+                    ${otNumber === currentQuater ? "rounded-e-lg" : ""}`}
+                >
+                  OT{index + 1}
+                </th>
+              );
+            })}
+        </tr>
+      </thead>
+      <tbody className="rounded-md">
+        <tr className="bg-secondary-bg rounded-md">
+          {[1, 2, 3, 4].map((q) => (
+            <td key={q} className={`px-6 py-1 ${q === currentQuater ? "text-white" : "text-gray-400"}`}>
+              {selectedPlayerQuarterScores[q] !== undefined ? selectedPlayerQuarterScores[q] : "0"}
+            </td>
+          ))}
+          {currentQuater > 4 &&
+            [...Array(currentQuater - 4)].map((_, index) => {
+              const otNumber = index + 5;
+              return (
+                <td key={`OT${otNumber}`} className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}>
+                  {selectedPlayerQuarterScores[otNumber] !== undefined ? selectedPlayerQuarterScores[otNumber] : "0"}
+                </td>
+              );
+            })}
+        </tr>
+      </tbody>
+    </table>
+
+
+</div>
+<div className="bg-secondary-bg flex flex-col justify-center items-center px-5 py-3 rounded-md">
+  <p className="text-gray-400 text-sm">True Shooting %</p> {/* Title text */}
+  <p className="text-white text-lg font-bold">{trueShootingPercentage}%</p> {/* Dummy percentage */}
+</div>
+
+</div>
 }
 
 
@@ -1473,7 +1701,7 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
 
 {/* Court */}
 <div
-  onClick={handleCourtClick} // Make the court clickable
+  onClick={!savedGame.isComplete ? handleCourtClick : undefined} // Disable click if game is not complete
   className={`top-nav w-full relative z-50  h-[55vh]
     ${
     actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
@@ -1541,16 +1769,8 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
         ? "bg-white/10" // Highlight inner arc in blue for 2-point actions
         : "bg-secondary-bg" // Default color
     }
-
-
     border-gray-500 border-2`}
   >
-
-
-    {/* <div className="bg-primary-danger w-[100%]  h-[50%] absolute"></div>
-    <div className="bg-red-300 w-[76%]  top-[50%] h-[30%] left-[12%] absolute"></div>
-    <div className="bg-red-100 w-[40%]  top-[80%] h-[15%] left-[30%] absolute"></div>
-    <div className="bg-green-100 w-[10%]  top-[95%] h-[5%] left-[45%] absolute"></div> */}
 
     {/* Court Key */}
     <div
@@ -1562,26 +1782,20 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
     ></div>
     <div className="absolute 
     sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
-    
+      sm:w-1/4 sm:left-[37.5%]
     border-2 border-gray-500 
-      lg:h-[25%] h-[25%] sm:h-[25%] rounded-b-full top-[65%]"></div>
+     h-[20%] top-[65%]
+      rounded-b-full "></div>
        <div className="absolute 
-    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
-    
+    sm:w-1/4 sm:left-[37.5%]
+    w-1/3 left-2/4 
     border-2 border-gray-500 
-      lg:h-[20%] h-[20%] sm:h-[20%] rounded-b-full top-[45%] border-dashed rotate-180"></div>
-    {/* <div className="absolute 
-    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
-    border-dashed
-    border-2 border-gray-500 
-      lg:h-[25%] h-[20%] sm:h-[20%] rounded-b-full top-[45%] rotate-180"
-    style={{ 
-      borderStyle: 'dashed', 
-      borderDashoffset: '0',
-      borderDasharray: '3 2'  // Format is "dash-length space-length"
-    }}></div> */}
+    h-[20%] top-[45%]
+      rounded-b-full 
+       border-dashed rotate-180"></div>
+
 {/* semi key */}
-<div className="absolute w-[15%] left-[42.5%] rounded-t-full h-16 border-t-2 border-t-gray-500 top-[25%] rotate-180"></div>
+<div className="absolute w-[15%] left-[42.5%] rounded-t-full h-16 border-t-2 border-t-gray-500 top-[12%] rotate-180 "></div>
 
     {/* Render Actions as Dots */}
 
@@ -1725,25 +1939,14 @@ gameActions.filter((action) => {
     );
     // const selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
     // Extract the player number and name separately
-
     // let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer));
-
     // If selectedPlayerStat is found, get the player details
     let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {};
 let playerDetails = {
     number: selectedPlayerStat.player?.match(/\((\d+)\)/)?.[1] || "",
     name: selectedPlayerStat.player?.replace(/\(\d+\)\s*/, "") || selectedPlayer || "Unknown",
     image: selectedPlayerStat.image || null, // Default to null if no image is found
-};
-
-    // let playerDetails = selectedPlayerStat
-    //   ? {
-    //       number: selectedPlayerStat.player.match(/\((\d+)\)/)?.[1] || "",
-    //       name: selectedPlayerStat.player.replace(/\(\d+\)\s*/, "") || selectedPlayer,
-    //       image: selectedPlayerStat.image || null, // Default to null if no image is found
-    //     }
-    //   : { number: "", name: selectedPlayer, image: null };
-      
+};    
   // Now, check if the player's image exists in the lineout
   if (!playerDetails.image && savedGame?.lineout?.players) {
     const lineoutPlayer = savedGame.lineout.players.find(
@@ -1939,6 +2142,7 @@ console.log("Final Selected Player Details:", playerDetails);
 
         {/* quick stats end  */}
         {/* Main Actions Buttons Section */}
+        {!savedGame.isComplete ? 
         <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
   {actions.map((action, index) => (
     <button
@@ -1989,6 +2193,10 @@ console.log("Final Selected Player Details:", playerDetails);
     </button>
   ))}
 </div>
+: 
+<div className="w-full flex items-center justify-center h-2/4 bg-secondary-bg rounded-md">
+<p>Stats Here</p></div>
+}
 
 {/* Game Quick Settings Section */}
 <div className="text-white relative   text-center flex-row p-2 space-x-4 flex w-full flex items-center justify-center h-1/4">
@@ -2561,6 +2769,11 @@ Overtime
     legendOffset: 36,
     legendPosition: "middle"
   }}
+    // 🔥 Explicitly set white text for point labels
+
+  pointLabel={(point) => `${point.data.y}`} // Ensure labels show correct values
+  pointLabelYOffset={-12} // Position labels above the points
+  pointLabelTextColor={{ from: "color", modifiers: [["brighter", 1.5]] }} // Brightens text
   theme={customTheme}
   axisLeft={{
     tickValues: Array.from({ length: 21 }, (_, i) => i * 5), // Steps of 5 (0, 5, 10, 15, 20, etc.)
@@ -2575,8 +2788,6 @@ Overtime
   pointBorderWidth={2}
   pointBorderColor={{ from: "serieColor" }} // Make sure border color is correct
   enablePointLabel={true}
-  pointLabel="y"
-  pointLabelYOffset={-12}
   useMesh={true}
 />
 
@@ -2655,6 +2866,44 @@ Overtime
 
     </div>
 
+    </div>
+    <div className="w-full h-48 flex flex-row">
+      <div className="w-1/2 h-full">
+      <ResponsiveBar
+  data={fgPercentages}
+  keys={['percentage']}
+  indexBy="quarter"
+  margin={{ top: 20, right: 50, bottom: 50, left: 60 }}
+  padding={0.3}
+  colors="#4B61D1"
+  theme={customTheme}
+  valueScale={{ type: 'linear' }}
+  indexScale={{ type: 'band', round: true }}
+  axisTop={null}
+  axisRight={null}
+  
+  axisBottom={{
+    tickSize: 5,
+    tickPadding: 5,
+    tickRotation: 0,
+    legend: 'Quarter',
+    legendPosition: 'middle',
+    legendOffset: 40,
+  }}
+  axisLeft={null} // ✅ Remove Y-axis numbers
+  
+  enableGridX={false} // ✅ Remove grid lines
+  enableGridY={false}
+
+  labelSkipWidth={12}
+  labelSkipHeight={12}
+  labelTextColor="#ffffff"
+  label={({ value }) => `${value}%`} // ✅ Adds % to inside bar labels
+  animate={true}
+  motionConfig="wobbly"
+/>
+
+    </div>
     </div>
 </div>
       <div className="flex w-full flex-row  mt-10 ">
