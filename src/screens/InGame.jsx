@@ -1629,60 +1629,59 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
 <div className=" bg-primary-bg w-[55%] space-x-1 grid grid-cols-3 h-full rounded-md">
 
 <div className="bg-primary-bg col-span-2">
-<table className="w-full text-sm text-left h-full rtl:text-right rounded-md text-gray-500 dark:text-gray-400">
-      <thead className="text-xs rounded-md uppercase bg-secondary-bg shadow-md">
-        <tr>
-          {/* Render Q1-Q4 */}
-          {[1, 2, 3, 4].map((q) => (
+<table className="w-full text-sm text-left rtl:text-right h-full border-separate border-spacing-0 rounded-md overflow-hidden bg-secondary-bg shadow-md text-gray-500 dark:text-gray-400">
+  <thead className="text-xs uppercase shadow-md">
+    <tr>
+      {[1, 2, 3, 4].map((q) => (
+        <th
+          key={q}
+          className={`px-6 py-1 bg-secondary-bg ${q === 1 ? "rounded-s-lg" : ""}
+            ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""}
+            ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+        >
+          Q{q}
+        </th>
+      ))}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 5;
+          return (
             <th
-              key={q}
-              className={`px-6 py-1 ${q === 1 ? "rounded-s-lg" : ""}
-                ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""}
-                ${q === currentQuater ? "text-white" : "text-gray-400"}`}
+              key={`OT${otNumber}`}
+              className={`px-6 py-1 bg-secondary-bg ${currentQuater === otNumber ? "text-white" : "text-gray-400"}
+                ${otNumber === currentQuater ? "rounded-e-lg" : ""}`}
             >
-              Q{q}
+              OT{index + 1}
             </th>
-          ))}
-          {/* Render OT dynamically if currentQuater > 4 */}
-          {currentQuater > 4 &&
-            [...Array(currentQuater - 4)].map((_, index) => {
-              const otNumber = index + 5; // OT starts from Q5 (1st OT)
-              return (
-                <th
-                  key={`OT${otNumber}`}
-                  className={`px-6 py-1 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}
-                    ${otNumber === currentQuater ? "rounded-e-lg" : ""}`}
-                >
-                  OT{index + 1}
-                </th>
-              );
-            })}
-        </tr>
-      </thead>
-      <tbody className="rounded-md">
-        <tr className="bg-secondary-bg rounded-md">
-          {[1, 2, 3, 4].map((q) => (
-            <td key={q} className={`px-6 py-1 ${q === currentQuater ? "text-white" : "text-gray-400"}`}>
-              {selectedPlayerQuarterScores[q] !== undefined ? selectedPlayerQuarterScores[q] : "0"}
+          );
+        })}
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="bg-secondary-bg">
+      {[1, 2, 3, 4].map((q) => (
+        <td key={q} className={`px-6 py-1 ${q === currentQuater ? "text-white" : "text-gray-400"}`}>
+          {selectedPlayerQuarterScores[q] !== undefined ? selectedPlayerQuarterScores[q] : "0"}
+        </td>
+      ))}
+      {currentQuater > 4 &&
+        [...Array(currentQuater - 4)].map((_, index) => {
+          const otNumber = index + 5;
+          return (
+            <td key={`OT${otNumber}`} className={`px-6 py-1 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}>
+              {selectedPlayerQuarterScores[otNumber] !== undefined ? selectedPlayerQuarterScores[otNumber] : "0"}
             </td>
-          ))}
-          {currentQuater > 4 &&
-            [...Array(currentQuater - 4)].map((_, index) => {
-              const otNumber = index + 5;
-              return (
-                <td key={`OT${otNumber}`} className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}>
-                  {selectedPlayerQuarterScores[otNumber] !== undefined ? selectedPlayerQuarterScores[otNumber] : "0"}
-                </td>
-              );
-            })}
-        </tr>
-      </tbody>
-    </table>
+          );
+        })}
+    </tr>
+  </tbody>
+</table>
+
 
 
 </div>
-<div className="bg-secondary-bg flex flex-col justify-center items-center px-5 py-3 rounded-md">
-  <p className="text-gray-400 text-sm">True Shooting %</p> {/* Title text */}
+<div className="bg-secondary-bg flex w-auto flex-col justify-center items-center px-2 py-1 rounded-md">
+  <p className="text-gray-400 text-sm">TS%</p> {/* Title text */}
   <p className="text-white text-lg font-bold">{trueShootingPercentage}%</p> {/* Dummy percentage */}
 </div>
 
@@ -2333,7 +2332,7 @@ Overtime
     
     {/* Modal Content */}
     <div
-      className="relative bg-secondary-bg items-end right-0 p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
+      className="relative bg-primary-bg items-end right-0 p-4 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
       onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
     >
               <button
@@ -2469,7 +2468,7 @@ Overtime
 
 <div class="flex items-center justify-center w-screen  text-gray-800  ">
 
-<div className="grid lg:grid-cols-3 md:grid-cols-3 gap-1 w-full max-w-6xl">
+<div className="grid lg:grid-cols-4 md:grid-cols-4 gap-1 w-full max-w-6xl">
   {/* Field Goal */}
   <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg">
   <div className={`flex flex-shrink-0 items-center justify-center border-b-2
@@ -2488,7 +2487,7 @@ Overtime
       <span className="text-xl text-gray-200 font-bold">{fgPercentage}%</span>
     </div>
     <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-300 font-bold">Field Goal</span>
+      <span className="text-xl text-gray-300 font-bold">FG</span>
       <div className="flex items-center justify-between">
         <span className="text-gray-300">{fgMade}-{fgAttempts}</span>
       </div>
@@ -2510,7 +2509,7 @@ Overtime
       <span className="text-xl text-gray-200 font-bold">{threePtPercentage}%</span>
     </div>
     <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">3 Point</span>
+      <span className="text-xl text-gray-100 font-bold">3PT</span>
       <div className="flex items-center justify-between">
         <span className="text-gray-300">{threePtMade}-{threePtAttempts}</span>
       </div>
@@ -2532,14 +2531,13 @@ Overtime
       <span className="text-xl text-gray-200 font-bold">{ftPercentage}%</span>
     </div>
     <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">Free Throw</span>
+      <span className="text-xl text-gray-100 font-bold">FT</span>
       <div className="flex items-center justify-between">
         <span className="text-gray-300">{ftMade}-{ftAttempts}</span>
       </div>
     </div>
   </div>
 
-  {/* T/O-Steals (Example: replace with your dynamic variables) */}
   <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
   <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
     <span className="text-xl text-gray-200 font-bold">{blocks}</span>
@@ -2552,14 +2550,7 @@ Overtime
   </div>
 </div>
 
-<div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-  {/* <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
-    { (turnovers === 0 && steals === 0) ? (
-      <span className="text-xl text-gray-200 font-bold">-</span>
-    ) : (
-      <span className="text-xl text-gray-200 font-bold">{(turnovers/steals)*100}</span>
-    )}
-  </div> */}
+{/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
   <div className="flex-grow flex flex-col ml-4">
     <span className="text-xl text-gray-100 font-bold">T/O – Steals</span>
     <div className="flex items-center justify-between">
@@ -2570,8 +2561,8 @@ Overtime
     </div>
   </div>
   
-</div>
-<div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+</div> */}
+{/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
   <div className="flex-grow flex flex-col ml-4">
     <span className="text-xl text-gray-100 font-bold">Lead Change</span>
     <div className="flex items-center justify-between">
@@ -2621,7 +2612,7 @@ Overtime
       </span>
     </div>
   </div>
-</div>
+</div> */}
 </div>
 
 
@@ -2631,9 +2622,58 @@ Overtime
 
 
 
-      
-<div className=" w-full h-auto my-4">
-  <h1 className="text-xl font-semibold mt-2 mb-4 text-white font-semibold">Lead Changes boii</h1>
+
+<div className=" w-full    h-auto my-4">
+  <h1 className="text-xl font-semibold text-center mt-2 mb-4 text-white font-semibold ">Lead Changes   <span className="px-3">-</span> 
+ {/* renderign the lea changes into the label for space savings ❤️ */}
+<span className="text-gray-300 ">
+  
+        {(() => {
+          // Check if Ravens are currently leading
+          if (teamScore > opponentScore) {
+            // Find when they LAST took the lead
+            const lastLeadChange = leadChanges
+            .slice()
+            .reverse()
+            .find((lead) => lead.team === "Ravens");
+          
+          if (lastLeadChange) {
+            return (
+              <span className="text-primary-cta">
+                Lead since Q{lastLeadChange.q} ({lastLeadChange.score})
+              </span>
+            );
+          }
+          
+
+            return <span className="text-primary-cta">Currently Leading</span>;
+          }
+
+          // Find the last time Ravens had the lead
+          const lastRavensLead = leadChanges
+          .slice()
+          .reverse()
+          .find((lead, index, arr) => {
+            // Find the last instance where Ravens were in the lead *before* they lost it
+            const nextLead = arr[index - 1]; // The lead change right after it
+            return lead.team === "Ravens" && nextLead && nextLead.team !== "Ravens";
+          });
+        
+        if (lastRavensLead) {
+          return (
+            <span className="text-gray-300">
+              Last lead Q{lastRavensLead.q} ({lastRavensLead.score})
+            </span>
+          );
+        }
+        
+          // If they never led
+          return <span className="text-primary-danger">Never in Lead</span>;
+        })()}
+      </span>
+
+  
+  </h1>
   {/* timeline for lead changes will go here  */}
   <div className="w-full h-auto ">
       {/* 🔹 Quarter Navigation */}
@@ -2748,6 +2788,7 @@ Overtime
     </div>
 
 <div className=" rounded-xl p-2" style={{ height: "200px", width: "100%",marginTop:"40px" }}>
+<h4 style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Quarter Split</h4>
 <ResponsiveLine
   animate={true} 
   motionConfig={{ mass: 1, tension: 250, friction: 20 }}
@@ -2792,8 +2833,9 @@ Overtime
 />
 
   </div>
-  <div className="w-full flex flex-row">
-  <div className=" rounded-md   w-1/2" style={{ height: "200px" }}>
+  <div className="w-full mt-10 flex flex-row">
+  <div className=" rounded-md  w-1/2" style={{ height: "200px" }}>
+  <h4 style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Split</h4>
       <ResponsivePie
         data={pieData}
         margin={{ top: 20, right: 80, bottom: 80, left: 80 }}
@@ -2806,23 +2848,34 @@ Overtime
         enableArcLabels={true}
         arcLabelsSkipAngle={10}
         arcLabelsTextColor="#FFFFFF"
+        axisBottom={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: 0,
+          legend: 'FG Percentage',
+          legendPosition: 'middle',
+          legendOffset: 40,
+        }}
         theme={customTheme}
-        legends={[
-          {
-            anchor: "bottom",
-            direction: "row",
-            translateY: 56,
-            itemsSpacing: 10,
-            itemWidth: 100,
-            itemHeight: 18,
-            itemTextColor: "#fff",
-            symbolSize: 18,
-            symbolShape: "circle"
-          }
-        ]}
+
+        // legends={[
+        //   {
+        //     anchor: "bottom",
+        //     direction: "row",
+        //     translateY: 56,
+        //     itemsSpacing: 10,
+        //     itemWidth: 100,
+        //     itemHeight: 18,
+        //     itemTextColor: "#fff",
+        //     symbolSize: 18,
+        //     symbolShape: "circle"
+        //   }
+        // ]}
       />
+      
     </div>
-    <div className="w-1/2  ">
+    
+    <div className="w-1/2 ">
 
     <ResponsiveBar
   data={[{ category: "Possessions", steals: steals, turnovers: turnovers }]} // Example data
@@ -2848,10 +2901,11 @@ Overtime
         { id: "steals", label: "Steals", color: "#04B075" },
         { id: "turnovers", label: "Turnovers", color: "#4285F4" }
       ],
-      anchor: "bottom",
+      anchor: "top",
       direction: "row",
+
       justify: false,
-      translateY: 40, // ✅ Space below for legend
+      translateY: 10, // ✅ Space below for legend
       itemsSpacing: 10,
       itemWidth: 80,
       itemHeight: 20,
@@ -2870,6 +2924,7 @@ Overtime
     <div className="w-full h-48 flex flex-row">
       <div className="w-1/2 h-full">
       <ResponsiveBar
+     
   data={fgPercentages}
   keys={['percentage']}
   indexBy="quarter"
@@ -2881,15 +2936,29 @@ Overtime
   indexScale={{ type: 'band', round: true }}
   axisTop={null}
   axisRight={null}
+  legends={[
+    {
+      anchor: "top", // 🔥 Position it at the top
+      direction: "row",
+      justify: false,
+      translateY: -20, // Move it up/down if needed
+      itemsSpacing: 10,
+      itemWidth: 100,
+      itemHeight: 18,
+      itemTextColor: "#fff", // Customize text color
+      symbolSize: 18,
+      symbolShape: "circle",
+    }
+  ]}
   
-  axisBottom={{
-    tickSize: 5,
-    tickPadding: 5,
-    tickRotation: 0,
-    legend: 'Quarter',
-    legendPosition: 'middle',
-    legendOffset: 40,
-  }}
+  // axisBottom={{
+  //   tickSize: 5,
+  //   tickPadding: 5,
+  //   tickRotation: 0,
+  //   legend: 'FG Percentage',
+  //   legendPosition: 'middle',
+  //   legendOffset: 40,
+  // }}
   axisLeft={null} // ✅ Remove Y-axis numbers
   
   enableGridX={false} // ✅ Remove grid lines
@@ -2906,7 +2975,7 @@ Overtime
     </div>
     </div>
 </div>
-      <div className="flex w-full flex-row  mt-10 ">
+      {/* <div className="flex w-full flex-row  mt-10 ">
         <svg onClick={()=>{
           setGameStatsExpanded(!gameStatsExpanded)
         }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2 my-auto text-gray-400">
@@ -2927,7 +2996,7 @@ Overtime
               <th className="px-4 py-2 border-b">Action</th>
               <th className="px-4 py-2 border-b">Time</th>
               <th className="px-4 py-2 border-b">Player</th>
-              {/* <th className="px-4 py-2 border-b">Position</th> */}
+           
             </tr>
           </thead>
           <tbody>
@@ -2941,17 +3010,13 @@ Overtime
                 <td className="px-4 py-2 border-b text-center">
                   {action.playerName ? `${action.playerName} (${action.playerNumber})` : "-"}
                 </td>
-                {/* <td className="px-4 py-2 border-b text-center">
-                  {typeof action.x === "number" && typeof action.y === "number"
-                    ? `(${action.x.toFixed(1)}%, ${action.y.toFixed(1)}%)`
-                    : "-"}
-                </td> */}
+ 
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      </div>
+      </div> */}
     </div>
   </div>
 )}

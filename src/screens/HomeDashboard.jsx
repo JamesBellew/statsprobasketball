@@ -375,7 +375,7 @@ const handleConfirmCompleteGame = async () => {
                     onClick={() => handleCompleteGameClick(game)}
                     className="py-1 bg-secondary-cta px-4 text-center font-semibold rounded flex items-center text-md text-secondary-bg"
                   >
-                    <FontAwesomeIcon icon={faCheck} className="mr-2" /> Complete
+                    <FontAwesomeIcon icon={faCheck} className="mr-2" /> 
                   </button>
                   <div className="flex justify-end space-x-2 w-full">
                     <button

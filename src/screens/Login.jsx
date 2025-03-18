@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.3 (18/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.32 (18/03/2025)</h2>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">This is a BETA(calm down) !!</h2>
             <form onSubmit={handleLogin} className=" ">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
@@ -31,6 +31,14 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3">
+<p className="text-gray-400 text-sm">18/03/2025</p>
+<hr></hr>
+<li className="py-2">Fixed saved games overflowing on home dashboard</li> 
+<li className="py-2">Labeling of the gamestats</li> 
+<li className="py-2">True shooting percentage UX/UI</li> 
+<li className="py-2">Filtered player quarter stats table now fitted to new nav row</li> 
+<li className="py-2">Gamestats re-strcuturing, still in porgress. Done by next version</li> 
+<li className="py-2">Game Leads now intergated within the label to save space</li> 
 <p className="text-gray-400 text-sm">18/03/2025</p>
 <hr></hr>
 <li className="py-2">4 new charts displayed in the game stats page</li> 
