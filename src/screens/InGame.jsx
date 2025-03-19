@@ -1136,22 +1136,10 @@ gameActions.forEach((action) => {
   const barData = transformGameActionsToBarData(gameActions);
   const pieData = transformGameActionsToPieData(gameActions);
   const testdata = [
-    {
-      quarter: 'Q1',
-      percentage: 45,
-    },
-    {
-      quarter: 'Q2',
-      percentage: 50,
-    },
-    {
-      quarter: 'Q3',
-      percentage: 25,
-    },
-    {
-      quarter: 'Q4',
-      percentage: 21,
-    },
+    { quarter: 'Q1', steals: 3, turnovers: 1 },
+    { quarter: 'Q2', steals: 2, turnovers: 1 },
+    { quarter: 'Q3', steals: 1, turnovers: 2 },
+    { quarter: 'Q4', steals: 2, turnovers: 1 },
   ]
 console.log(gameActions);
 console.log("Current quarter:", currentQuater);
@@ -1231,6 +1219,34 @@ const fgPercentages = Object.keys(quarterStats).map(q => {
   };
 });
 
+const calculateStealsTurnoversPerQuarter = (gameActions) => {
+  // Initialize counters per quarter
+  const quarterStats = {
+    1: { steals: 0, turnovers: 0 },
+    2: { steals: 0, turnovers: 0 },
+    3: { steals: 0, turnovers: 0 },
+    4: { steals: 0, turnovers: 0 },
+  };
+
+  gameActions.forEach(action => {
+    const q = action.quarter;
+    // Example action names - adjust if your actual naming differs
+    if (action.actionName === "Steal") {
+      quarterStats[q].steals++;
+    } 
+    if (action.actionName === "T/O") {
+      quarterStats[q].turnovers++;
+    }
+  });
+
+  // Convert to array for Nivo
+  return Object.keys(quarterStats).map(q => ({
+    quarter: `Q${q}`,
+    steals: quarterStats[q].steals,
+    turnovers: quarterStats[q].turnovers,
+  }));
+};
+const stealsTurnoversData = calculateStealsTurnoversPerQuarter(gameActions);
 
 
 
@@ -1630,13 +1646,13 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
 
 <div className="bg-primary-bg col-span-2">
 <table className="w-full text-sm text-left rtl:text-right h-full border-separate border-spacing-0 rounded-md overflow-hidden bg-secondary-bg shadow-md text-gray-500 dark:text-gray-400">
-  <thead className="text-xs uppercase shadow-md">
+  <thead className="text-xs border-2 border-white  uppercase shadow-md">
     <tr>
       {[1, 2, 3, 4].map((q) => (
         <th
           key={q}
-          className={`px-6 py-1 bg-secondary-bg ${q === 1 ? "rounded-s-lg" : ""}
-            ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""}
+          className={`px-6   bg-secondary-bg border-b-2 border-b-primary-bg ${q === 1 ? "" : ""}
+            ${q === 4 && currentQuater <= 4 ? "" : ""}
             ${q === currentQuater ? "text-white" : "text-gray-400"}`}
         >
           Q{q}
@@ -1648,7 +1664,7 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
           return (
             <th
               key={`OT${otNumber}`}
-              className={`px-6 py-1 bg-secondary-bg ${currentQuater === otNumber ? "text-white" : "text-gray-400"}
+              className={`px-6  bg-secondary-bg ${currentQuater === otNumber ? "text-white" : "text-gray-400"}
                 ${otNumber === currentQuater ? "rounded-e-lg" : ""}`}
             >
               OT{index + 1}
@@ -1658,9 +1674,9 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
     </tr>
   </thead>
   <tbody>
-    <tr className="bg-secondary-bg">
+    <tr className="bg-secondary-bg ">
       {[1, 2, 3, 4].map((q) => (
-        <td key={q} className={`px-6 py-1 ${q === currentQuater ? "text-white" : "text-gray-400"}`}>
+        <td key={q} className={`px-6  ${q === currentQuater ? "text-white" : "text-gray-400"}`}>
           {selectedPlayerQuarterScores[q] !== undefined ? selectedPlayerQuarterScores[q] : "0"}
         </td>
       ))}
@@ -1668,7 +1684,7 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
         [...Array(currentQuater - 4)].map((_, index) => {
           const otNumber = index + 5;
           return (
-            <td key={`OT${otNumber}`} className={`px-6 py-1 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}>
+            <td key={`OT${otNumber}`} className={`px-6  ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}>
               {selectedPlayerQuarterScores[otNumber] !== undefined ? selectedPlayerQuarterScores[otNumber] : "0"}
             </td>
           );
@@ -2184,7 +2200,7 @@ console.log("Final Selected Player Details:", playerDetails);
       }  font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg 
       
       
-      ${action.category === "plus" ? "" : "text-gray-200"}
+      ${action.category === "plus" ? "text-white" : "text-gray-200"}
       flex items-center justify-center `}
     >
       {action.displayIcon}
@@ -2349,7 +2365,7 @@ Overtime
     {/* Score Section */}
     <div
   onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
-  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 mr-10 "
+  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-secondary-bg w-2/5 mr-10 "
 >
   {/* Team Score Row */}
   <div className="flex items-center w-full">
@@ -2877,6 +2893,55 @@ Overtime
   motionConfig="wobbly"
 />
 
+    </div>
+    <div className="w-1/2 h-full">
+    <ResponsiveBar
+  data={stealsTurnoversData}
+  keys={['steals', 'turnovers']}
+  indexBy="quarter"
+  margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
+  padding={0.3}
+  layout="vertical"
+  valueScale={{ type: 'linear' }}
+  indexScale={{ type: 'band', round: true }}
+  colors={({ id }) => (id === 'steals' ? '#0b63fb' : '#10B981')} // Green & Red split
+  borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
+  theme={customTheme} // Using your theme
+  labelTextColor="#fff"
+  axisTop={null}
+  axisRight={null}
+  axisLeft={null} // Remove numbers
+  axisBottom={{
+    tickSize: 5,
+    tickPadding: 5,
+    tickRotation: 0,
+    legend: '',
+    legendPosition: 'middle',
+    legendOffset: 40,
+  }}
+  enableGridX={false}
+  enableGridY={false}
+  labelSkipWidth={12}
+  labelSkipHeight={12}
+  label={({ value }) => `${value}`} // Show values
+  legends={[
+    {
+      anchor: 'top',
+      direction: 'row',
+      translateY: -20,
+      itemsSpacing: 10,
+      itemWidth: 80,
+      itemHeight: 20,
+      itemTextColor: '#fff',
+      symbolSize: 18,
+      symbolShape: 'circle',
+      data: [
+        { id: 'steals', label: 'Steals', color: '#0b63fb' },
+        { id: 'turnovers', label: 'Turnovers', color: '#10B981' },
+      ],
+    },
+  ]}
+/>
     </div>
     </div>
 </div>

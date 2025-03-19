@@ -15,7 +15,7 @@ export default {
         "primary-cta": "#0b63fb",
         "secondary-cta": "#10B981",
         
-        "primary-danger": "#FC4938",
+        "primary-danger": "#8B5CF6",
       },
     },
   },
