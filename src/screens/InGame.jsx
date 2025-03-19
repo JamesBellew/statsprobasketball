@@ -289,7 +289,7 @@ const customTheme = {
   },
   grid: {
     line: {
-      stroke: "#16181A",
+      stroke: "#262626",
       strokeWidth: 1
     }
   },
@@ -1072,9 +1072,9 @@ gameActions.forEach((action) => {
     });
   
     return [
-      { id: "2PT", label: "2PT", value: twoPoints, color: "#6366F1" },  // Tailwind bg-indigo-500
-      { id: "3PT", label: "3PT", value: threePoints, color: "#04B075" }, // Your CTA color
-      { id: "FT", label: "FT", value: freeThrows, color: "#207DFA" }     // Free Throw color
+      { id: "2PT", label: "2PT", value: twoPoints, color: "#10B981" },  // Tailwind bg-indigo-500
+      { id: "3PT", label: "3PT", value: threePoints, color: "#0b63fb" }, // Your CTA color
+      { id: "FT", label: "FT", value: freeThrows, color: "#8B5CF6" }     // Free Throw color
     ];
   };
   const transformGameActionsToBarData = (gameActions) => {
@@ -2115,7 +2115,7 @@ console.log("Final Selected Player Details:", playerDetails);
         {/* Current Quarter Stats */}
         {(currentQuater > 1 || gameActions.some(action => action.quarter > 1)) &&
           !currentGameActionFilters.includes("All Game") && (
-            <div className="border-l-2 border-r-2 border-primary-cta h-full py-2 flex w-[40%] relative">
+            <div className="border-l-2  border-white/10 h-full py-2 flex w-[40%] relative">
               <p className="absolute inset-x-0 top-0 text-center text-gray-400">
                 {currentQuater<=4 ? "Q"+currentQuater : "OT"+(currentQuater-4)}
                 {/* Q{currentQuater} */}
@@ -2184,7 +2184,7 @@ console.log("Final Selected Player Details:", playerDetails);
       }  font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg 
       
       
-      ${action.category === "plus" ? "text-primary-cta" : "text-gray-200"}
+      ${action.category === "plus" ? "" : "text-gray-200"}
       flex items-center justify-center `}
     >
       {action.displayIcon}
@@ -2378,7 +2378,7 @@ Overtime
 
   <div class="relative overflow-x-auto ">
   <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-  <thead className="text-xs uppercase bg-primary-bg">
+  <thead className="text-xs uppercase border-b-4 border-b-secondary-bg">
     <tr>
       {/* Render Q1-Q4 */}
       {[1, 2, 3, 4].map((q) => (
@@ -2409,7 +2409,7 @@ Overtime
     </tr>
   </thead>
   <tbody>
-    <tr className="bg-secondary-bg">
+    <tr className="bg-primary-bg">
       {/* Render Q1-Q4 scores */}
       {[1, 2, 3, 4].map((q) => (
         <td
@@ -2451,26 +2451,16 @@ Overtime
       <div className="flex justify-between items-center mb-2 ">
         <div className="flex">
           {/* <h2 className="text-white text-2xl font-bold">Game Stats</h2> */}
-          {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
-            <div>FG: {fgMade}-{fgAttempts}<span className="text-gray-400">({fgPercentage}%)</span> </div>
-            <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
-            <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
-          </div> */}
+
         </div>
 
       </div>
       <div className=" py-2 flex justify-center">
-              {/* <div className="mt-2 ml-5 space-x-3 flex  items-center text-sm text-gray-100">
-            <div className="bg-white/10 px-4 py-2 rounded-md text-lg font-semibold text-center"><span className="text-gray-400">FG</span><br></br> {fgMade}-{fgAttempts}<span className="text-gray-400 ml-2">({fgPercentage}%)</span> </div>
-            <div>3PT: {threePtMade}-{threePtAttempts} <span className="text-gray-400">({threePtPercentage}%)</span></div>
-            <div>FT: {ftMade}-{ftAttempts} <span className="text-gray-400">({ftPercentage}%)</span></div>
-          </div> */}
-
 <div class="flex items-center justify-center w-screen  text-gray-800  ">
 
 <div className="grid lg:grid-cols-4 md:grid-cols-4 gap-1 w-full max-w-6xl">
   {/* Field Goal */}
-  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg">
+  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg">
   <div className={`flex flex-shrink-0 items-center justify-center border-b-2
 
     ${fgPercentage === 0
@@ -2495,7 +2485,7 @@ Overtime
   </div>
 
   {/* 3 Point */}
-  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
   <div className={`flex flex-shrink-0 items-center justify-center border-b-2
 
     ${threePtPercentage === 0
@@ -2517,7 +2507,7 @@ Overtime
   </div>
 
   {/* Free Throw */}
-  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
     <div className={`flex flex-shrink-0 items-center justify-center border-b-2
 
     ${ftAttempts === 0
@@ -2538,7 +2528,7 @@ Overtime
     </div>
   </div>
 
-  <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
+  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
   <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
     <span className="text-xl text-gray-200 font-bold">{blocks}</span>
   </div>
@@ -2550,69 +2540,6 @@ Overtime
   </div>
 </div>
 
-{/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-  <div className="flex-grow flex flex-col ml-4">
-    <span className="text-xl text-gray-100 font-bold">T/O – Steals</span>
-    <div className="flex items-center justify-between">
-      <span className="text-gray-300">
-        <span className="text-primary-danger">{turnovers}</span>-
-        <span className="text-primary-cta">{steals}</span>
-      </span>
-    </div>
-  </div>
-  
-</div> */}
-{/* <div className="flex items-center p-2 bg-secondary-bg shadow-md shadow-primary-bg rounded">
-  <div className="flex-grow flex flex-col ml-4">
-    <span className="text-xl text-gray-100 font-bold">Lead Change</span>
-    <div className="flex items-center justify-between">
-      <span className="text-gray-300">
-        {(() => {
-          // Check if Ravens are currently leading
-          if (teamScore > opponentScore) {
-            // Find when they LAST took the lead
-            const lastLeadChange = leadChanges
-            .slice()
-            .reverse()
-            .find((lead) => lead.team === "Ravens");
-          
-          if (lastLeadChange) {
-            return (
-              <span className="text-primary-cta">
-                Lead since Q{lastLeadChange.q} ({lastLeadChange.score})
-              </span>
-            );
-          }
-          
-
-            return <span className="text-primary-cta">Currently Leading</span>;
-          }
-
-          // Find the last time Ravens had the lead
-          const lastRavensLead = leadChanges
-          .slice()
-          .reverse()
-          .find((lead, index, arr) => {
-            // Find the last instance where Ravens were in the lead *before* they lost it
-            const nextLead = arr[index - 1]; // The lead change right after it
-            return lead.team === "Ravens" && nextLead && nextLead.team !== "Ravens";
-          });
-        
-        if (lastRavensLead) {
-          return (
-            <span className="text-gray-300">
-              Last lead Q{lastRavensLead.q} ({lastRavensLead.score})
-            </span>
-          );
-        }
-        
-          // If they never led
-          return <span className="text-primary-danger">Never in Lead</span>;
-        })()}
-      </span>
-    </div>
-  </div>
-</div> */}
 </div>
 
 
@@ -2624,7 +2551,7 @@ Overtime
 
 
 <div className=" w-full    h-auto my-4">
-  <h1 className="text-xl font-semibold text-center mt-2 mb-4 text-white font-semibold ">Lead Changes   <span className="px-3">-</span> 
+  <h1 className="text-md font-semibold text-center mt-2 mb-4 text-white font-semibold ">Lead Changes   <span className="px-3">-</span> 
  {/* renderign the lea changes into the label for space savings ❤️ */}
 <span className="text-gray-300 ">
   
@@ -2682,7 +2609,7 @@ Overtime
   <button
     onClick={() => setSelectedQuarter("All")}
     className={`px-4 py-2 rounded ${
-      selectedQuarter === "All" ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
+      selectedQuarter === "All" ? "bg-white/10 text-white" : "bg-secondary-bg text-gray-400"
     }`}
   >
     All
@@ -2694,7 +2621,7 @@ Overtime
   key={q}
   onClick={() => setSelectedQuarter(q)}
   className={`px-4 py-2 rounded ${
-    selectedQuarter === q ? "bg-primary-cta text-white" : "bg-secondary-bg text-gray-400"
+    selectedQuarter === q ? "bg-white/10 text-white" : "bg-secondary-bg text-gray-400"
   }`}
 >
   {q > 4 ? `OT${q - 4}` : `Q${q}`}
@@ -2711,7 +2638,7 @@ Overtime
   </div>
   <div className={`w-14 flex  items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
     
-    ${teamScore<opponentScore ? "border-2 border-[#207DFA]" : ""}`}>
+    ${teamScore<opponentScore ? "border-2 border-[#10B981]" : ""}`}>
   {/* <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} /> */}
   <img 
   className="w-10 h-10 mx-auto rounded-full "
@@ -2729,14 +2656,14 @@ Overtime
       <li key={index} className="flex-shrink-0 relative flex flex-col items-center">
         {/* Top Score Box (Ravens lead) */}
         {lead.team === "Ravens" && (
-          <div className={`timeline-start timeline-box border-none ${isLatest ? "bg-green-600 text-white" : "bg-primary-bg text-gray-300"}`}>
+          <div className={`timeline-start timeline-box border-none ${isLatest ? "bg-[#0b63fb] text-white" : "bg-secondary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
 
         {/* Icon + Connecting Line */}
   {/* Icon + Connecting Line */}
-<div className={`timeline-middle relative bg-primary-bg p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
+<div className={`timeline-middle relative bg-secondary-bg p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
   {(() => {
     // Extract the scores from the lead.score string (assuming format like "6-5")
     const scoreParts = lead.score.split('-');
@@ -2766,13 +2693,14 @@ Overtime
   })()}
   {/* ✅ Horizontal Line (only if there's another lead change after this one) */}
   {index !== filteredLeadChanges.length - 1 && (
-    <div className="absolute top-1/2 left-full w-14 h-1 bg-primary-bg"></div>
+    <div className="absolute top-1/2 left-full w-14 h-1 bg-secondary-bg"></div>
   )}
 </div>
 
         {/* Bottom Score Box (Opponent lead) */}
         {lead.team !== "Ravens" && (
-          <div className={`timeline-end border-none timeline-box ${isLatest ? "bg-red-600 text-white" : "bg-primary-bg text-gray-300"}`}>
+          <div className={`timeline-end border-none timeline-box ${isLatest ? "bg-red-600 text-white" : 
+          "bg- text-gray-300"}`}>
             {lead.score}
           </div>
         )}
@@ -2788,49 +2716,51 @@ Overtime
     </div>
 
 <div className=" rounded-xl p-2" style={{ height: "200px", width: "100%",marginTop:"40px" }}>
-<h4 style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Quarter Split</h4>
-<ResponsiveLine
-  animate={true} 
-  motionConfig={{ mass: 1, tension: 250, friction: 20 }}
-  data={gameLineChartData}
-  margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
-  xScale={{ type: "point" }}
-  yScale={{
-    type: "linear",
-    min: 0,
-    max: "auto",
-    stacked: false,
-    nice: true
-  }}
-  axisBottom={{
-    tickSize: 5,
-    tickPadding: 5,
-    tickRotation: 0,
-    legend: "Quarter",
-    legendOffset: 36,
-    legendPosition: "middle"
-  }}
-    // 🔥 Explicitly set white text for point labels
+<h4 className="" style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Quarter Split</h4>
 
-  pointLabel={(point) => `${point.data.y}`} // Ensure labels show correct values
-  pointLabelYOffset={-12} // Position labels above the points
-  pointLabelTextColor={{ from: "color", modifiers: [["brighter", 1.5]] }} // Brightens text
-  theme={customTheme}
-  axisLeft={{
-    tickValues: Array.from({ length: 21 }, (_, i) => i * 5), // Steps of 5 (0, 5, 10, 15, 20, etc.)
-    legend: "Score",
-    legendOffset: -40,
-    legendPosition: "middle"
-  }}
-  pointLabelColor="#FFFFFFF" // Explicitly setting it
-  colors={({ id }) => (id === "Ravens" ? "#04B075" : "#207DFA")}
-  pointColor={({ id }) => (id === "Opponent" ? "#207DFA" : "#04B075")}
-  pointSize={10}
-  pointBorderWidth={2}
-  pointBorderColor={{ from: "serieColor" }} // Make sure border color is correct
-  enablePointLabel={true}
-  useMesh={true}
-/>
+<div className="bg-primary-bg h-full w-full  py-2 rounded-md">
+  <ResponsiveLine
+    animate={true} 
+    motionConfig={{ mass: 1, tension: 250, friction: 20 }}
+    data={gameLineChartData}
+    margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
+    xScale={{ type: "point" }}
+    yScale={{
+      type: "linear",
+      min: 0,
+      max: "auto",
+      stacked: false,
+      nice: true
+    }}
+    axisBottom={{
+      tickSize: 5,
+      tickPadding: 5,
+      tickRotation: 0,
+      legend: "Quarter",
+      legendOffset: 36,
+      legendPosition: "middle"
+    }}
+    pointLabel={(point) => `${point.data.y}`}
+    pointLabelYOffset={-12}
+    pointLabelTextColor={{ from: "color", modifiers: [["brighter", 1.5]] }}
+    theme={customTheme}
+    axisLeft={{
+      tickValues: Array.from({ length: 21 }, (_, i) => i * 5),
+      legend: "Score",
+      legendOffset: -40,
+      legendPosition: "middle"
+    }}
+    pointLabelColor="#FFFFFFF"
+    colors={({ id }) => (id === "Ravens" ? "#0b63fb" : "#10B981")}
+    pointColor={({ id }) => (id === "Opponent" ? "#10B981" : "#0b63fb")}
+    pointSize={10}
+    pointBorderWidth={2}
+    pointBorderColor={{ from: "serieColor" }}
+    enablePointLabel={true}
+    useMesh={true}
+  />
+</div>
+
 
   </div>
   <div className="w-full mt-10 flex flex-row">
@@ -2857,20 +2787,6 @@ Overtime
           legendOffset: 40,
         }}
         theme={customTheme}
-
-        // legends={[
-        //   {
-        //     anchor: "bottom",
-        //     direction: "row",
-        //     translateY: 56,
-        //     itemsSpacing: 10,
-        //     itemWidth: 100,
-        //     itemHeight: 18,
-        //     itemTextColor: "#fff",
-        //     symbolSize: 18,
-        //     symbolShape: "circle"
-        //   }
-        // ]}
       />
       
     </div>
@@ -2884,7 +2800,7 @@ Overtime
   layout="horizontal" // ✅ Horizontal bar
   margin={{ top: 20, right: 20, bottom: 50, left: 20 }} // Extra space for legend
   padding={0.5}
-  colors={["#04B075", "#4285F4"]} // ✅ Yellow (steals) & Blue (turnovers)
+  colors={["#0b63fb", "#10B981"]} // ✅ Yellow (steals) & Blue (turnovers)
   axisLeft={null} // ✅ No left axis labels
   axisBottom={null} // ✅ No bottom axis labels
   enableGridX={false} // ✅ No gridlines
@@ -2898,8 +2814,8 @@ Overtime
   legends={[
     {
       data: [
-        { id: "steals", label: "Steals", color: "#04B075" },
-        { id: "turnovers", label: "Turnovers", color: "#4285F4" }
+        { id: "steals", label: "Steals", color: "#0b63fb" },
+        { id: "turnovers", label: "Turnovers", color: "#10B981" }
       ],
       anchor: "top",
       direction: "row",
@@ -2930,7 +2846,7 @@ Overtime
   indexBy="quarter"
   margin={{ top: 20, right: 50, bottom: 50, left: 60 }}
   padding={0.3}
-  colors="#4B61D1"
+  colors="#0b63fb"
   theme={customTheme}
   valueScale={{ type: 'linear' }}
   indexScale={{ type: 'band', round: true }}
@@ -2950,20 +2866,9 @@ Overtime
       symbolShape: "circle",
     }
   ]}
-  
-  // axisBottom={{
-  //   tickSize: 5,
-  //   tickPadding: 5,
-  //   tickRotation: 0,
-  //   legend: 'FG Percentage',
-  //   legendPosition: 'middle',
-  //   legendOffset: 40,
-  // }}
   axisLeft={null} // ✅ Remove Y-axis numbers
-  
   enableGridX={false} // ✅ Remove grid lines
   enableGridY={false}
-
   labelSkipWidth={12}
   labelSkipHeight={12}
   labelTextColor="#ffffff"

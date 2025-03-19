@@ -9,10 +9,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        "primary-bg": "#16181A",
-        "secondary-bg": "#1F2122",
-        "primary-cta": "#04B075",
-        "secondary-cta": "#207DFA",
+        "primary-bg": "#12131A",
+        
+        "secondary-bg": "#161a1f",
+        "primary-cta": "#0b63fb",
+        "secondary-cta": "#10B981",
+        
         "primary-danger": "#FC4938",
       },
     },
