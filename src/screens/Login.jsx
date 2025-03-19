@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.33 (19/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.34 (19/03/2025)</h2>
             <h2 className="text-xl font-bold text-indigo-600 mb-4">This is a BETA(calm down) !!</h2>
             <form onSubmit={handleLogin} className=" ">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
@@ -31,6 +31,9 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3">
+<p className="text-gray-400 text-sm">19/03/2025</p>
+<hr></hr>
+<li className="py-2">Fixed lead change coloring issue for opponent</li> 
 <p className="text-gray-400 text-sm">19/03/2025</p>
 <hr></hr>
 <li className="py-2">New theme added overall</li> 

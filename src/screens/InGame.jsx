@@ -2663,7 +2663,7 @@ Overtime
 
         {/* Icon + Connecting Line */}
   {/* Icon + Connecting Line */}
-<div className={`timeline-middle relative  bg-[#12131A] p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
+<div className={`timeline-middle relative bg-secondary-bg  p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
   {(() => {
     // Extract the scores from the lead.score string (assuming format like "6-5")
     const scoreParts = lead.score.split('-');
@@ -2700,7 +2700,7 @@ Overtime
         {/* Bottom Score Box (Opponent lead) */}
         {lead.team !== "Ravens" && (
           <div className={`timeline-end border-none timeline-box ${isLatest ? "bg-red-600 text-white" : 
-          "bg- text-gray-300"}`}>
+          "bg-secondary-bg text-gray-300"}`}>
             {lead.score}
           </div>
         )}
