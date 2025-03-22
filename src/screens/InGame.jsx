@@ -17,11 +17,10 @@ export default function InGame() {
   const navigate = useNavigate();
   //old singular filter feature
   //! remove when multile is implemented
-const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
-//for the new multiple filters feature
-const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
-const [opponentScore,setOpponentScore] = useState(0)
-
+  const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
+  //for the new multiple filters feature
+  const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
+  const [opponentScore,setOpponentScore] = useState(0)
   const [currentQuater,setCurrentQuarter]=useState(1)
   const [leadChanges,setleadChanges] = useState([])
   const location = useLocation();
@@ -33,15 +32,16 @@ const [opponentScore,setOpponentScore] = useState(0)
   const [fieldGoal,setFieldGoal] = useState({total:0,made:0});
   const [threepoint,setThreePoint] = useState({total:0,made:0});
   const [fieldGoalPercentage, setFieldGoalPercentage] = useState(0);
-const [showFiltersPlayerStat,setShowFiltersPlayerStat] = useState(true)
+  const [showFiltersPlayerStat,setShowFiltersPlayerStat] = useState(true)
   const [threePointPercentage,setThreePointPercentage]=useState(0);
-const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
-const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
-const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
+  const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
+  const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
+  const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
+  const [minutesTracked, setMinutesTracked] = useState(savedGame?.minutesTracked || null);
 
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
-// Immediately after your existing state declarations, add:
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
+// const minutesTracked = savedGame.minutesTrackedEnabled;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
 const [gameStatsExpanded,setGameStatsExpanded] = useState(false);
@@ -50,15 +50,42 @@ const [teamScore, setTeamScore] = useState(0);
 const quarters = [1, 2, 3, 4];
 const quartersNew = ["Q1", "Q2", "Q3", "Q4"];
 const [selectedQuarter, setSelectedQuarter] = useState("All");
-// Get the unique quarters that actually have lead changes
 const availableQuarters = [...new Set(leadChanges.map((lead) => lead.q))].sort((a, b) => a - b);
 const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
 const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
-// const [opponentActions, setOpponentActions] = useState([]);
 const [opponentActions, setOpponentActions] = useState(savedGame?.opponentActions || []);
+const [minutes, setMinutes] = useState(savedGame?.quarterTimes?.[1]?.minutes || 10);
+const [seconds, setSeconds] = useState(savedGame?.quarterTimes?.[1]?.seconds || 0);
 
+const minutesRef = useRef(minutes);
+const secondsRef = useRef(seconds);
+
+const [isRunning, setIsRunning] = useState(false);
+const intervalRef = useRef(null); // To keep track of interval
+const [showTimeModal, setShowTimeModal] = useState(false);
+const [onCourtPlayers, setOnCourtPlayers] = useState([]);
+const onCourtPlayersRef = useRef(onCourtPlayers);
+
+const [showLineoutModal, setShowLineoutModal] = useState(false);
+const [playerMinutes, setPlayerMinutes] = useState(savedGame?.playerMinutes || {});
+const [hasFirstMinutePassed, setHasFirstMinutePassed] = useState(false);
+const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
+  1: { minutes: 10, seconds: 0 },
+  2: { minutes: 10, seconds: 0 },
+  3: { minutes: 10, seconds: 0 },
+  4: { minutes: 10, seconds: 0 },
+});
+
+
+useEffect(() => {
+  minutesRef.current = minutes;
+}, [minutes]);
+
+useEffect(() => {
+  secondsRef.current = seconds;
+}, [seconds]);
 
 // Filter lead changes based on selected quarter
 const filteredLeadChanges =
@@ -81,6 +108,86 @@ useEffect(() => {
   
   setTeamScore(totalPoints);
 }, [gameActions]); // Recalculate when `gameActions` change
+
+//?use effect for the timer 
+// useEffect(() => {
+//   if (isRunning) {
+//     intervalRef.current = setInterval(() => {
+//       setSeconds(prevSeconds => {
+//         if (prevSeconds === 0) {
+//           if (minutes === 0) {
+//             clearInterval(intervalRef.current);
+//             setIsRunning(false);
+//             return 0;
+//           } else {
+//             setMinutes(prev => prev - 1);
+//             return 59;
+//           }
+//         }
+//         return prevSeconds - 1;
+//       });
+//     }, 1000);
+//   } else {
+//     clearInterval(intervalRef.current);
+//   }
+
+//   return () => clearInterval(intervalRef.current);
+// }, [isRunning, minutes]);
+useEffect(() => {
+  if (isRunning) {
+    intervalRef.current = setInterval(() => {
+      if (secondsRef.current === 0) {
+        if (minutesRef.current === 0) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          setIsRunning(false);
+        } else {
+          setMinutes(prev => prev - 1);
+          minutesRef.current = minutesRef.current - 1;
+
+          if (hasFirstMinutePassed) {
+            // Only after first full minute
+            updatePlayerMinutes();
+          } else {
+            // First minute passed!
+            setHasFirstMinutePassed(true);
+          }
+
+          setSeconds(59);
+          secondsRef.current = 59;
+        }
+      } else {
+        setSeconds(prev => prev - 1);
+        secondsRef.current = secondsRef.current - 1;
+      }
+    }, 1000);
+  } else {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+
+  return () => clearInterval(intervalRef.current);
+}, [isRunning, hasFirstMinutePassed]);
+
+
+const updatePlayerMinutes = () => {
+  onCourtPlayersRef.current.forEach(playerNumber => {
+    setPlayerMinutes(prev => ({
+      ...prev,
+      [playerNumber]: (prev[playerNumber] || 0) + 1
+    }));
+  });
+};
+
+
+
+const extractPlayerNumber = (playerString) => {
+  const match = playerString.match(/\((\d+)\)/);
+  return match ? match[1] : null; // returns the number as string (e.g., "2")
+};
+
+
+//? use effect for counting minutes for players 
 //4 overtimes added
 const calculateQuarterScores = () => {
   const scores = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 , 6: 0 , 7: 0 , 8: 0 }; // ✅ Add OT1 (Q5)
@@ -101,6 +208,7 @@ const calculateQuarterScores = () => {
 useEffect(() => {
   setQuarterScores(calculateQuarterScores());
 }, [gameActions]);
+
 
 
 // Use this function in state:
@@ -438,41 +546,69 @@ const handleOTClick = ()=>{
   
 }
 //hanlder for going to next period/quarter
-const handleNextPeriodClick =()=>{
-  console.log('clicked boii');
+const handleNextPeriodClick = () => {
+  // Save current quarter time before moving
+  setQuarterTimes(prev => ({
+    ...prev,
+    [currentQuater]: { minutes, seconds },
+  }));
 
+  const nextQuarter = currentQuater + 1;
 
-    //we can add one to it now, since its less then 4
-    setCurrentQuarter(currentQuater+1)
-//also clear the action selected
-setActionSelected()
-  
-  if(currentQuater==3){
-    //we need to change the text to finsih game
-    console.log(' change text to finsih game ');
-
+  // Restore if previously visited
+  const storedTime = quarterTimes[nextQuarter];
+  if (storedTime) {
+    setMinutes(storedTime.minutes);
+    setSeconds(storedTime.seconds);
+  } else {
+    setMinutes(10);
+    setSeconds(0);
   }
-      // Show an alert message
-      setAlertMessage(`Finished Q${currentQuater} !`);
-      setTimeout(() => setAlertMessage(""), 3000);
-}
+
+  setCurrentQuarter(nextQuarter);
+
+  setActionSelected();
+
+  if (currentQuater === 3) {
+    console.log('Change text to Finish Game');
+  }
+
+  setAlertMessage(`Finished Q${currentQuater} !`);
+  setTimeout(() => setAlertMessage(""), 3000);
+};
+
 // handler for going back a quarter
-const handlePreviousPeriodClick =()=>{
-//first we check if the quarter is more than one. I know we already check this in the disabled, but measure twice cut once hai
+const handlePreviousPeriodClick = () => {
+  if (currentQuater > 1) {
 
-if(currentQuater>1){
-  //we good to minus one
-  setCurrentQuarter(currentQuater-1);
-  //cheeky alert message
-      // Show an alert message
-      setAlertMessage(`Back to Q${currentQuater-1} !`);
-      setTimeout(() => setAlertMessage(""), 3000);
-}else{
-  console.log('we have issue');
+    // ✅ First: Save current quarter's clock time before leaving!
+    setQuarterTimes(prev => ({
+      ...prev,
+      [currentQuater]: { minutes, seconds },
+    }));
 
-}
+    const prevQuarter = currentQuater - 1;
 
-}
+    // ✅ Restore clock to whatever was saved for previous quarter
+    const storedTime = quarterTimes[prevQuarter];
+    if (storedTime) {
+      setMinutes(storedTime.minutes);
+      setSeconds(storedTime.seconds);
+    } else {
+      // Default fallback (unlikely)
+      setMinutes(10);
+      setSeconds(0);
+    }
+
+    setCurrentQuarter(prevQuarter);
+
+    setAlertMessage(`Back to Q${prevQuarter} !`);
+    setTimeout(() => setAlertMessage(""), 3000);
+  } else {
+    console.log('we have issue');
+  }
+};
+
 const handleUndoLastActionHandler = () => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to undo!");
@@ -563,6 +699,9 @@ const handleSaveGame = async () => {
     opponentActions,  // ✅ NOW SAVING opponentActions to DB
     leadChanges,    // ✅ Save lead changes history
     lineout: savedGame?.lineout || passedLineout,
+    minutesTracked,
+    playerMinutes, // ✅ Add here!
+    quarterTimes, // ✅ ADD THIS!
     timestamp: new Date().toISOString(),
     opponentLogo,   // ✅ Save opponent logo
   };
@@ -588,8 +727,6 @@ const handleSaveGame = async () => {
 
   setTimeout(() => setAlertMessage(""), 3000);
 };
-
-
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
@@ -597,12 +734,33 @@ useEffect(() => {
     setOpponentActions(savedGame.opponentActions || []);
     setleadChanges(savedGame.leadChanges || []);
     setOpponentLogo(savedGame.opponentLogo || null);
+    setMinutesTracked(savedGame.minutesTracked || null);
+    setPlayerMinutes(savedGame.playerMinutes || {});
+
+    if (savedGame.quarterTimes) {
+      setQuarterTimes(savedGame.quarterTimes);
+
+      // ✅ Apply Q1 saved time immediately
+      const q1Time = savedGame.quarterTimes[1];
+      if (q1Time) {
+        setMinutes(q1Time.minutes);
+        setSeconds(q1Time.seconds);
+      }
+    } else {
+      // Default fallback
+      setMinutes(10);
+      setSeconds(0);
+    }
+
     console.log("Loaded saved game:", savedGame);
-    console.log("Opponent Actions Loaded:", savedGame.opponentActions);
   } else {
     console.log("Starting a new game.");
   }
 }, [savedGame]);
+
+
+
+
 
 
 
@@ -636,30 +794,33 @@ const handleCourtClick = (e) => {
   const x = ((e.clientX - court.left) / court.width) * 100;
   const y = ((e.clientY - court.top) / court.height) * 100;
 
-  // Store the pending dot position
-  setPendingAction({ x, y });
+  // Prepare time info: record current game clock time
+  const timeData = minutesTracked
+    ? { clockMinutesLeft: minutes, clockSecondsLeft: seconds }
+    : {};
 
+  // Store pending action if player modal is needed
   if (passedLineout) {
-    // If there's a lineout, wait for player selection
     setPendingAction({
       actionName: actionSelected,
       quarter: currentQuater,
       x,
       y,
+      ...timeData, // ✅ Attach clock time
     });
     setShowPlayerModal(true);
   } else {
-    // If no player selection is needed, plot immediately
+    // No player modal, save immediately
     const newAction = {
       quarter: currentQuater,
       actionName: actionSelected,
       x,
       y,
-      timestamp: Date.now(),
+      ...timeData, // ✅ Attach clock time
     };
     setGameActions((prev) => [...prev, newAction]);
     setAlertMessage(`${actionSelected} recorded.`);
-    setPendingAction(null); // Remove temp dot since action is recorded
+    setPendingAction(null); // Clear temp dot
     setTimeout(() => setAlertMessage(""), 3000);
   }
 };
@@ -937,7 +1098,7 @@ const actions = [
   const selectedPlayer = currentGameActionFilters.find(filter =>
     !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)
   );
-  console.log('goon to a goblin',gameActions);
+ 
   
   let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {};
   const twoPtMade = selectedPlayerStat.fgMade - selectedPlayerStat.threePtMade;
@@ -968,13 +1129,13 @@ if (selectedPlayerStat && selectedPlayerStat.player) {
     }
   });
 
-  console.log("Selected Player Quarter Scores:", selectedPlayerQuarterScores); // Debugging
+
 } else {
   console.log("No selected player found.");
 }
 
 
-console.log("Selected Player Quarter Scores:", selectedPlayerQuarterScores);
+
 
 // This function calculates quarter scores for a selected player
 const calculateSelectedPlayerQuarterScores = () => {
@@ -1024,9 +1185,7 @@ gameActions.forEach((action) => {
       });
     }
     
-    // Console log for debugging
-    console.log("Quarter points for team:", quarterPoints);
-    console.log("Quarter points for opponent:", quarterOpponentPoints);
+
     
     // Filtered quarters logic...
     const filteredQuarters = [1, 2, 3, 4].concat(
@@ -1141,13 +1300,11 @@ gameActions.forEach((action) => {
     { quarter: 'Q3', steals: 1, turnovers: 2 },
     { quarter: 'Q4', steals: 2, turnovers: 1 },
   ]
-console.log(gameActions);
-console.log("Current quarter:", currentQuater);
-console.log("Player quarter scores before render:", selectedPlayerQuarterScores);
+
 // 2. Log a sample of player names from actions (with quotes)
 gameActions.forEach((action, index) => {
   if (index < 3) { // Just log a few to avoid cluttering the console
-    console.log("Action player name:", `"${action.playerName}"`);
+
   }
 });
 
@@ -1247,6 +1404,40 @@ const calculateStealsTurnoversPerQuarter = (gameActions) => {
   }));
 };
 const stealsTurnoversData = calculateStealsTurnoversPerQuarter(gameActions);
+
+const handleTogglePlayer = (playerNumber) => {
+  setOnCourtPlayers((prev) => {
+    let updated;
+    if (prev.includes(playerNumber)) {
+      // Deselect
+      updated = prev.filter((num) => num !== playerNumber);
+    } else {
+      // Add player - check if less than 5
+      if (prev.length >= 5) {
+        alert("Maximum 5 players allowed on court. Deselect one first.");
+        setTimeout(() => setAlertMessage(""), 3000);
+        return prev; // No change
+      }
+      updated = [...prev, playerNumber];
+    }
+
+    onCourtPlayersRef.current = updated; // ✅ Sync ref immediately
+    return updated;
+  });
+};
+
+
+useEffect(() => {
+  if (passedLineout && passedLineout.players) {
+    const defaultOnCourt = passedLineout.players
+      .slice(0, 5)
+      .map(player => player.number);
+
+    setOnCourtPlayers(defaultOnCourt);
+    onCourtPlayersRef.current = defaultOnCourt; // ✅ Sync ref
+  }
+}, [passedLineout]);
+
 
 
 
@@ -1799,13 +1990,13 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
     sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
       sm:w-1/4 sm:left-[37.5%]
     border-2 border-gray-500 
-     h-[20%] top-[65%]
+     h-[17.5%] top-[65%]
       rounded-b-full "></div>
        <div className="absolute 
     sm:w-1/4 sm:left-[37.5%]
     w-1/3 left-2/4 
     border-2 border-gray-500 
-    h-[20%] top-[45%]
+    h-[17.5%] top-[47.5%]
       rounded-b-full 
        border-dashed rotate-180"></div>
 
@@ -1866,7 +2057,7 @@ gameActions.filter((action) => {
           key={index}
           className={`absolute w-4 h-4 rounded-full ${
             ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
-              ? "bg-primary-danger"
+              ? "bg-secondary-danger"
               : "bg-primary-cta"
           }`}
           style={{
@@ -1982,7 +2173,7 @@ let playerDetails = {
         ftMade: 0, ftAttempts: 0,
         assists: 0, rebounds: 0,
         offRebounds: 0, turnovers: 0,
-        steals: 0, blocks: 0,
+        steals: 0, blocks: 0
       };
 
       // Extract stats for easy use
@@ -1996,6 +2187,8 @@ let playerDetails = {
       const fgPercentage = fgAttempts ? Math.round((fgMade / fgAttempts) * 100) : 0;
       const threePtPercentage = threePtAttempts ? Math.round((threePtMade / threePtAttempts) * 100) : 0;
       const ftPercentage = ftAttempts ? Math.round((ftMade / ftAttempts) * 100) : 0;
+      const minutesPlayed = playerDetails.number ? playerMinutes[playerDetails.number] || 0 : 0;
+
 console.log('what player do we have here below');
 
 console.log("Final Selected Player Details:", playerDetails);
@@ -2034,12 +2227,12 @@ console.log("Final Selected Player Details:", playerDetails);
   <span className="text-gray-400 mr-1">({playerDetails.number})</span> 
   {playerDetails.name}
 </p>
-            <p className="text-2xl font-semibold">{(fgMade * 2) + (threePtMade * 1) + (ftMade * 1)}</p>
+      <p className="text-2xl font-semibold">{(fgMade * 2) + (threePtMade * 1) + (ftMade * 1)}</p>
             <div className="flex bg-secondary-bg justify-center">
               <p className="text-white bg-primary-cta rounded-sm px-2 py-[2px] text-xs uppercase font-bold w-fit inline-block">PTS</p>
             </div>
           </div>
-
+    
           {/* Assists */}
           <div className="w-1/6 text-gray-200 bg-secondary-bg text-center text-sm flex flex-col justify-center h-full">
             <p className="text-2xl font-semibold">{assists}</p>
@@ -2065,13 +2258,22 @@ console.log("Final Selected Player Details:", playerDetails);
           </div>
              {/* Blocks (conditionaly rendered based on view) */}
           {!showFiltersPlayerStat &&
-                 
+                 <>
                     <div className="w-1/6 bg-secondary-bg text-gray-200 text-center text-sm flex flex-col justify-center h-full">
             <p className="text-2xl font-semibold">{blocks}</p>
             <div className="flex justify-center">
               <p className="text-white bg-primary-cta px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">BLK</p>
             </div>
           </div>
+          {minutesTracked &&
+                  <div className="w-1/6 bg-secondary-bg text-gray-300 text-center text-sm flex flex-col justify-center h-full">
+                  <p className="text-2xl font-semibold">{minutesPlayed}</p>
+                  <div className="flex justify-center">
+                    <p className="text-gray-400  px-2 py-[2px] rounded-sm text-xs uppercase font-bold w-fit inline-block">MINS</p>
+                  </div>
+                </div>
+    }
+                </>
     }
 
           {/* Field Goals */}
@@ -2113,8 +2315,42 @@ console.log("Final Selected Player Details:", playerDetails);
     // ❌ Default Layout (Red & Blue Stats)
     return (
       <>
+  
         {/* All Game Stats */}
-        <div className="relative w-[40%] flex flex-row h-full">
+        <div className="relative w-[40%]  flex flex-row h-full">
+        {alertMessage && (
+  <motion.div
+    className="absolute bottom-8 text-center left-0 w-full transform -translate-x-1/2 bg-primary-cta text-white  py-3 rounded-lg shadow-lg flex items-center space-x-3"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: 20 }}
+    transition={{ duration: 0.3 }}
+  >
+    {/* Icon */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5 text-primary-cta"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+
+    {/* Message */}
+    <p className="text-sm font-medium">{alertMessage}</p>
+
+    {/* Close Button */}
+    <button
+      className="text-gray-400 hover:text-white"
+      onClick={() => setAlertMessage("")}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 9l-3-3a1 1 0 011.414-1.414L10 6.586l3-3a1 1 0 011.414 1.414L11.414 8l3 3a1 1 0 01-1.414 1.414L10 9.414l-3 3a1 1 0 01-1.414-1.414l3-3z" clipRule="evenodd" />
+      </svg>
+    </button>
+  </motion.div>
+)}
           {currentQuater > 1 && currentGameActionFilters.length === 0 && (
             <p className="absolute inset-x-0 top-0 text-center text-gray-400">Overall</p>
           )}
@@ -2127,7 +2363,7 @@ console.log("Final Selected Player Details:", playerDetails);
             <p>{threepoint.made}-{threepoint.total}</p>
           </div>
         </div>
-
+   
         {/* Current Quarter Stats */}
         {(currentQuater > 1 || gameActions.some(action => action.quarter > 1)) &&
           !currentGameActionFilters.includes("All Game") && (
@@ -2150,6 +2386,7 @@ console.log("Final Selected Player Details:", playerDetails);
       </>
     );
   })()}
+  
 </div>
 
 
@@ -2214,40 +2451,8 @@ console.log("Final Selected Player Details:", playerDetails);
 }
 
 {/* Game Quick Settings Section */}
-<div className="text-white relative   text-center flex-row p-2 space-x-4 flex w-full flex items-center justify-center h-1/4">
-{alertMessage && (
-  <motion.div
-    className="absolute bottom-8 left-1/4 w-2/4 transform -translate-x-1/2 bg-primary-bg text-white px-5 py-3 rounded-lg shadow-lg flex items-center space-x-3"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: 20 }}
-    transition={{ duration: 0.3 }}
-  >
-    {/* Icon */}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-5 h-5 text-primary-cta"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
+<div className="text-white relative    text-center flex-row p-2 space-x-4 flex w-full flex items-center justify-center h-1/4">
 
-    {/* Message */}
-    <p className="text-sm font-medium">{alertMessage}</p>
-
-    {/* Close Button */}
-    <button
-      className="text-gray-400 hover:text-white"
-      onClick={() => setAlertMessage("")}
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 9l-3-3a1 1 0 011.414-1.414L10 6.586l3-3a1 1 0 011.414 1.414L11.414 8l3 3a1 1 0 01-1.414 1.414L10 9.414l-3 3a1 1 0 01-1.414-1.414l3-3z" clipRule="evenodd" />
-      </svg>
-    </button>
-  </motion.div>
-)}
 
         <button
         disabled={currentQuater ===1}
@@ -2257,18 +2462,105 @@ console.log("Final Selected Player Details:", playerDetails);
         }
         className={`h-full
 
-          flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
+          flex-row bg-secondary-bg rounded-lg  flex 
+          ${minutesTracked ? "w-1/4" : "w-2/4"}
+           my-auto  justify-center items-center
           ${currentQuater==1 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}
           `}>
         <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period
 
         </button>
-       
+       {/* renderinf the game clock */}
+       {
+        minutesTracked &&
+        <>
+ {showTimeModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-secondary-bg p-6 rounded-md flex flex-col items-center space-y-4">
+      <p className="text-white text-lg">Adjust Time</p>
+
+      <div className="flex space-x-4 items-center">
+        {/* Minutes Input */}
+        <input
+          type="number"
+          min="0"
+          max="59"
+          value={minutes}
+          onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
+          className="bg-gray-800 text-white text-3xl text-center w-16 rounded-md"
+        />
+        <span className="text-white text-3xl">:</span>
+        {/* Seconds Input */}
+        <input
+          type="number"
+          min="0"
+          max="59"
+          value={seconds}
+          onChange={(e) => setSeconds(parseInt(e.target.value) || 0)}
+          className="bg-gray-800 text-white text-3xl text-center w-16 rounded-md"
+        />
+      </div>
+
+      <button
+        onClick={() => setShowTimeModal(false)}
+        className="mt-4 bg-primary-cta px-4 py-2 rounded text-white"
+      >
+        Done
+      </button>
+    </div>
+  </div>
+)}
+
+        <div className="py-1 w-2/4 grid grid-cols-8 grid-flow-col rounded-md h-full">
+        
+        <div className="flex items-center justify-center col-span-2"   id="teamLineoutDiv"
+  onClick={() => setShowLineoutModal(true)}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+</svg>
+
+        </div>
+        <div
+  className="col-span-4 grid grid-cols-2 px-2 space-x-2 cursor-pointer"
+  id="gameClockDiv"
+  onClick={() => setShowTimeModal(true)} // Open modal
+>
+  <div className="h-full bg-secondary-bg rounded-md text-3xl items-center justify-center text-primary-cta flex">
+    <p>{minutes}</p>
+  </div>
+  <div className="h-full bg-secondary-bg rounded-md text-3xl items-center justify-center text-primary-cta flex">
+    <p>{seconds < 10 ? `0${seconds}` : seconds}</p>
+  </div>
+</div>
+
+        <div
+  className="col-span-2 justify-center flex items-center cursor-pointer"
+  id="gameClockControlsDiv"
+  onClick={() => setIsRunning(!isRunning)} // Toggle play/pause
+>
+  {isRunning ? (
+    // Pause Icon
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+    </svg>
+  ) : (
+    // Play Icon
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+    </svg>
+  )}
+</div>
+
+        </div>
+        </>
+       }
         <button
           disabled={currentQuater ===8}
         onClick={handleNextPeriodClick}
 
-        className={`h-full flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
+        className={`h-full flex-row bg-secondary-bg rounded-lg  flex 
+              ${minutesTracked ? "w-1/4" : "w-2/4"}
+   my-auto  justify-center items-center
 
            ${currentQuater==4 ? "  bg-secondary-bg text-gray-200" : ""}
            
@@ -2287,22 +2579,36 @@ console.log("Final Selected Player Details:", playerDetails);
 
         </button>
 
-{/* {currentQuater ===4 &&
-        <button
-                disabled={currentQuater !=4}
-        onClick={handleNextPeriodClick}
-
-        className={`h-full flex-row bg-secondary-bg rounded-lg  flex w-2/4 my-auto  justify-center items-center
-
-           ${currentQuater!=4 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}`}>
-Overtime       
-
-        </button>
-} */}
-
                 </div>
         </div>
       </div>
+      {showLineoutModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-secondary-bg p-6 rounded-md flex flex-col space-y-4 w-80">
+      <h3 className="text-white text-lg text-center mb-4">Manage On-Court Players</h3>
+
+      {passedLineout.players.map((player) => (
+        <div key={player.number} className="flex justify-between items-center text-white">
+          <span>{player.name} #{player.number}</span>
+          <input
+            type="checkbox"
+            checked={onCourtPlayers.includes(player.number)}
+            onChange={() => handleTogglePlayer(player.number)}
+            className="w-5 h-5"
+          />
+        </div>
+      ))}
+
+      <button
+        onClick={() => setShowLineoutModal(false)}
+        className="mt-4 bg-primary-cta px-4 py-2 rounded text-white"
+      >
+        Done
+      </button>
+    </div>
+  </div>
+)}
+
       {showExitModal && (
   <div
     className="fixed inset-0 flex items-center justify-center z-50"
@@ -3154,6 +3460,10 @@ Overtime
           <thead>
             <tr>
               <th className="px-4 py-2 border-b  text-left">PlayerName</th>
+              
+              {minutesTracked && (
+      <th className="px-4 py-2 border-b text-left">Mins</th>
+    )}
               <th className="px-4 py-2 border-b  text-left">PTS</th>
               <th className="px-4 py-2 border-b text-left">FG</th>
               <th className="px-4 py-2 border-b text-left">3PT</th>
@@ -3181,12 +3491,29 @@ Overtime
 
       // Calculate total points for the player
       const totalPoints = (stat.fgMade * 2) + (stat.threePtMade * 1) + (stat.ftMade * 1);
+        // 🔥 Get player's minutes based on playerNumber or name
+        const playerNumber = extractPlayerNumber(stat.player);
+        const minutesPlayed = playerNumber ? playerMinutes[playerNumber] || 0 : 0;
+        
 
+
+
+        
 
 
       return (
         <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg even:bg-white/10 text-white hover:text-primary-bg">
           <td className="px-4 py-2 border-b border-b-gray-500 "><span className="text-gray-200 group-hover:text-black">{stat.player}</span></td>
+          {minutesTracked && (
+<>
+
+             {/* New Minutes Column */}
+             <td className="px-4 py-2 border-b border-b-gray-500 font-bold text-white">
+
+              <span className="text-gray-200 group-hover:text-black">{minutesPlayed}</span>
+            </td>
+            </>
+                )}
           <td className="px-4 py-2 border-b border-b-gray-500 font-bold text-white"><span className="text-gray-200 group-hover:text-black">{totalPoints}</span></td> {/* Player Points */}
           <td className="px-4 py-2 border-b border-b-gray-500">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-black">({fgPct}%)</span></td>
           <td className="px-4 py-2 border-b border-b-gray-500">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-black">({threePct}%)</span></td>

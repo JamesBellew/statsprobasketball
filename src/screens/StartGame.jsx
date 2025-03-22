@@ -11,6 +11,7 @@ export default function StartGame() {
   const [lineouts, setLineouts] = useState([]);
   const [selectedLineout, setSelectedLineout] = useState(null);
   const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
+  const [minutesTracked, setMinutesTracked] = useState(false);
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function StartGame() {
       playerStatsEnabled,
       lineout: selectedLineoutData,
       opponentLogo, // Pass logo data
+      minutesTracked
     };
 
     navigate("/ingame", { state: gameState });
@@ -144,12 +146,14 @@ export default function StartGame() {
           {/* Lineout Selector */}
           {playerStatsEnabled && (
             <div className="mt-5">
-              <label className="block text-sm font-medium text-white">Select Lineout</label>
+              <label className="block text-sm font-medium text-white mb-5">Select Lineout</label>
+              <div className=" flex flex-row my-auto items-center justify-center space-x-5 px-5 mb-10">
+                <div className="w-1/2 h-full">
               {lineouts.length > 0 ? (
                 <select
                   value={selectedLineout || ""}
                   onChange={(e) => setSelectedLineout(e.target.value)}
-                  className="mt-1 block w-full p-2 bg-gray-50 border border-gray-300 rounded-lg text-xs"
+                  className=" block w-full p-2 text-black bg-gray-50 border border-gray-300 rounded-lg text-xs"
                 >
                   {lineouts.map((lineout) => (
                     <option key={lineout.id} value={lineout.id}>
@@ -160,6 +164,23 @@ export default function StartGame() {
               ) : (
                 <p className="text-gray-400">None</p>
               )}
+              </div>
+              <div className="w-1/2 h-full items-center justify-center my-auto">
+
+<label class="inline-flex items-center cursor-pointer">
+  <input  
+  checked={minutesTracked}
+  onChange={(e) => setMinutesTracked(e.target.checked)}
+                   type="checkbox" value="" class="sr-only peer"/>
+  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
+  <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Timer</span>
+</label>
+
+              </div>
+
+</div>
+
+
             </div>
           )}
 
