@@ -138,9 +138,11 @@ useEffect(() => {
     intervalRef.current = setInterval(() => {
       if (secondsRef.current === 0) {
         if (minutesRef.current === 0) {
+          setAlertMessage('finished ',currentQuater)
           clearInterval(intervalRef.current);
           intervalRef.current = null;
           setIsRunning(false);
+          setTimeout(() => setAlertMessage(""), 3000);
         } else {
           setMinutes(prev => prev - 1);
           minutesRef.current = minutesRef.current - 1;
@@ -295,6 +297,12 @@ const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
 // Compute overall stats for display in the modal header
 // Compute overall stats from gameActions:
 const blocks = gameActions.filter(action => action.actionName === "Block").length;
+const asists = gameActions.filter(action => action.actionName === "Assist").length;
+const offRebounds = gameActions.filter(action => action.actionName === "OffRebound").length;
+const rebounds = gameActions.filter(action => 
+  action.actionName === "Rebound" || action.actionName === "OffRebound"
+).length;
+
 const turnovers = gameActions.filter(action => action.actionName === "T/O").length;
 const steals = gameActions.filter(action => action.actionName === "Steal").length;
 
@@ -1920,7 +1928,6 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
 {showPlayerModal && (
   <div
     className="fixed inset-0 flex items-center justify-center z-50"
-    // Optional: clicking the overlay also closes the modal
     onClick={() => {
       setShowPlayerModal(false);
       setPendingAction(null);
@@ -1928,41 +1935,98 @@ onClick={() => updateOpponentScore(opponentScore -1 , -1)}
   >
     {/* Modal Overlay */}
     <div className="absolute inset-0 bg-black opacity-50"></div>
+
     {/* Modal Content */}
     <div
-  className="relative p-6 rounded-lg w-1/2 bg-secondary-bg"
-  // Stop propagation so clicks inside the modal don't trigger the overlay onClick
-  onClick={(e) => e.stopPropagation()}
->
-  <h3 className="text-white text-lg mb-4">Select Player</h3>
-  {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
-    <div className="grid grid-cols-2 gap-2">
-      {passedLineout.players.map((player, index) => (
-        <button
-          key={index}
-          onClick={() => handlePlayerSelection(player)}
-          className="w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white  border-l-2 border-l-primary-cta "
-        >
-          <span className="text-gray-400 group-hover:text-black">({player.number}) </span>
-          {player.name}
-        </button>
-      ))}
+      className="relative p-6 rounded-lg w-1/2 bg-secondary-bg"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="text-white text-lg mb-4">Select Player</h3>
+
+      {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
+        <>
+          {(() => {
+            const sortedPlayers = [...passedLineout.players].sort((a, b) => {
+              const aOn = onCourtPlayers.includes(a.number);
+              const bOn = onCourtPlayers.includes(b.number);
+              return aOn === bOn ? 0 : aOn ? -1 : 1;
+            });
+
+            const onFloorPlayers = sortedPlayers.slice(0, 5);
+            const benchPlayers = sortedPlayers.slice(5);
+
+            return (
+              <div className="flex flex-col space-y-2">
+                {/* On Floor Label */}
+                <p className="text-gray-400 text-sm mb-1">On Floor</p>
+
+                {/* On Floor Players */}
+                <div className="grid grid-cols-2 gap-2">
+                  {onFloorPlayers.map((player, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePlayerSelection(player)}
+                      className={`w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white border-l-2 ${
+                        onCourtPlayers.includes(player.number)
+                          ? 'border-l-primary-cta'
+                          : 'border-l-gray-400'
+                      }`}
+                    >
+                      <span className={`${
+                        onCourtPlayers.includes(player.number) ? 'text-white' : 'text-gray-400'
+                      } group-hover:text-black`}>
+                        ({player.number}){" "}
+                      </span>
+                      {player.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <hr className="border-gray-600 my-2" />
+
+                {/* Bench Label */}
+                <p className="text-gray-400 text-sm mb-1">Bench</p>
+
+                {/* Bench Players */}
+                <div className="grid grid-cols-2 gap-2">
+                  {benchPlayers.map((player, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePlayerSelection(player)}
+                      className={`w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white border-l-2 ${
+                        onCourtPlayers.includes(player.number)
+                          ? 'border-l-primary-cta'
+                          : 'border-l-gray-400'
+                      }`}
+                    >
+                      <span className={`${
+                        onCourtPlayers.includes(player.number) ? 'text-white' : 'text-gray-400'
+                      } group-hover:text-black`}>
+                        ({player.number}){" "}
+                      </span>
+                      {player.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </>
+      ) : (
+        <p className="text-gray-400">No players available.</p>
+      )}
+
+      <button
+        onClick={() => {
+          setShowPlayerModal(false);
+          setPendingAction(null);
+        }}
+        className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
+      >
+        Cancel
+      </button>
     </div>
-  ) : (
-    <p className="text-gray-400">No players available.</p>
-  )}
-
-  <button
-    onClick={() => {
-      setShowPlayerModal(false);
-      setPendingAction(null);
-    }}
-    className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
-  >
-    Cancel
-  </button>
-</div>
-
   </div>
 )}
 
@@ -2525,12 +2589,41 @@ console.log("Final Selected Player Details:", playerDetails);
   id="gameClockDiv"
   onClick={() => setShowTimeModal(true)} // Open modal
 >
-  <div className="h-full bg-secondary-bg rounded-md text-3xl items-center justify-center text-primary-cta flex">
-    <p>{minutes}</p>
-  </div>
-  <div className="h-full bg-secondary-bg rounded-md text-3xl items-center justify-center text-primary-cta flex">
-    <p>{seconds < 10 ? `0${seconds}` : seconds}</p>
-  </div>
+<AnimatePresence mode="wait">
+<motion.div
+  key={minutes}
+  initial={{ y: 50, opacity: 0, rotateX: -90 }}
+  animate={{
+    y: 0,
+    opacity: 1,
+    rotateX: 0,
+    scale: minutes === 0 && seconds === 0 ? [1, 1.5, 1] : 1, // Pulse when clock hits 0
+    color: minutes === 0 && seconds === 0 ? '#8B5CF6' : undefined // Flash red at 0
+  }}
+  exit={{ y: -50, opacity: 0, rotateX: 90 }}
+  transition={{ duration: 0.4, ease: "easeInOut" }}
+  className={`relative h-full bg-secondary-bg rounded-md text-3xl items-center justify-center
+    ${isRunning ? "text-primary-cta" : "text-gray-400"}
+    flex`}
+>
+  <p>{minutes}</p>
+</motion.div>
+
+</AnimatePresence>
+
+<motion.div
+  key={seconds}
+  animate={{
+    scale: minutes === 0 && seconds === 0 ? [1, 1.5, 1] : 1, // Pulse at 0
+    color: minutes === 0 && seconds === 0 ? '#8B5CF6' : undefined, // Flash red
+  }}
+  transition={{ duration: 0.4, ease: "easeInOut" }}
+  className={`h-full bg-secondary-bg rounded-md text-3xl items-center justify-center 
+    ${isRunning ? "text-primary-cta" : "text-gray-400"} flex`}
+>
+  <p>{seconds < 10 ? `0${seconds}` : seconds}</p>
+</motion.div>
+
 </div>
 
         <div
@@ -2587,17 +2680,52 @@ console.log("Final Selected Player Details:", playerDetails);
     <div className="bg-secondary-bg p-6 rounded-md flex flex-col space-y-4 w-80">
       <h3 className="text-white text-lg text-center mb-4">Manage On-Court Players</h3>
 
-      {passedLineout.players.map((player) => (
-        <div key={player.number} className="flex justify-between items-center text-white">
-          <span>{player.name} #{player.number}</span>
-          <input
-            type="checkbox"
-            checked={onCourtPlayers.includes(player.number)}
-            onChange={() => handleTogglePlayer(player.number)}
-            className="w-5 h-5"
-          />
-        </div>
-      ))}
+      {/* Sort first */}
+      {(() => {
+        const sortedPlayers = [...passedLineout.players].sort((a, b) => {
+          const aOn = onCourtPlayers.includes(a.number);
+          const bOn = onCourtPlayers.includes(b.number);
+          return aOn === bOn ? 0 : aOn ? -1 : 1;
+        });
+
+        const onFloorPlayers = sortedPlayers.slice(0, 5);
+        const benchPlayers = sortedPlayers.slice(5);
+
+        return (
+          <>
+            {/* On Floor Section */}
+            <p className="text-gray-400 text-sm mb-1">On Floor</p>
+            {onFloorPlayers.map((player) => (
+              <div key={player.number} className="flex justify-between items-center text-white">
+                <span>{player.name} #{player.number}</span>
+                <input
+                  type="checkbox"
+                  checked={onCourtPlayers.includes(player.number)}
+                  onChange={() => handleTogglePlayer(player.number)}
+                  className="w-5 h-5"
+                />
+              </div>
+            ))}
+
+            {/* Divider */}
+            <hr className="border-gray-600 my-2" />
+
+            {/* Bench Section */}
+            <p className="text-gray-400 text-sm mb-1">Bench</p>
+            {benchPlayers.map((player) => (
+              <div key={player.number} className="flex justify-between items-center text-white">
+                <span>{player.name} #{player.number}</span>
+                <input
+                  type="checkbox"
+                  checked={onCourtPlayers.includes(player.number)}
+                  onChange={() => handleTogglePlayer(player.number)}
+                  className="w-5 h-5"
+                />
+              </div>
+            ))}
+          </>
+        );
+      })()}
 
       <button
         onClick={() => setShowLineoutModal(false)}
@@ -2608,6 +2736,7 @@ console.log("Final Selected Player Details:", playerDetails);
     </div>
   </div>
 )}
+
 
       {showExitModal && (
   <div
@@ -2770,104 +2899,115 @@ console.log("Final Selected Player Details:", playerDetails);
   
 </div>
 
-      <div className="flex justify-between items-center mb-2 ">
-        <div className="flex">
-          {/* <h2 className="text-white text-2xl font-bold">Game Stats</h2> */}
+      <div className=" bg-red-600 flex justify-center">
+  <div className="flex items-center justify-start w-screen overflow-x-auto scrollbar-hide bg-primary-bg py-3">
+    <div className="flex space-x-3 px-2 w-max">
 
+      {/* FG */}
+      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  
+space-y-2`}>
+
+        {/* Icon Badge */}
+        <div className={`flex items-center justify-center p-3 rounded-full
+          ${fgPercentage === 0
+            ? "bg-gray-700"
+            : fgPercentage >= 25
+              ? "bg-primary-cta"
+              : "bg-primary-danger"}`}>
+          <span className="text-white text-sm font-bold">FG</span>
         </div>
 
+        {/* Stat */}
+        <span className={`text-2xl font-bold 
+       text-gray-200`}>
+          {fgPercentage}%
+        </span>
+
+        {/* Label */}
+        <span className="text-sm text-gray-400">{fgMade}-{fgAttempts}</span>
       </div>
-      <div className=" py-2 flex justify-center">
-<div class="flex items-center justify-center w-screen  text-gray-800  ">
 
-<div className="grid lg:grid-cols-4 md:grid-cols-4 gap-1 w-full max-w-6xl">
-  {/* Field Goal */}
-  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg">
-  <div className={`flex flex-shrink-0 items-center justify-center border-b-2
+      {/* 3PT */}
+      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
 
-    ${fgPercentage === 0
-      ? "border-b-gray"
-      : (fgPercentage >= 25
-          ? "border-b-primary-cta"
-          : "border-b-primary-danger")}
+        <div className={`flex items-center justify-center p-2 py-3 rounded-full
+          ${threePtPercentage === 0
+            ? "bg-gray-700"
+            : threePtPercentage >= 25
+              ? "bg-primary-cta"
+              : "bg-primary-danger"}`}>
+          <span className="text-white text-sm font-bold">3PT</span>
+        </div>
 
+        <span className={`text-2xl font-bold 
+        text-gray-200`}>
+          {threePtPercentage}%
+        </span>
 
-    h-14 w-14`}>
-
-
-
-      <span className="text-xl text-gray-200 font-bold">{fgPercentage}%</span>
-    </div>
-    <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-300 font-bold">FG</span>
-      <div className="flex items-center justify-between">
-        <span className="text-gray-300">{fgMade}-{fgAttempts}</span>
+        <span className="text-sm text-gray-400">{threePtMade}-{threePtAttempts}</span>
       </div>
-    </div>
-  </div>
 
-  {/* 3 Point */}
-  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
-  <div className={`flex flex-shrink-0 items-center justify-center border-b-2
+      {/* FT */}
+      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
 
-    ${threePtPercentage === 0
-      ? "border-b-gray"
-      : (threePtPercentage >= 25
-          ? "border-b-primary-cta"
-          : "border-b-primary-danger")}
+        <div className={`flex items-center justify-center p-2 rounded-full
+          ${ftPercentage === 0
+            ? "bg-gray-700"
+            : ftPercentage >= 25
+              ? "bg-primary-cta"
+              : "bg-primary-danger"}`}>
+          <span className="text-white text-sm font-bold">FT</span>
+        </div>
 
+        <span className={`text-2xl font-bold 
+          text-gray-200`}>
+          {ftPercentage}%
+        </span>
 
-    h-14 w-14`}>
-      <span className="text-xl text-gray-200 font-bold">{threePtPercentage}%</span>
-    </div>
-    <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">3PT</span>
-      <div className="flex items-center justify-between">
-        <span className="text-gray-300">{threePtMade}-{threePtAttempts}</span>
+        <span className="text-sm text-gray-400">{ftMade}-{ftAttempts}</span>
       </div>
-    </div>
-  </div>
 
-  {/* Free Throw */}
-  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
-    <div className={`flex flex-shrink-0 items-center justify-center border-b-2
+      {/* Blocks */}
+      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px] 
+       space-y-2">
 
-    ${ftAttempts === 0
-      ? "border-b-gray"
-      : (ftPercentage >= 25
-          ? "border-b-primary-cta"
-          : "border-b-primary-danger")}
+        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
+          <span className="text-white text-sm font-bold">BLK</span>
+        </div>
 
-
-    h-14 w-14`}>
-      <span className="text-xl text-gray-200 font-bold">{ftPercentage}%</span>
-    </div>
-    <div className="flex-grow flex flex-col ml-4">
-      <span className="text-xl text-gray-100 font-bold">FT</span>
-      <div className="flex items-center justify-between">
-        <span className="text-gray-300">{ftMade}-{ftAttempts}</span>
+        <span className="text-2xl text-gray-200 font-bold">{blocks}</span>
+        {/* <span className="text-sm text-gray-400">{blocks}</span> */}
       </div>
-    </div>
-  </div>
 
-  <div className="flex items-center p-2 bg-primary-bg shadow-md shadow-primary-bg rounded">
-  <div className="flex flex-shrink-0 items-center justify-center border-b-2 border-b-primary-cta h-14 w-14">
-    <span className="text-xl text-gray-200 font-bold">{blocks}</span>
-  </div>
-  <div className="flex-grow flex flex-col ml-4">
-    <span className="text-xl text-gray-100 font-bold">Blocks</span>
-    <div className="flex items-center justify-between">
-      <span className="text-gray-300">{blocks}</span>
+      {/* Dummy Cards — Similar style, static colors */}
+      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2">
+        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
+          <span className="text-white text-sm font-bold">AST</span>
+        </div>
+        <span className="text-2xl text-gray-200 font-bold">{asists}</span>
+        {/* <span className="text-sm text-gray-400">10</span> */}
+      </div>
+
+      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]   space-y-2">
+        <div className="flex items-center justify-center p-2 rounded-full bg-primary-danger">
+          <span className="text-white text-sm font-bold">ORB</span>
+        </div>
+        <span className="text-2xl text-gray-200 font-bold">{offRebounds}</span>
+        {/* <span className="text-sm text-gray-400">5</span> */}
+      </div>
+
+      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2">
+        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
+          <span className="text-white text-sm font-bold">RB</span>
+        </div>
+        <span className="text-2xl text- font-bold">{rebounds}</span>
+        {/* <span className="text-sm text-gray-400">8</span> */}
+      </div>
+
     </div>
   </div>
 </div>
 
-</div>
-
-
-
-</div>
-      </div>
 
 
 

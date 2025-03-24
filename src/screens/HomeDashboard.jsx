@@ -315,7 +315,9 @@ const handleConfirmCompleteGame = async () => {
             <li className="px-4 py-2 hover:text-indigo-400"><a href="#">Settings</a></li>
             <li className="px-4 py-2 hover:text-indigo-400"><a href="#">Subscription</a></li>
           </ul> */}
-          <button className="px-4 py-2 bg-primary-cta hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
+          <button onClick={()=>{
+            handleLogout()
+          }} className="px-4 py-2 bg-primary-cta hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
@@ -325,12 +327,11 @@ const handleConfirmCompleteGame = async () => {
       </nav>
 
       <div className="container mx-auto p-6">
-        <h3 className="px-4">Welcome Back, James</h3>
-        {/* Bottom Section */}
+
         <div className="p-6">
           <button
             onClick={handleStartNewGame}
-            className="btn my-5 bg-primary-cta px-4 py-2 rounded-lg"
+            className="btn my-5 bg-primary-cta px-4 ml-8 py-2 rounded-lg"
           >
             Start New Game
           </button>

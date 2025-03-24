@@ -7,7 +7,7 @@ import StartGame from './screens/StartGame';
 import InGame from './screens/InGame';
 import Statistics from './screens/Statistics';
 import StatisticsShotMap from './screens/StatisticsShotMap';
-
+import MobileBlocker from './screens/MobileBlocker';
 
 export default function App() {
 
@@ -30,14 +30,16 @@ export default function App() {
   return (
     
     <Router>
+      <MobileBlocker/>
       <Routes>
         <Route
           path="/"
           element={
             <>
+              <div className="bg-white min-h-screen">
               {/* Passing the state and updater function as props to Login */}
               <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
-            <section className="w-full px-8 text-gray-700 ">
+            <section className="w-full bg-white px-8 text-gray-700 ">
               <div className="container flex flex-col flex-wrap items-center justify-between py-5 mx-auto md:flex-row max-w-7xl">
                 <div className="relative flex flex-col md:flex-row">
                   <a href="#_" className="flex items-center mb-5 font-medium text-gray-900 lg:w-auto lg:items-center lg:justify-center md:mb-0">
@@ -66,7 +68,7 @@ export default function App() {
                  <div class="w-full md:w-1/2 md:px-3">
                    <div class="w-full pb-6 space-y-6 sm:max-w-md lg:max-w-lg md:space-y-4 lg:space-y-8 xl:space-y-9 sm:pr-5 lg:pr-0 md:pb-0">
                      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-4xl lg:text-5xl xl:text-6xl">
-                       <span class="block xl:inline">Simple To Use</span>
+                       <span class="block xl:inline">Just A Chill</span>
                        <span class="block text-indigo-600 xl:inline">Basketball Stat Tracker.</span>
                      </h1>
                      <p class="mx-auto text-base text-gray-500 sm:max-w-md lg:text-xl md:max-w-3xl">No Bullshit Sport Tracking app. Up and Running In 2 Minutes And Easy To Use .</p>
@@ -100,6 +102,7 @@ export default function App() {
                </div>
              </div>
            </section>
+           </div>
            </>
           }
         />
@@ -113,6 +116,7 @@ export default function App() {
 
   
       </Routes>
+    
     </Router>
   );
 }

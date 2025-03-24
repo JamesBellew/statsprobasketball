@@ -10,7 +10,7 @@ export default {
     extend: {
       colors: {
         "primary-bg": "#12131A",
-        
+     "card-bg": "#1a1f2d",
         "secondary-bg": "#161a1f",
         "primary-cta": "#0b63fb",
         "secondary-cta": "#10B981",
