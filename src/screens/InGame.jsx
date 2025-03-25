@@ -738,7 +738,10 @@ const handleSaveGame = async () => {
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
-    setOpponentScore(savedGame.opponentScore || 0);
+    if (typeof savedGame.opponentScore === "number") {
+      setOpponentScore(savedGame.opponentScore);
+    }
+    
     setOpponentActions(savedGame.opponentActions || []);
     setleadChanges(savedGame.leadChanges || []);
     setOpponentLogo(savedGame.opponentLogo || null);
@@ -3000,7 +3003,7 @@ space-y-2`}>
         <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
           <span className="text-white text-sm font-bold">RB</span>
         </div>
-        <span className="text-2xl text- font-bold">{rebounds}</span>
+        <span className="text-2xl text-gray-200 text- font-bold">{rebounds}</span>
         {/* <span className="text-sm text-gray-400">8</span> */}
       </div>
 
