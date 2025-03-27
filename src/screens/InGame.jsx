@@ -1422,44 +1422,63 @@ gameActions.forEach(action => {
 });
 
 
-const fgPercentages = Object.keys(quarterStats).map(q => {
-  const { made, attempted } = quarterStats[q];
-  const percentage = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
+const fgPercentages = Object.keys(quarterStats)
+  .filter(q => {
+    const qNum = parseInt(q);
+    // Always show Q1–Q4, and conditionally show Q5–Q8 if currentQuarter is at or beyond them
+    return qNum <= 4 || qNum <= currentQuater;
+  })
+  .map(q => {
+    const { made, attempted } = quarterStats[q];
+    const percentage = attempted > 0 ? Math.round((made / attempted) * 100) : 0;
 
-  return {
-    quarter: `Q${q}`,
-    percentage
-  };
-});
-
-const calculateStealsTurnoversPerQuarter = (gameActions) => {
-  // Initialize counters per quarter
-  const quarterStats = {
-    1: { steals: 0, turnovers: 0 },
-    2: { steals: 0, turnovers: 0 },
-    3: { steals: 0, turnovers: 0 },
-    4: { steals: 0, turnovers: 0 },
-  };
-
-  gameActions.forEach(action => {
-    const q = action.quarter;
-    // Example action names - adjust if your actual naming differs
-    if (action.actionName === "Steal") {
-      quarterStats[q].steals++;
-    } 
-    if (action.actionName === "T/O") {
-      quarterStats[q].turnovers++;
-    }
+    return {
+      quarter: `Q${q}`,
+      percentage
+    };
   });
 
-  // Convert to array for Nivo
-  return Object.keys(quarterStats).map(q => ({
-    quarter: `Q${q}`,
-    steals: quarterStats[q].steals,
-    turnovers: quarterStats[q].turnovers,
-  }));
-};
-const stealsTurnoversData = calculateStealsTurnoversPerQuarter(gameActions);
+
+  const calculateStealsTurnoversPerQuarter = (gameActions, currentQuarter) => {
+    // Initialize counters per quarter
+    const quarterStats = {
+      1: { steals: 0, turnovers: 0 },
+      2: { steals: 0, turnovers: 0 },
+      3: { steals: 0, turnovers: 0 },
+      4: { steals: 0, turnovers: 0 },
+      5: { steals: 0, turnovers: 0 },
+      6: { steals: 0, turnovers: 0 },
+      7: { steals: 0, turnovers: 0 },
+      8: { steals: 0, turnovers: 0 },
+    };
+  
+    gameActions.forEach(action => {
+      const q = action.quarter;
+      if (quarterStats[q]) {
+        if (action.actionName === "Steal") {
+          quarterStats[q].steals++;
+        } 
+        if (action.actionName === "T/O") {
+          quarterStats[q].turnovers++;
+        }
+      }
+    });
+  
+    // Only include Q1–Q4 always, and Q5–Q8 if currentQuarter >= that number
+    return Object.keys(quarterStats)
+      .filter(q => {
+        const qNum = parseInt(q);
+        return qNum <= 4 || qNum <= currentQuarter;
+      })
+      .map(q => ({
+        quarter: `Q${q}`,
+        steals: quarterStats[q].steals,
+        turnovers: quarterStats[q].turnovers,
+      }));
+  };
+  
+  const stealsTurnoversData = calculateStealsTurnoversPerQuarter(gameActions, currentQuater);
+
 
 const handleTogglePlayer = (playerNumber) => {
   setOnCourtPlayers((prev) => {
