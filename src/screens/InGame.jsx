@@ -13,9 +13,14 @@ import { v4 as uuidv4 } from 'uuid';  // Install with: npm install uuid
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveBar } from '@nivo/bar';
+import { uploadGameToCloud } from "../utils/syncGameToCloud"; // adjust path
+import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
+import { cleanForFirestore } from "../utils/cleanForFirestore";
 export default function InGame() {
   const navigate = useNavigate();
   //old singular filter feature
+  const { user } = useAuth();
+  
   //! remove when multile is implemented
   const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
   //for the new multiple filters feature
@@ -694,40 +699,75 @@ const handleSaveGame = async () => {
     return;
   }
 
-  const gameId = currentGameId || savedGame?.id || `game_${opponentName}_${Date.now()}`;
+  let gameId = currentGameId;
 
-
-
+  if (!gameId && savedGame?.id) {
+    gameId = savedGame.id;
+  } else if (!gameId) {
+    // 🔍 Try to find a game by opponentName + venue
+    const existing = await db.games.where({ opponentName, selectedVenue }).first();
+    if (existing) {
+      gameId = existing.id;
+    } else {
+      gameId = `game_${opponentName}_${Date.now()}`;
+    }
+  }
+  
   const gameData = {
     id: gameId,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    opponentScore,  // ✅ Save opponentScore
-    opponentActions,  // ✅ NOW SAVING opponentActions to DB
-    leadChanges,    // ✅ Save lead changes history
+    opponentScore,
+    opponentActions,
+    leadChanges,
     lineout: savedGame?.lineout || passedLineout,
     minutesTracked,
-    playerMinutes, // ✅ Add here!
-    quarterTimes, // ✅ ADD THIS!
+    playerMinutes,
+    quarterTimes,
     timestamp: new Date().toISOString(),
-    opponentLogo,   // ✅ Save opponent logo
+    opponentLogo,
   };
-
   try {
     const existingGame = await db.games.get(gameId);
     if (existingGame) {
       await db.games.update(gameId, gameData);
-      console.log("Game updated:", gameData);
+      console.log("Game updated locally:", gameData);
     } else {
       await db.games.put(gameData);
-      console.log("New game saved:", gameData);
+      console.log("New game saved locally:", gameData);
     }
+
+    // 🔥 Cloud sync only if logged in
+// ✅ Move this before the testData
+if (user) {
+  try {
+    const fullGameData = {
+      ...gameData,
+      id: gameId, // just to be sure
+      actions: gameActions,
+      opponentScore,
+      opponentActions,
+      leadChanges,
+      lineout: savedGame?.lineout || passedLineout,
+      minutesTracked,
+      playerMinutes,
+      quarterTimes,
+      opponentLogo,
+    };
+
+    const cleaned = cleanForFirestore(fullGameData);
+    await uploadGameToCloud(user.uid, cleaned);
+    console.log("✅ Game synced to Firestore!");
+  } catch (err) {
+    console.error("🔥 Failed to sync game:", err);
+  }
+}
+
 
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
     setCurrentGameId(gameId);
-
   } catch (error) {
     console.error("Error saving game:", error);
     setAlertMessage("Error saving game. Please try again.");
@@ -735,6 +775,7 @@ const handleSaveGame = async () => {
 
   setTimeout(() => setAlertMessage(""), 3000);
 };
+
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
@@ -1359,6 +1400,10 @@ const quarterStats = {
   2: { made: 0, attempted: 0 },
   3: { made: 0, attempted: 0 },
   4: { made: 0, attempted: 0 },
+  5: { made: 0, attempted: 0 },
+  6: { made: 0, attempted: 0 },
+  7: { made: 0, attempted: 0 },
+  8: { made: 0, attempted: 0 },
 }
 
 
@@ -2537,6 +2582,15 @@ console.log("Final Selected Player Details:", playerDetails);
         <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period
 
         </button>
+        {!minutesTracked &&
+        <div className="flex items-center justify-center w-1/4 bg-secondary-bg h-full rounded-md"   id="teamLineoutDiv"
+  onClick={() => setShowLineoutModal(true)}>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+</svg>
+
+        </div>
+}
        {/* renderinf the game clock */}
        {
         minutesTracked &&

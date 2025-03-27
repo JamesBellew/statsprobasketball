@@ -3,8 +3,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faUpload, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db"; // Import your Dexie instance
+import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
 
 export default function StartGame() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");

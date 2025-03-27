@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { db } from "../db";
+import { uploadGameToCloud } from "../utils/syncGameToCloud"; // adjust path
+import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
 
 import { faCheck, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 

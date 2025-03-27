@@ -20,7 +20,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.43 (24/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.51 (27/03/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is a Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -32,6 +32,15 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">27/03/2025</p>
+<hr></hr>
+<li className="py-2">Added Firebasee Authentication for user login🔥</li>
+<li className="py-2">Created two Firebase accounts for Auth testing, works well 👍</li>
+<li className="py-2">Fixed huge issue with OT edge case with new opponent structure. Can now handle up to 4 OT's</li>
+<li className="py-2">When in a game with no tracking of the time, you can now substitute player for ease of selecting for actions.</li>
+<li className="py-2">Login system UX/UI for Firebase🔥(More needed, looks like shit)</li>
+<li className="py-2">More security for Opponent score leakage, I will eventually squash this bug, but can still happen on refresh in offline mode 😭</li>
+<li className="py-2">App now have two states for saving/retreiving data. 1 is Dexie for local and offline storage. 2 is Firebase for user Authentication and account sharing database storage</li>
 <p className="font-bold text-primary-danger text-sm">25/03/2025</p>
 <hr></hr>
 <li className="py-2">More ddatabase leak protection for opponenet score to hopefully fix sever leak</li>

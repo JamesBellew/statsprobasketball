@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 
 import Login from './screens/Login';
 import HomeDashboard from "./screens/HomeDashboard";
@@ -8,9 +8,36 @@ import InGame from './screens/InGame';
 import Statistics from './screens/Statistics';
 import StatisticsShotMap from './screens/StatisticsShotMap';
 import MobileBlocker from './screens/MobileBlocker';
+import useAuth from "./hooks/useAuth";
 
 export default function App() {
-
+  const { user, login, logout } = useAuth();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(true);
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault(); // Prevent the mini-infobar from appearing
+      setDeferredPrompt(e);
+      setShowInstallButton(true); // Show your custom install button
+    };
+  
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
+  
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      console.log("User accepted the A2HS prompt");
+      setDeferredPrompt(null);
+      setShowInstallButton(false);
+    } else {
+      console.log("User dismissed the A2HS prompt");
+    }
+  };
  //UseStates
  const [showLoginModal,setShowLoginModal] = useState(false)
  if ('serviceWorker' in navigator) {
@@ -57,6 +84,14 @@ export default function App() {
                     <a href="#_" className="mr-5 font-medium leading-6 text-gray-600 hover:text-gray-900">
                       Examples
                     </a>
+                    {showInstallButton && (
+  <button
+    onClick={handleInstallClick}
+    className="bg-primary-danger text-white px-4 py-2 rounded-lg ml-4"
+  >
+    Download App
+  </button>
+)}
                   </nav>
                 </div>
               </div>
@@ -71,7 +106,7 @@ export default function App() {
                        <span class="block xl:inline">Just A Chill</span>
                        <span class="block text-indigo-600 xl:inline">Basketball Stat Tracker.</span>
                      </h1>
-                     <p class="mx-auto text-base text-gray-500 sm:max-w-md lg:text-xl md:max-w-3xl">No Bullshit Sport Tracking app. Up and Running In 2 Minutes And Easy To Use .</p>
+                     <p class="mx-auto text-base text-gray-500 sm:max-w-md lg:text-xl md:max-w-3xl">Sport Tracking App. Up and Running In 2 Minutes And Easy To Use .</p>
                      <div class="relative flex flex-col sm:flex-row sm:space-x-4">
                      <a
                 onClick={() => {
@@ -79,12 +114,35 @@ export default function App() {
                 }}
                 className="flex items-center w-full px-6 py-3 mb-3 text-lg text-white bg-indigo-600 rounded-md sm:mb-0 hover:bg-indigo-700 sm:w-auto cursor-pointer"
               >
-  Start
+  Guest User
   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12"></line>
     <polyline points="12 5 19 12 12 19"></polyline>
   </svg>
 </a>
+{!user ? (
+  <button
+    onClick={() => {
+      const email = prompt("Email:");
+      const password = prompt("Password:");
+      if (email && password) {
+        login(email, password)
+          .then(() => alert("Logged in!"))
+          .catch(err => alert("Login failed: " + err.message));
+      }
+    }}
+    className="bg-primary-cta flex items-center w-full px-6 py-3 mb-3 text-lg text-white rounded-md sm:mb-0 hover:bg-indigo-700 sm:w-auto cursor-pointer"
+  >
+    Login
+  </button>
+) : (
+  <button
+    onClick={logout}
+    className="bg-red-600 flex items-center w-full px-6 py-3 mb-3 text-lg text-white rounded-md sm:mb-0 hover:bg-red-700 sm:w-auto cursor-pointer"
+  >
+    Logout ({user.email})
+  </button>
+)}
 
                    
                      </div>
