@@ -7,6 +7,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
     e.preventDefault(); // Prevent form submission reload
     // Perform login logic here (e.g., validation, API call)
     navigate("/homedashboard"); // Navigate to HomeDashboard after login
+    setShowLoginModal(false)
   };
 
   return (
@@ -20,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.52 (27/03/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.60 (01/04/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is a Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -32,6 +33,21 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">01/04/2025</p>
+<hr></hr>
+<li className="py-2">In game stats now has a current run card to show the run the team is on</li>
+<li className="py-2">In Game stats card re-design</li>
+<li className="py-2">Now can handle multiple lineouts</li>
+<li className="py-2">Lineouts now saved to database</li>
+<li className="py-2">Opponent score leak has finally been sealed ❤️</li>
+<li className="py-2">Homedashboard theme change to match app</li>
+<li className="py-2">Homedashboard new animated image</li>
+<li className="py-2">Animation on synching games to the cloud when uplaoding</li>
+<li className="py-2">Animation on synching lineouts to the cloud when uplaoding</li>
+<li className="py-2">New accounts now created for Alpha use</li>
+<li className="py-2">Now have the ability to store a game locally and synch it to the cloud</li>
+<li className="py-2">CRUD for cloud features implemented</li>
+<li className="py-2">Lineouts now have a select if you have multiple lineouts, split into local and cloud</li>
 <p className="font-bold text-primary-danger text-sm">27/03/2025</p>
 <hr></hr>
 <li className="py-2">Conditionally render overtimes in graphs/charts</li>

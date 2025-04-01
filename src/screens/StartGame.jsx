@@ -4,6 +4,9 @@ import { faTrash, faUpload, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db"; // Import your Dexie instance
 import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
+import { useLocation } from "react-router-dom";
+import { collection, getDocs } from "firebase/firestore";
+import { firestore } from "../firebase"; // Adjust path based on your project structure
 
 export default function StartGame() {
   const { user } = useAuth();
@@ -11,18 +14,58 @@ export default function StartGame() {
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");
   const [lineouts, setLineouts] = useState([]);
-  const [selectedLineout, setSelectedLineout] = useState(null);
+
+
+
+  const location = useLocation();
+  const selectedLineoutFromNav = location.state?.lineout;
+  
+  const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
+  
+
+// const selectedLineoutFromNav = location.state?.lineout;
+// const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
+
+
+  // const [selectedLineout, setSelectedLineout] = useState(null);
   const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
   const [minutesTracked, setMinutesTracked] = useState(false);
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
 
+  // const location = useLocation();
+  // const selectedLineout = location.state?.lineout;
+  
+  const handleGoBack = (e) => {
+    e.preventDefault(); // Prevent form submission reload
+    // Perform login logic here (e.g., validation, API call)
+    navigate("/startgame"); // Navigate to HomeDashboard after login
+  };
   useEffect(() => {
-    async function fetchLineouts() {
-      const storedLineouts = await db.lineouts.toArray();
-      setLineouts(storedLineouts);
-    }
+    const fetchLineouts = async () => {
+      let allLineouts = [];
+  
+      // 1. Fetch local lineouts
+      const local = await db.lineouts.toArray();
+      allLineouts = [...local];
+  
+      // 2. Fetch cloud lineouts if user is logged in
+      if (user) {
+        const snapshot = await getDocs(collection(firestore, "users", user.uid, "lineouts"));
+        const cloudLineouts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          isCloud: true,
+        }));
+  
+        allLineouts = [...local, ...cloudLineouts];
+      }
+  
+      setLineouts(allLineouts);
+    };
+  
     fetchLineouts();
-  }, []);
+  }, [user]);
+  
 
   useEffect(() => {
     if (playerStatsEnabled) {
@@ -41,9 +84,10 @@ export default function StartGame() {
 
   const handleGameStart = () => {
     const selectedLineoutData =
-      playerStatsEnabled && selectedLineout
-        ? lineouts.find((lineout) => lineout.id === selectedLineout) || null
-        : null;
+    playerStatsEnabled && selectedLineout
+      ? lineouts.find((lineout) => lineout.id.toString() === selectedLineout.toString()) || null
+      : null;
+  
 
     const gameState = {
       opponentName,
@@ -84,6 +128,13 @@ export default function StartGame() {
 
   return (
     <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">
+      <button onClick={()=>{
+   navigate("/homedashboard"); 
+      }} className="bg-primary-danger px-5 py-2 rounded-md cursor-pointer absolute top-5 left-5 w-48 flex items-center justify-center  ">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+</svg>
+Back</button>
       <div className="container mx-auto">
         <div className="w-full px-10 my-auto flex-row justify-center items-center">
           <label htmlFor="small-input" className="block mb-2 text-sm font-medium text-gray-200">

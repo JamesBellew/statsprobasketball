@@ -5,13 +5,18 @@ import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { db } from "../db";
 import { uploadGameToCloud } from "../utils/syncGameToCloud"; // adjust path
 import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
-
+import { downloadGamesFromCloud } from "../utils/downloadGamesFromCloud";
+import { doc, setDoc, collection, getDocs } from "firebase/firestore";
+import { firestore } from "../firebase"; // or wherever your firestore config is
+import { deleteDoc } from "firebase/firestore"; // make sure this is imported
 import { faCheck, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 
 export default function HomeDashboard() {
+  const { user } = useAuth();
   // Dashboard states
   const [isExpanded, setIsExpanded] = useState(true);
-  const [savedGames, setSavedGames] = useState([]);
+  const [savedGames, setSavedGames] = useState({ local: [], synced: [] });
+
   // We now load all saved lineouts from the DB and display only one (the most recent)
   const [savedLineouts, setSavedLineouts] = useState([]);
   const navigate = useNavigate();
@@ -36,12 +41,73 @@ export default function HomeDashboard() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const [addPhotos, setAddPhotos] = useState(false); // Toggle for photo upload
+  const [syncingGameId, setSyncingGameId] = useState(null);
+  const [justSyncedGameId, setJustSyncedGameId] = useState(null);
+  const [selectedLineoutId, setSelectedLineoutId] = useState(null);
+  const [localLineouts, setLocalLineouts] = useState([]);
+  const [cloudLineouts, setCloudLineouts] = useState([]);
+  const [creatingLineout, setCreatingLineout] = useState(false);
+
+
+  const totalSavedGames =
+  savedGames.local.length + savedGames.synced.length;
+
+if(user){
+  console.log('logged in');
+  
+}else{
+  console.log('not logged in');
+  
+}
+const fetchLineouts = async () => {
+  const local = await db.lineouts.toArray();
+  setLocalLineouts(local);
+
+  let defaultSet = false;
+
+  if (local.length > 0) {
+    setSelectedLineoutId(`local-${local[0].id}`);
+    defaultSet = true;
+  }
+
+  if (user) {
+    const snapshot = await getDocs(collection(firestore, "users", user.uid, "lineouts"));
+    const cloud = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setCloudLineouts(cloud);
+
+    // If no local lineouts and there are cloud ones, set cloud as default
+    if (!defaultSet && cloud.length > 0) {
+      setSelectedLineoutId(`cloud-${cloud[0].id}`);
+    }
+  }
+};
+
+useEffect(() => {
+  fetchLineouts();
+}, [user]);
+
+
+
+useEffect(() => {
+  async function syncAndRefresh() {
+    if (user) {
+      await downloadGamesFromCloud(user.email); // ✅ email not uid
+    }
+    await refreshGames();
+  }
+  syncAndRefresh();
+}, [user]);
+
 
   // Load saved lineouts from IndexedDB on component mount
   useEffect(() => {
     async function fetchLineouts() {
       const lineouts = await db.lineouts.toArray();
       setSavedLineouts(lineouts);
+      if (lineouts.length > 0 && !selectedLineoutId) {
+        setSelectedLineoutId(lineouts[0].id);
+      }
+      
     }
     fetchLineouts();
     
@@ -50,12 +116,21 @@ export default function HomeDashboard() {
 useEffect(() => {
   async function fetchSavedGames() {
     const games = await db.games.toArray();
-    setSavedGames(games);
+    const localOnlyGames = games.filter(
+      (game) => !game.synced || (game.synced && !game.userId)
+    );
+    
+    const syncedGames = games.filter(game => game.synced);     // already pushed to cloud
+
+    setSavedGames({ local: localOnlyGames, synced: syncedGames });
   }
+
   fetchSavedGames();
 }, []);
-console.log(savedGames);
 
+useEffect(() => {
+  refreshGames();
+}, [user]);
 
 
 const handleCompleteGameClick = (game) => {
@@ -65,13 +140,42 @@ const handleCompleteGameClick = (game) => {
 
 const handleConfirmCompleteGame = async () => {
   if (!gameToComplete) return;
+
   const updatedGame = { ...gameToComplete, isComplete: true };
-  await db.games.put(updatedGame);
+
+  await db.games.put(updatedGame); // ✅ update locally
+
+  if (user) {
+    await uploadGameToCloud(user.email, updatedGame); // ❗ Use email
+
+  }
+// 🛠 FIX: Small delay so Dexie commits the write before we query again
+await new Promise((resolve) => setTimeout(resolve, 50)); // 50ms is enough
+
+setTimeout(() => {
+  refreshGames();
+}, 50);
+
   const games = await db.games.toArray();
-  setSavedGames(games);
+
+  const localOnlyGames = games.filter((game) => {
+    if (!game.synced) return true;
+    if (!user && game.userId) return false;
+    if (!user && !game.userId) return true;
+    if (user && game.userId !== user.uid) return false;
+    return !game.userId;
+  });
+
+  const syncedGames = user
+    ? games.filter((game) => game.synced && game.userId === user.uid)
+    : [];
+
+  setSavedGames({ local: localOnlyGames, synced: syncedGames });
   setShowCompleteModal(false);
   setGameToComplete(null);
 };
+
+
 
 
   // Close dropdown if click outside
@@ -88,11 +192,24 @@ const handleConfirmCompleteGame = async () => {
   const handleLogout = () => {
     navigate("/");
   };
-
   const handleStartNewGame = () => {
-    console.log("Navigating to /startgame");
-    navigate("/startgame");
+    let selectedLineout = null;
+  
+    if (typeof selectedLineoutId === "string") {
+      if (selectedLineoutId.startsWith("local-")) {
+        const id = parseInt(selectedLineoutId.replace("local-", ""));
+        selectedLineout = localLineouts.find((lo) => lo.id === id);
+      } else if (selectedLineoutId.startsWith("cloud-")) {
+        const id = selectedLineoutId.replace("cloud-", "");
+        selectedLineout = cloudLineouts.find((lo) => lo.id === id);
+      }
+    }
+  
+    navigate("/startgame", {
+      state: { lineout: selectedLineout ?? null },
+    });
   };
+  
 
 
   const handleStatisticsClick = (game)=>{
@@ -112,6 +229,7 @@ const handleConfirmCompleteGame = async () => {
     setActiveDropdown(null);
     setShowGameEditModal(true);
   };
+
   const handleSaveGameEdit = async () => {
     if (!editedOpponentName.trim() || !editedVenue.trim()) {
       alert("Please fill in both opponent name and venue.");
@@ -122,24 +240,18 @@ const handleConfirmCompleteGame = async () => {
       opponentName: editedOpponentName,
       venue: editedVenue,
     };
-  
-    // Use the correct table: 'games' as defined in your db.js file
     await db.games.put(updatedGame);
-  
-    // Re-fetch games from Dexie using the correct table
-    const games = await db.games.toArray();
-    setSavedGames(games);
+    await refreshGames();
     setShowGameEditModal(false);
     setEditingGame(null);
   };
-  
+
   
 
   const handleDeleteGame = async (gameId) => {
     if (window.confirm("Are you sure you want to delete this game?")) {
       await db.games.delete(gameId);
-      const games = await db.games.toArray();
-      setSavedGames(games);
+      await refreshGames();
       setActiveDropdown(null);
     }
   };
@@ -167,10 +279,7 @@ const handleConfirmCompleteGame = async () => {
     setShowLineoutModal(true);
     setActiveDropdown(null);
   };
-  const handleReopenGameClick = (game) => {
-    setGameToReopen(game);
-    setShowReopenModal(true);
-  };
+
 
   const handleConfirmReopenGame = async () => {
     if (!gameToReopen) return;
@@ -181,14 +290,56 @@ const handleConfirmCompleteGame = async () => {
     setShowReopenModal(false);
     setGameToReopen(null);
   };
+
   const handleDeleteLineout = async (lineoutId) => {
     setActiveDropdown(null);
-    if (window.confirm("Are you sure you want to delete this lineout?")) {
-      await db.lineouts.delete(lineoutId);
-      const updatedLineouts = await db.lineouts.toArray();
-      setSavedLineouts(updatedLineouts);
+  
+    if (!lineoutId) return;
+  
+    const isCloud = typeof lineoutId === "string" && isNaN(Number(lineoutId));
+  
+    const confirmed = window.confirm("Are you sure you want to delete this lineout?");
+    if (!confirmed) return;
+  
+    try {
+      let updatedLocal = localLineouts;
+      let updatedCloud = cloudLineouts;
+  
+      if (isCloud && user) {
+        // ✅ Delete from Firestore
+        await deleteDoc(doc(firestore, "users", user.uid, "lineouts", lineoutId));
+        const snapshot = await getDocs(collection(firestore, "users", user.uid, "lineouts"));
+        updatedCloud = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCloudLineouts(updatedCloud);
+      } else {
+        // ✅ Delete from Dexie
+        await db.lineouts.delete(Number(lineoutId)); // make sure it's a number
+        updatedLocal = await db.lineouts.toArray();
+        setLocalLineouts(updatedLocal);
+        setSavedLineouts(updatedLocal);
+      }
+  
+      // 🔄 Update selected
+      const deletedSelected =
+        selectedLineoutId === `cloud-${lineoutId}` ||
+        selectedLineoutId === `local-${lineoutId}`;
+  
+      if (deletedSelected) {
+        if (updatedLocal.length > 0) {
+          setSelectedLineoutId(`local-${updatedLocal[0].id}`);
+        } else if (updatedCloud.length > 0) {
+          setSelectedLineoutId(`cloud-${updatedCloud[0].id}`);
+        } else {
+          setSelectedLineoutId(null);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Failed to delete lineout:", err);
     }
   };
+  
+  
+  
 
   const addPlayer = () => {
     if (players.length < 15) {
@@ -225,62 +376,166 @@ const handleConfirmCompleteGame = async () => {
   };
   
   const handleSaveLineout = async () => {
-    if (!lineoutName.trim()) {
-      setFormError("Please enter a lineout name.");
-      return;
-    }
-    for (let i = 0; i < players.length; i++) {
-      if (!players[i].name.trim() || !players[i].number) {
-        setFormError("All players must have a name and a number.");
+    setCreatingLineout(true);
+  
+    try {
+      if (!lineoutName.trim()) {
+        setFormError("Please enter a lineout name.");
+        setCreatingLineout(false);
         return;
       }
+  
+      for (let i = 0; i < players.length; i++) {
+        if (!players[i].name.trim() || !players[i].number) {
+          setFormError("All players must have a name and a number.");
+          setCreatingLineout(false);
+          return;
+        }
+      }
+  
+      const numbers = players.map((p) => p.number.toString());
+      const uniqueNumbers = new Set(numbers);
+      if (uniqueNumbers.size !== numbers.length) {
+        setFormError("Each player must have a unique number.");
+        setCreatingLineout(false);
+        return;
+      }
+  
+      if (user && typeof editingLineoutId === "string") {
+        // ✏️ Update existing cloud lineout
+        const existingDoc = doc(firestore, "users", user.uid, "lineouts", editingLineoutId);
+        await setDoc(existingDoc, { name: lineoutName, players });
+      } else if (user && !editingLineoutId) {
+        // ➕ Create new cloud lineout
+        const newDoc = doc(collection(firestore, "users", user.uid, "lineouts"));
+        await setDoc(newDoc, { name: lineoutName, players });
+      } else {
+        // 🗃 Save/update locally
+        const newLineout = {
+          id: editingLineoutId || Date.now(),
+          name: lineoutName,
+          players,
+        };
+      
+        if (editingLineoutId) {
+          await db.lineouts.put(newLineout);
+        } else {
+          await db.lineouts.add(newLineout);
+        }
+      
+        const updatedLineouts = await db.lineouts.toArray();
+        setSavedLineouts(updatedLineouts);
+        setLocalLineouts(updatedLineouts);
+      }
+      
+      
+  
+      const updatedLineouts = await db.lineouts.toArray();
+      setSavedLineouts(updatedLineouts);
+      setLineoutName("");
+      setPlayers([]);
+      setEditingLineoutId(null);
+      setFormError("");
+      await fetchLineouts();
+
+      setShowLineoutModal(false);
+    } catch (err) {
+      console.error("Error saving lineout", err);
+      setFormError("Something went wrong saving the lineout.");
+    } finally {
+      setCreatingLineout(false);
     }
-    const numbers = players.map((p) => p.number.toString());
-    const uniqueNumbers = new Set(numbers);
-    if (uniqueNumbers.size !== numbers.length) {
-      setFormError("Each player must have a unique number.");
-      return;
-    }
-    const newLineout = {
-      id: editingLineoutId || Date.now(),
-      name: lineoutName,
-      players,
-    };
-    if (editingLineoutId) {
-      // Update the existing lineout
-      await db.lineouts.put(newLineout);
-    } else {
-      // Since only one lineout is allowed, clear any existing entries and add new one.
-      await db.lineouts.clear();
-      await db.lineouts.add(newLineout);
-    }
-    
-    // Re-fetch from DB
-    const updatedLineouts = await db.lineouts.toArray();
-    setSavedLineouts(updatedLineouts);
-    setShowLineoutModal(false);
-    setLineoutName("");
-    setPlayers([]);
-    setEditingLineoutId(null);
-    setFormError("");
   };
+  
+  
+  const refreshGames = async () => {
+    const games = await db.games.toArray();
+    // console.log('refresh games games', games);
+    // console.log("Current user in refreshGames:", user);
+  
+    const localOnlyGames = games.filter((game) => {
+      if (!game.synced) return true;
+  
+      // 🔥 Updated: make sure userId matches user.uid now
+      if (!user && game.userId) return false;
+      if (!user && !game.userId) return true;
+  
+      if (user && game.userId !== user.uid) return false;
+  
+      return !game.userId;
+    });
+  
+    const syncedGames = user
+    ? games.filter((game) => game.synced && game.userId === user.email) // ✅ MATCH email
+    : [];
+  
+    setSavedGames({ local: localOnlyGames, synced: syncedGames });
+  };
+  
+  const handleSyncToCloud = async (game) => {
+    if (!user) return;
+    setSyncingGameId(game.id);
+  
+    try {
+      const updatedGame = {
+        ...game,
+        synced: true,
+        userId: user.uid, // ✅ match Firestore path
+        isComplete: game.isComplete ?? false,
+      };
+      
+  
+      await db.games.put(updatedGame);
+      await uploadGameToCloud(user.email, updatedGame);
 
-  const handleCreateStatisticSave= async () =>{
-    
-  }
-
-
+      await refreshGames();
+  
+      console.log("✅ Synced game to cloud!");
+      setJustSyncedGameId(game.id); // ✅ flash success state
+      setTimeout(() => setJustSyncedGameId(null), 2000); // ⏱️ auto clear after 2s
+    } catch (err) {
+      console.error("❌ Failed to sync game:", err);
+    } finally {
+      setSyncingGameId(null);
+    }
+  };
+  
+  
   
   // For display, only show the most recent (or only) lineout.
-  const displayedLineout =
-    savedLineouts.length > 0 ? savedLineouts[savedLineouts.length - 1] : null;
+  const displayedLineout = (() => {
+    if (!selectedLineoutId || typeof selectedLineoutId !== "string") return null;
+  
+    if (selectedLineoutId.startsWith("local-")) {
+      const id = parseInt(selectedLineoutId.replace("local-", ""));
+      return localLineouts.find((lineout) => lineout.id === id);
+    }
+  
+    if (selectedLineoutId.startsWith("cloud-")) {
+      const id = selectedLineoutId.replace("cloud-", "");
+      return cloudLineouts.find((lineout) => lineout.id === id);
+    }
+  
+    return null;
+  })();
+  
+  
+
     const handleSetInProgress = async (game) => {
       const updatedGame = { ...game, isComplete: false };
+    
       await db.games.put(updatedGame);
-      const games = await db.games.toArray();
-      setSavedGames(games);
+    
+      if (user) {
+        await uploadGameToCloud(user.email, updatedGame); // ✅ Match your Firestore path
+      }
+    
+      await refreshGames(); // ✅ Re-populate savedGames state
     };
     
+    console.log('yeeeahh boiiii', savedGames.local.filter(game => game.isComplete).length);
+    
+  
   return (
     <div className="min-h-screen bg-primary-bg text-white">
        {/* Completion Confirmation Modal */}
@@ -317,14 +572,17 @@ const handleConfirmCompleteGame = async () => {
             <li className="px-4 py-2 hover:text-indigo-400"><a href="#">Settings</a></li>
             <li className="px-4 py-2 hover:text-indigo-400"><a href="#">Subscription</a></li>
           </ul> */}
+<div className="flex flex-row items-center space-x-4">
+<span className="flex">{user ? user.email: "Guest"}</span>
           <button onClick={()=>{
             handleLogout()
           }} className="px-4 py-2 bg-primary-cta hover:bg-indigo-600 text-gray-50 rounded-xl flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
-            <span>Logout</span>
+            <span>Home </span>
           </button>
+          </div>
         </div>
       </nav>
 
@@ -340,143 +598,289 @@ const handleConfirmCompleteGame = async () => {
 
 {/* Saved Games Section */}
 <div className="bg-primary-bg pb-24 p-8 rounded-lg">
-  <div className="flex items-center space-x-3">
-    <h4 className="text-xl font-medium">Saved Games</h4>
-    <p className="text-sm text-gray-400 font-light">
-      ({savedGames.length || "No"} {savedGames.length === 1 ? "Game" : "Games"})
-    </p>
-  </div>
+<div className="flex items-center space-x-3">
+  <h4 className="text-xl font-medium">Saved Games</h4>
+  <p className="text-sm text-gray-400 font-light">
+    ({totalSavedGames || "No"} {totalSavedGames === 1 ? "Game" : "Games"})
+  </p>
+</div>
+
+
 
   {/* In Progress Section */}
   <div className="border-l-4 px-5 border-l-secondary-cta">
     <h3 className="mt-8 mb-3">In Progress</h3>
   </div>
   <div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
-    <ul className="grid grid-cols-6 gap-4">
-      {savedGames.filter(game => !game.isComplete).length > 0 ? (
-        savedGames
-          .filter(game => !game.isComplete)
-          .map((game) => (
-            <li
-              key={game.id}
-              className="bg-white/5 border-l-secondary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col"
-            >
-              <div className="mb-2">
-                <p className="text-sm font-medium">
-                  {game.opponentName || "Unknown"} ({game.venue})
-                </p>
-              </div>
-              <div className="flex justify-between">
-                <div className="flex space-x-2 w-full">
-                  <button
-                    onClick={() => handleGameClick(game)}
-                    className="py-1 bg-white/10 px-4 text-secondary-cta font-semibold rounded flex items-center text-md ml-1"
-                  >
-                    Continue
-                  </button>
-                  <button
-                    onClick={() => handleCompleteGameClick(game)}
-                    className="py-1 bg-secondary-cta px-4 text-center font-semibold rounded flex items-center text-md text-secondary-bg"
-                  >
-                    <FontAwesomeIcon icon={faCheck} className="mr-2" /> 
-                  </button>
-                  <div className="flex justify-end space-x-2 w-full">
-                    <button
-                      onClick={() => openGameEditModal(game)}
-                      className="py-1 rounded flex text-gray-400 items-center text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGame(game.id)}
-                      className="py-1 text-gray-400 rounded text-xs"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </li>
-          ))
-      ) : (
-        <li className="text-gray-400 w-44 ">No games in progress</li>
-      )}
-    </ul>
-  </div>
+  {/* Local Games */}
+  {user &&
+  <h4 className="text-sm text-white font-semibold mb-2">Local</h4>
+}
+  <ul className="grid grid-cols-6 gap-4 mb-6">
+    {savedGames.local.filter(game => !game.isComplete).length > 0 ? (
+      savedGames.local
+        .filter(game => !game.isComplete)
+        .map((game) => (
+          <li key={game.id} className="bg-white/5 border-l-secondary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10">
+            <p className="text-sm font-medium mb-2">{game.opponentName || "Unknown"} ({game.venue})</p>
+            <div className="flex justify-between items-center">
+  <button
+    onClick={() => handleGameClick(game)}
+    className="py-1 bg-white/10 px-4 text-secondary-cta font-semibold rounded"
+  >
+    {game.isComplete ? "Open" : "Continue"}
+  </button>
 
-  {/* Completed Section */}
-  <div className="border-l-4 px-5 border-l-primary-cta mt-8">
-    <h3 className="mt-8 mb-3">Completed</h3>
-  </div>
-  <div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
-    <ul className="grid grid-cols-6 gap-4">
-      {savedGames.filter(game => game.isComplete).length > 0 ? (
-        savedGames
-          .filter(game => game.isComplete)
-          .map((game) => (
-            <li
-              key={game.id}
-              className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col"
-            >
-              <div className="mb-2">
-                <p className="text-sm font-medium">
-                  {game.opponentName || "Unknown"} ({game.venue})
-                </p>
-              </div>
-              <div className="flex justify-between">
-                <div className="flex space-x-2 w-full">
-                <button
-                    onClick={() => handleGameClick(game)}
-                    className="py-1 bg-white/10 px-4 text-primary-cta font-semibold rounded flex items-center text-md ml-1"
-                  >
-                    Open
-                  </button>
-                  {/* <button
-                    onClick={() => handleSetInProgress(game)}
-                    className="p-2 w-auto px-4 bg-white/10 hover:bg-gray-500 rounded text-white"
-                  >
-                    Restore
-                  </button> */}
-                  <div className="flex justify-end space-x-2 w-full">
-                    <button
-                      onClick={() => handleSetInProgress(game)}
-                      className="py-1 rounded flex text-gray-400 items-center text-xs"
-                    >
-                      Restore
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGame(game.id)}
-                      className="py-1 text-gray-400 rounded text-xs"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </li>
-          ))
-      ) : (
-        <li className="text-gray-400">No completed games</li>
-      )}
-    </ul>
+  <div className="flex gap-2 items-center">
+{user && (
+  <button
+    onClick={() => handleSyncToCloud(game)}
+    className={`text-xs px-3 py-2 rounded flex items-center font-semibold transition-all
+      ${
+        syncingGameId === game.id
+          ? "bg-blue-600 cursor-not-allowed"
+          : justSyncedGameId === game.id
+          ? "bg-green-600"
+          : "bg-primary-danger hover:bg-blue-600"
+      }
+      text-white`}
+    disabled={syncingGameId === game.id}
+  >
+    {syncingGameId === game.id ? (
+      <>
+        <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+        Syncing...
+      </>
+    ) : justSyncedGameId === game.id ? (
+      <>
+        <span className="mr-2">✅</span> Synced!
+      </>
+    ) : (
+      <>
+        Sync to account<span className="mx-2">|</span>
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257A3 3 0 0015.574 8.4a5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+        </svg>
+      </>
+    )}
+  </button>
+)}
+
+
+    <button
+      onClick={() => handleCompleteGameClick(game)}
+      className="py-2 bg-white/10 px-4 text-white font-semibold rounded"
+    > 
+      <FontAwesomeIcon className="text-secondary-cta" icon={faCheck} />
+    </button>
   </div>
 </div>
 
+          </li>
+        ))
+    ) : (
+      <li className="text-gray-400 my-auto w-96">No local games in progress</li>
+    )}
+  </ul>
+{/* onyl want to show this is the user is logged in  */}
+{user &&
+<>
+  {/* Synced Games */}
+  <h4 className="text-sm text-white font-semibold mb-2">Cloud</h4>
+  <ul className="grid grid-cols-6 gap-4">
+    {savedGames.synced.filter(game => !game.isComplete).length > 0 ? (
+      savedGames.synced
+        .filter(game => !game.isComplete)
+        .map((game) => (
+          <li key={game.id} className="bg-white/5 border-l-green-500 border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10">
+            <p className="text-sm font-medium mb-2">{game.opponentName || "Unknown"} ({game.venue})</p>
+            <div className="flex justify-between items-center">
+              <button onClick={() => handleGameClick(game)} className="py-1 bg-white/10 px-4 text-secondary-cta font-semibold rounded">
+                Continue
+              </button>
+              <button onClick={() => handleCompleteGameClick(game)} className="py-1 bg-secondary-cta px-4 text-secondary-bg font-semibold rounded">
+                <FontAwesomeIcon icon={faCheck} />
+              </button>
+            </div>
+          </li>
+        ))
+    ) : (
+      <li className="text-gray-400 w-96 mx-2">No cloud games in progress</li>
+    )}
+  </ul>
+  </>
+}
+</div>
 
-          <div className="grid grid-cols-2 gap-4">
+
+{/* Completed Section */}
+<div className="border-l-4 px-5 border-l-primary-cta mt-8">
+  <h3 className="mt-8 mb-3">Completed</h3>
+</div>
+
+<div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
+
+{user && 
+<>
+  {/* Synced Completed Games */}
+  <h4 className="text-sm text-white font-semibold mb-2">Cloud</h4>
+  <ul className="grid grid-cols-6 gap-4">
+    {savedGames.synced.filter(game => game.isComplete).length > 0 ? (
+      savedGames.synced
+        .filter(game => game.isComplete)
+        .map((game) => (
+          <li key={game.id} className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col">
+            <div className="mb-2">
+              <p className="text-sm font-medium">
+                {game.opponentName || "Unknown"} ({game.venue})
+              </p>
+            </div>
+            <div className="flex justify-between">
+              <div className="flex space-x-2 w-full">
+                <button
+                  onClick={() => handleGameClick(game)}
+                  className="py-1 bg-white/10 px-4 text-white font-semibold rounded flex items-center text-md ml-1"
+                >
+                  Open
+                </button>
+                <div className="flex justify-end space-x-2 w-full">
+                  <button
+                    onClick={() => handleSetInProgress(game)}
+                    className="py-1 rounded flex text-gray-400 items-center text-xs"
+                  >
+                    Restore
+                  </button>
+                  <button
+                    onClick={() => handleDeleteGame(game.id)}
+                    className="py-1 text-gray-400 rounded text-xs"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))
+    ) : (
+      <li className="text-gray-400 min-w-96">No cloud completed games</li>
+    )}
+  </ul>
+  </>
+}
+
+{/* {user && savedGames.local.filter(game => game.isComplete).length > 0 &&
+<> */}
+  {/* Local Completed Games */}
+
+  {user &&  savedGames.local.filter(game => game.isComplete).length > 0 &&
+  <h4 className="text-sm mt-5 text-white font-semibold mb-2">Local</h4>
+  }
+  <ul className="grid grid-cols-6 gap-4 mb-6">
+    {savedGames.local.filter(game => game.isComplete).length > 0 ? (
+      savedGames.local
+        .filter(game => game.isComplete)
+        .map((game) => (
+          <li key={game.id} className="bg-white/5 border-l-primary-cta border-l-4 shadow-lg col-span-6 md:col-span-3 p-3 rounded-lg hover:bg-white/10 flex flex-col">
+            <div className="mb-2">
+              <p className="text-sm font-medium">
+                {game.opponentName || "Unknown"} ({game.venue})
+              </p>
+            </div>
+            <div className="flex justify-between">
+              <div className="flex space-x-2 w-full">
+                <button
+                  onClick={() => handleGameClick(game)}
+                  className="py-1 bg-white/10 px-4 text-white font-semibold rounded flex items-center text-md ml-1"
+                >
+                  Open
+                </button>
+                <div className="flex justify-end space-x-2 w-full">
+                  <button
+                    onClick={() => handleSetInProgress(game)}
+                    className="py-1 rounded flex text-gray-400 items-center text-xs"
+                  >
+                    Restore
+                  </button>
+                  <button
+                    onClick={() => handleDeleteGame(game.id)}
+                    className="py-1 text-gray-400 rounded text-xs"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))
+    ) : (
+      
+      <li className="text-gray-400 w-auto min-w-96">
+{!user
+  ? "No completed games"
+  : savedGames.local.filter(game => game.isComplete).length === 0 &&
+    (savedGames.local.length > 0 || savedGames.synced.length > 0)
+    ? "No local completed games"
+    : null}
+
+
+       </li>
+    )}
+  </ul>
+  {/* </>
+} */}
+</div>
+
+</div>
+
+
+          <div className="grid grid-cols-2 gap-4 p-8">
             {/* Lineout Section */}
             <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-2 rounded-lg mt-4">
-              <div className="flex items-center justify-between">
-                <p className="text-lg font-bold">Lineout</p>
-                {!displayedLineout && (
-                  <button
-                    onClick={openLineoutModal}
-                    className="btn btn-primary px-5 py-2 bg-primary-cta rounded-md"
-                  >
-                    Create
-                  </button>
-                )}
-              </div>
+ 
+
+            <div className="flex items-center justify-between mb-4">
+  <p className="text-lg font-bold">Lineout</p>
+
+  <div className="flex items-center space-x-4">
+  {(localLineouts.length > 0 || cloudLineouts.length > 0) && (
+  <select
+    value={selectedLineoutId || ""}
+    onChange={(e) => setSelectedLineoutId(e.target.value)}
+    className="ml-4 p-2 rounded bg-white/10 text-white"
+  >
+    <optgroup label="Local Lineouts">
+      {localLineouts.map((lineout) => (
+        <option key={`local-${lineout.id}`} value={`local-${lineout.id}`}>
+          {lineout.name}
+        </option>
+      ))}
+    </optgroup>
+
+    {user && cloudLineouts.length > 0 && (
+      <optgroup label="Cloud Lineouts">
+        {cloudLineouts.map((lineout) => (
+          <option key={`cloud-${lineout.id}`} value={`cloud-${lineout.id}`}>
+            {lineout.name}
+          </option>
+        ))}
+      </optgroup>
+    )}
+  </select>
+)}
+
+
+    <button
+      onClick={openLineoutModal}
+      className="btn btn-primary px-5 py-2 bg-primary-cta rounded-md"
+    >
+      Create
+    </button>
+  </div>
+</div>
+
               {displayedLineout ? (
                 <div className="bg-secondary-bg shadow-lg border-l-4 border-l-primary-cta p-3 rounded flex justify-between items-center mt-3">
                   <div className="w-full">
@@ -516,9 +920,8 @@ const handleConfirmCompleteGame = async () => {
                           Edit
                         </button>
                         <button
-                          onClick={() =>
-                            handleDeleteLineout(displayedLineout.id)
-                          }
+                        onClick={() => handleDeleteLineout(displayedLineout.id)}
+
                           className="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm"
                         >
                           Delete
@@ -669,11 +1072,43 @@ const handleConfirmCompleteGame = async () => {
                 Cancel
               </button>
               <button
-                onClick={handleSaveLineout}
-                className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
-              >
-                Save Lineout
-              </button>
+  onClick={handleSaveLineout}
+  className={`px-4 py-2 rounded ${
+    creatingLineout
+      ? "bg-blue-700 cursor-not-allowed"
+      : "bg-indigo-600 hover:bg-primary-cta"
+  }`}
+  disabled={creatingLineout}
+>
+  {creatingLineout ? (
+    <span className="flex items-center gap-2">
+      <svg
+        className="animate-spin h-4 w-4 text-white"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v8H4z"
+        />
+      </svg>
+      Creating...
+    </span>
+  ) : (
+    "Save Lineout"
+  )}
+</button>
+
             </div>
           </div>
         </div>

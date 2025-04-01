@@ -1,4 +1,4 @@
-import { useState,useEffect ,useRef,useCallback} from "react";
+import { useState,useEffect ,useRef,useCallback,useMemo} from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
@@ -25,12 +25,23 @@ export default function InGame() {
   const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
   //for the new multiple filters feature
   const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
-  const [opponentScore,setOpponentScore] = useState(0)
+
+
+
+
+
+
   const [currentQuater,setCurrentQuarter]=useState(1)
   const [leadChanges,setleadChanges] = useState([])
   const location = useLocation();
   const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
   const [playerPoints, setPlayerPoints] = useState({}); // Store player points
+  useEffect(() => {
+    if (savedGame && savedGame.id) {
+      setCurrentGameId(savedGame.id);
+    }
+  }, [savedGame]);
+  
   const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
@@ -43,10 +54,8 @@ export default function InGame() {
   const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
   const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
   const [minutesTracked, setMinutesTracked] = useState(savedGame?.minutesTracked || null);
-
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
-// const minutesTracked = savedGame.minutesTrackedEnabled;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
 const [gameStatsExpanded,setGameStatsExpanded] = useState(false);
@@ -57,22 +66,19 @@ const quartersNew = ["Q1", "Q2", "Q3", "Q4"];
 const [selectedQuarter, setSelectedQuarter] = useState("All");
 const availableQuarters = [...new Set(leadChanges.map((lead) => lead.q))].sort((a, b) => a - b);
 const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
-const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
+
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
 const [opponentActions, setOpponentActions] = useState(savedGame?.opponentActions || []);
 const [minutes, setMinutes] = useState(savedGame?.quarterTimes?.[1]?.minutes || 10);
 const [seconds, setSeconds] = useState(savedGame?.quarterTimes?.[1]?.seconds || 0);
-
 const minutesRef = useRef(minutes);
 const secondsRef = useRef(seconds);
-
 const [isRunning, setIsRunning] = useState(false);
 const intervalRef = useRef(null); // To keep track of interval
 const [showTimeModal, setShowTimeModal] = useState(false);
 const [onCourtPlayers, setOnCourtPlayers] = useState([]);
 const onCourtPlayersRef = useRef(onCourtPlayers);
-
 const [showLineoutModal, setShowLineoutModal] = useState(false);
 const [playerMinutes, setPlayerMinutes] = useState(savedGame?.playerMinutes || {});
 const [hasFirstMinutePassed, setHasFirstMinutePassed] = useState(false);
@@ -83,7 +89,10 @@ const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   4: { minutes: 10, seconds: 0 },
 });
 
-
+const opponentScore = gameActions
+  .filter(a => a.type === 'score' && a.team === 'away')
+  .reduce((sum, a) => sum + a.points, 0);
+  const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
 useEffect(() => {
   minutesRef.current = minutes;
 }, [minutes]);
@@ -462,32 +471,31 @@ useEffect(() => {
   }
 }, [gameActions, opponentName]);
 
+const updateOpponentScore = async (points) => {
+  const newAction = {
+    type: 'score',
+    team: 'away',
+    points,
+    quarter: currentQuater,
+    timestamp: Date.now()
+  };
 
+  const updatedGameActions = [...gameActions, newAction];
+  setGameActions(updatedGameActions); // 🔥 This will trigger re-renders + animations
 
-const updateOpponentScore = async (newScore, points) => {
-  // Create the new action object
-  const newAction = { quarter: currentQuater, points, score: newScore, timestamp: Date.now() };
-  
-  // First update the state
-  const updatedActions = [...opponentActions, newAction];
-  setOpponentActions(updatedActions);
-  
-  // Update the opponent score
-  setOpponentScore(newScore);
-  
   try {
-    // Save to database with the updated actions array
     await db.games.update(currentGameId, {
-      opponentScore: newScore,
-      opponentActions: updatedActions,
+      gameActions: updatedGameActions,
     });
-    console.log("Opponent score updated in DB:", newScore);
-    //calling the save game 
-    handleSaveGame();
+
+    console.log("✅ Opponent action saved via gameActions:", newAction);
+    handleSaveGame(); // Optional: only call if auto-saving now
   } catch (error) {
-    console.error("Error updating opponent score:", error);
+    console.error("❌ Error updating opponent score:", error);
   }
 };
+
+
 
   const handleGameAction = (action) => {
     if (!actionSelected) {
@@ -521,37 +529,38 @@ const updateOpponentScore = async (newScore, points) => {
   
   const handlePlayerSelection = (player) => {
     if (!pendingAction) return;
-
+  
     const actionName = pendingAction.actionName;
-
+  
     // Determine how many points this action is worth
     let points = 0;
     if (actionName === "2 Points") points = 2;
     if (actionName === "3 Points") points = 3;
     if (actionName === "FT Score") points = 1;
-
+  
     const newAction = {
       ...pendingAction,
       playerName: player.name,
       playerNumber: player.number,
-      points, // Add points to the action
+      points,
+      team: 'home',           // ✅ add this
+      type: 'score',          // ✅ add this
       timestamp: Date.now(),
     };
-
+  
     setGameActions((prev) => [...prev, newAction]);
-
-    // Update the player's total points
+  
     setPlayerPoints((prevPoints) => ({
       ...prevPoints,
-      [player.name]: (prevPoints[player.name] || 0) + points, // Add to existing points
+      [player.name]: (prevPoints[player.name] || 0) + points,
     }));
-
+  
     setShowPlayerModal(false);
     setPendingAction(null);
     setAlertMessage(`${actionName} recorded for ${player.name}!`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
-
+  
 
 // this is the handler for entering the OT
 const handleOTClick = ()=>{
@@ -692,12 +701,15 @@ useEffect(() => {
     fetchOpponentGameActions();
   }
 }, [currentGameId]);
+
+
 const handleSaveGame = async () => {
-  if (gameActions.length === 0) {
+  if (gameActions.length === 0 && opponentActions.length === 0) {
     setAlertMessage("No actions to save!");
     setTimeout(() => setAlertMessage(""), 2000);
     return;
   }
+  
 
   let gameId = currentGameId;
 
@@ -712,13 +724,11 @@ const handleSaveGame = async () => {
       gameId = `game_${opponentName}_${Date.now()}`;
     }
   }
-  
   const gameData = {
     id: gameId,
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
-    opponentScore,
     opponentActions,
     leadChanges,
     lineout: savedGame?.lineout || passedLineout,
@@ -728,6 +738,7 @@ const handleSaveGame = async () => {
     timestamp: new Date().toISOString(),
     opponentLogo,
   };
+  
   try {
     const existingGame = await db.games.get(gameId);
     if (existingGame) {
@@ -746,7 +757,7 @@ if (user) {
       ...gameData,
       id: gameId, // just to be sure
       actions: gameActions,
-      opponentScore,
+ 
       opponentActions,
       leadChanges,
       lineout: savedGame?.lineout || passedLineout,
@@ -757,7 +768,7 @@ if (user) {
     };
 
     const cleaned = cleanForFirestore(fullGameData);
-    await uploadGameToCloud(user.uid, cleaned);
+    await uploadGameToCloud(user.email, cleaned);
     console.log("✅ Game synced to Firestore!");
   } catch (err) {
     console.error("🔥 Failed to sync game:", err);
@@ -779,9 +790,7 @@ if (user) {
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
-    if (typeof savedGame.opponentScore === "number") {
-      setOpponentScore(savedGame.opponentScore);
-    }
+ 
     
     setOpponentActions(savedGame.opponentActions || []);
     setleadChanges(savedGame.leadChanges || []);
@@ -812,6 +821,11 @@ useEffect(() => {
 
 
 
+useEffect(() => {
+  if (savedGame && savedGame.id) {
+    setCurrentGameId(savedGame.id);
+  }
+}, [savedGame]);
 
 
 
@@ -1038,85 +1052,85 @@ const actions = [
     ),
   }
 ];
+useEffect(() => {
+  // ✅ Filter only actions that have actionName
+  const actionsWithNames = gameActions.filter(action => !!action.actionName);
+  const currentQuarterActions = actionsWithNames.filter(action => action.quarter === currentQuater);
 
-  useEffect(() => {
-    // Overall stats
-    const overallFieldGoalAttempts = gameActions.filter((action) =>
-      ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
-    );
-    const overallFieldGoalMakes = overallFieldGoalAttempts.filter(
-      (action) => !action.actionName.includes("Miss")
-    );
+  // Overall stats
+  const overallFieldGoalAttempts = actionsWithNames.filter((action) =>
+    ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
+  );
+  const overallFieldGoalMakes = overallFieldGoalAttempts.filter(
+    (action) => !action.actionName.includes("Miss")
+  );
 
-    const overallThreePointAttempts = gameActions.filter((action) =>
-      action.actionName.includes("3")
-    );
-    const overallThreePointMakes = overallThreePointAttempts.filter(
-      (action) => !action.actionName.includes("Miss")
-    );
+  const overallThreePointAttempts = actionsWithNames.filter((action) =>
+    action.actionName.includes("3")
+  );
+  const overallThreePointMakes = overallThreePointAttempts.filter(
+    (action) => !action.actionName.includes("Miss")
+  );
 
-    setFieldGoal({
-      total: overallFieldGoalAttempts.length,
-      made: overallFieldGoalMakes.length,
-    });
+  setFieldGoal({
+    total: overallFieldGoalAttempts.length,
+    made: overallFieldGoalMakes.length,
+  });
 
-    setThreePoint({
-      total: overallThreePointAttempts.length,
-      made: overallThreePointMakes.length,
-    });
+  setThreePoint({
+    total: overallThreePointAttempts.length,
+    made: overallThreePointMakes.length,
+  });
 
-    setFieldGoalPercentage(
-      Math.round((overallFieldGoalMakes.length / overallFieldGoalAttempts.length) * 100) || 0
-    );
-    setThreePointPercentage(
-      Math.round((overallThreePointMakes.length / overallThreePointAttempts.length) * 100) || 0
-    );
+  setFieldGoalPercentage(
+    Math.round((overallFieldGoalMakes.length / overallFieldGoalAttempts.length) * 100) || 0
+  );
+  setThreePointPercentage(
+    Math.round((overallThreePointMakes.length / overallThreePointAttempts.length) * 100) || 0
+  );
 
-    // Current quarter stats
-    const currentQuarterActions = gameActions.filter(
-      (action) => action.quarter === currentQuater
-    );
+  // Current quarter stats
+  const currentFieldGoalAttempts = currentQuarterActions.filter((action) =>
+    ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
+  );
+  const currentFieldGoalMakes = currentFieldGoalAttempts.filter(
+    (action) => !action.actionName.includes("Miss")
+  );
 
-    const currentFieldGoalAttempts = currentQuarterActions.filter((action) =>
-      ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(action.actionName)
-    );
-    const currentFieldGoalMakes = currentFieldGoalAttempts.filter(
-      (action) => !action.actionName.includes("Miss")
-    );
+  const currentThreePointAttempts = currentQuarterActions.filter((action) =>
+    action.actionName.includes("3")
+  );
+  const currentThreePointMakes = currentThreePointAttempts.filter(
+    (action) => !action.actionName.includes("Miss")
+  );
 
-    const currentThreePointAttempts = currentQuarterActions.filter((action) =>
-      action.actionName.includes("3")
-    );
-    const currentThreePointMakes = currentThreePointAttempts.filter(
-      (action) => !action.actionName.includes("Miss")
-    );
+  setFieldGoal((prevState) => ({
+    ...prevState,
+    currentTotal: currentFieldGoalAttempts.length,
+    currentMade: currentFieldGoalMakes.length,
+  }));
 
-    setFieldGoal((prevState) => ({
-      ...prevState,
-      currentTotal: currentFieldGoalAttempts.length,
-      currentMade: currentFieldGoalMakes.length,
-    }));
+  setThreePoint((prevState) => ({
+    ...prevState,
+    currentTotal: currentThreePointAttempts.length,
+    currentMade: currentThreePointMakes.length,
+  }));
 
-    setThreePoint((prevState) => ({
-      ...prevState,
-      currentTotal: currentThreePointAttempts.length,
-      currentMade: currentThreePointMakes.length,
-    }));
+  setFieldGoalPercentage((prevState) => ({
+    ...prevState,
+    current: Math.round(
+      (currentFieldGoalMakes.length / currentFieldGoalAttempts.length) * 100
+    ) || 0,
+  }));
 
-    setFieldGoalPercentage((prevState) => ({
-      ...prevState,
-      current: Math.round(
-        (currentFieldGoalMakes.length / currentFieldGoalAttempts.length) * 100
-      ) || 0,
-    }));
+  setThreePointPercentage((prevState) => ({
+    ...prevState,
+    current: Math.round(
+      (currentThreePointMakes.length / currentThreePointAttempts.length) * 100
+    ) || 0,
+  }));
+}, [gameActions, currentQuater]);
 
-    setThreePointPercentage((prevState) => ({
-      ...prevState,
-      current: Math.round(
-        (currentThreePointMakes.length / currentThreePointAttempts.length) * 100
-      ) || 0,
-    }));
-  }, [gameActions, currentQuater]);
 
   useEffect(() => {
     if (savedGame?.actions) {
@@ -1216,53 +1230,42 @@ gameActions.forEach((action) => {
 };
   
   //! this is the chart render logic
-  const transformGameActionsToLineData = (gameActions, opponentActions, currentQuarter) => {
-    const quarterPoints = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
-    const quarterOpponentPoints = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
-    
-    // Team actions
+  const transformGameActionsToLineData = (gameActions, currentQuarter) => {
+    const quarterPoints = {};        // home
+    const quarterOpponentPoints = {}; // away
+  
+    for (let q = 1; q <= 8; q++) {
+      quarterPoints[q] = 0;
+      quarterOpponentPoints[q] = 0;
+    }
+  
     gameActions.forEach(action => {
-      if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
-        const points = action.actionName === "2 Points" ? 2 : action.actionName === "3 Points" ? 3 : 1;
-        quarterPoints[action.quarter] += points;
+      if (action.type === 'score' && action.team === 'home') {
+        quarterPoints[action.quarter] += action.points;
+      } else if (action.type === 'score' && action.team === 'away') {
+        quarterOpponentPoints[action.quarter] += action.points;
       }
     });
-    
-    // Opponent actions - use a single loop
-    if (Array.isArray(opponentActions)) {
-      opponentActions.forEach(action => {
-        if (action && action.quarter && action.points) {
-          quarterOpponentPoints[action.quarter] += action.points;
-        }
-      });
-    }
-    
-
-    
-    // Filtered quarters logic...
+  
     const filteredQuarters = [1, 2, 3, 4].concat(
       currentQuarter > 4 ? Array.from({ length: currentQuarter - 4 }, (_, i) => i + 5) : []
     );
-    
+  
     return [
       {
         id: "Ravens",
         color: "#007AFF",
-        data: filteredQuarters.map(quarter => ({
-          x: `Q${quarter}`,
-          y: quarterPoints[quarter]
-        }))
+        data: filteredQuarters.map(q => ({ x: `Q${q}`, y: quarterPoints[q] }))
       },
       {
         id: "Opponent",
         color: "#FF5733",
-        data: filteredQuarters.map(quarter => ({
-          x: `Q${quarter}`,
-          y: quarterOpponentPoints[quarter]
-        }))
+        data: filteredQuarters.map(q => ({ x: `Q${q}`, y: quarterOpponentPoints[q] }))
       }
     ];
   };
+  
+  
 
   
   
@@ -1343,7 +1346,9 @@ gameActions.forEach((action) => {
   
   // Update the line chart data with opponentActions
   // const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
-  const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
+  const gameLineChartData = transformGameActionsToLineData(gameActions, currentQuater);
+
+
   const barData = transformGameActionsToBarData(gameActions);
   const pieData = transformGameActionsToPieData(gameActions);
   const testdata = [
@@ -1512,6 +1517,100 @@ useEffect(() => {
     onCourtPlayersRef.current = defaultOnCourt; // ✅ Sync ref
   }
 }, [passedLineout]);
+
+function getCurrentRun(actions) {
+  const minRunLength = 2;
+  let run = {
+    team: null,
+    points: 0,
+    actions: [],
+  };
+
+  for (let i = actions.length - 1; i >= 0; i--) {
+    const action = actions[i];
+    if (action.type !== "score" || !action.team) continue;
+
+    if (!run.team) {
+      run.team = action.team;
+      run.points = action.points;
+      run.actions = [action];
+    } else if (action.team === run.team) {
+      run.points += action.points;
+      run.actions.unshift(action);
+    } else {
+      // Opposing team scored — run ends
+      break;
+    }
+  }
+
+  return run.actions.length >= minRunLength ? run : null;
+}
+
+
+
+
+
+
+// const [currentRun, setCurrentRun] = useState(null);
+function getOpponentPointsDuringRun(run, allActions) {
+  if (!run || !run.actions || run.actions.length === 0) return 0;
+
+  const runStartTime = run.actions[0].timestamp;
+  const runEndTime = run.actions[run.actions.length - 1].timestamp;
+
+  // Get the opposing team
+  const opposingTeam = run.team === "home" ? "away" : "home";
+
+  // Sum up points from the opposite team **within the same timeframe**
+  const points = allActions
+    .filter(
+      (a) =>
+        a.type === "score" &&
+        a.team === opposingTeam &&
+        a.timestamp >= runStartTime &&
+        a.timestamp <= runEndTime
+    )
+    .reduce((sum, a) => sum + (a.points || 0), 0);
+
+  return points;
+}
+const currentRun = useMemo(() => {
+  return getCurrentRun([...gameActions, ...opponentActions]);
+}, [gameActions, opponentActions]);
+
+
+const runPoints = currentRun?.points || 0;
+const opponentPoints = currentRun ? 0 : null;
+
+
+
+// const opponentPoints = currentRun?.opponentPoints ?? 0;
+const total = currentRun?.points + opponentPoints;
+// const progress = total > 0 ? (currentRun?.points / total) * 100 : 100;
+function getRunStartScore(run, allActions) {
+  if (!run || run.actions.length === 0) return null;
+
+  const runStartTimestamp = run.actions[0].timestamp;
+  let teamScore = 0;
+  let opponentScore = 0;
+  const team = run.team;
+  const opponent = team === "home" ? "away" : "home";
+
+  allActions.forEach(action => {
+    if (action.type === "score" && action.timestamp < runStartTimestamp) {
+      if (action.team === team) {
+        teamScore += action.points || 0;
+      } else if (action.team === opponent) {
+        opponentScore += action.points || 0;
+      }
+    }
+  });
+
+  return { teamScore, opponentScore };
+}
+const runStartScore = useMemo(() => {
+  return getRunStartScore(currentRun, [...gameActions, ...opponentActions]);
+}, [currentRun, gameActions, opponentActions]);
 
 
 
@@ -1868,25 +1967,25 @@ useEffect(() => {
 
      h-full text-center flex space-x-1 px-1 items-center rounded-lg `}>
   <button
-   onClick={() => updateOpponentScore(opponentScore + 2, 2)}
+   onClick={() => updateOpponentScore(2)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +2
   </button>
   <button
-   onClick={() => updateOpponentScore(opponentScore + 3, 3)}
+   onClick={() => updateOpponentScore(3)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +3
   </button>
   <button
-onClick={() => updateOpponentScore(opponentScore + 1, 1)}
+onClick={() => updateOpponentScore(1)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     +1
   </button>
   <button
-onClick={() => updateOpponentScore(opponentScore -1 , -1)}
+onClick={() => updateOpponentScore(-1)}
     className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
   >
     -1
@@ -3023,25 +3122,88 @@ space-y-2`}>
         <span className="text-sm text-gray-400">{threePtMade}-{threePtAttempts}</span>
       </div>
 
-      {/* FT */}
-      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
+   
+     {/* Runs */}
+     {currentRun && (
+  <div className="flex flex-col items-center text-white w-full space-y-2 bg-[#1e222a9b] p-4 min-w-[240px]">
+    {/* Header */}
+    <div className="text-md uppercase tracking-wide text-gray-200">Current Run</div>
 
-        <div className={`flex items-center justify-center p-2 rounded-full
-          ${ftPercentage === 0
-            ? "bg-gray-700"
-            : ftPercentage >= 25
-              ? "bg-primary-cta"
-              : "bg-primary-danger"}`}>
-          <span className="text-white text-sm font-bold">FT</span>
-        </div>
+    {/* Run Score */}
+    <div className="text-3xl font-extrabold flex flex-row text-white items-center">
+  {/* Left Logo (Ravens) */}
+  {currentRun.team === "home" && (
+    <img
+      src={ravensLogo}
+      alt="Ravens Logo"
+      className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"
+    />
+  )}
 
-        <span className={`text-2xl font-bold 
-          text-gray-200`}>
-          {ftPercentage}%
-        </span>
+  {/* Run Score */}
+  <span>{runPoints}</span>
+<span className="mx-1 text-gray-400">–</span>
+<span className="text-gray-400">{opponentPoints ?? ''}</span>
 
-        <span className="text-sm text-gray-400">{ftMade}-{ftAttempts}</span>
-      </div>
+
+
+  {/* Right Logo (Opponent) */}
+  {currentRun.team === "away" && (
+    <img
+      src={opponentLogo || opponentJerseyDefault}
+      alt="Opponent Logo"
+      className="w-10 h-10 rounded-full border-2 border-secondary-cta shadow ml-3"
+    />
+  )}
+</div>
+
+
+    {/* Subtext */}
+    {runStartScore && (
+  <div className="flex items-center space-x-2 text-sm text-gray-400">
+    {/* Start Score */}
+    <span className="bg-gray-700 rounded-full px-2 py-0.5">
+      {runStartScore.teamScore}–{runStartScore.opponentScore}
+    </span>
+
+    {/* Arrow */}
+    <span className="text-lg">→</span>
+
+    {/* Current Score */}
+    <span className="bg-gray-700 rounded-full px-2 py-0.5">
+      {teamScore}–{opponentScore}
+    </span>
+  </div>
+)}
+
+
+
+    {/* Progress Bar */}
+
+  </div>
+)}
+
+   {/* FT */}
+   <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
+
+<div className={`flex items-center justify-center p-2 rounded-full
+  ${ftPercentage === 0
+    ? "bg-gray-700"
+    : ftPercentage >= 25
+      ? "bg-primary-cta"
+      : "bg-primary-danger"}`}>
+  <span className="text-white text-sm font-bold">FT</span>
+</div>
+
+<span className={`text-2xl font-bold 
+  text-gray-200`}>
+  {ftPercentage}%
+</span>
+
+<span className="text-sm text-gray-400">{ftMade}-{ftAttempts}</span>
+</div>
+
+
 
       {/* Blocks */}
       <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px] 
@@ -3654,7 +3816,7 @@ space-y-2`}>
     value={opponentScore} // Bind input value to state
     onChange={(e) => {
         let value = e.target.value.replace(/^0+(?=\d)/, ""); // Remove leading zeros
-        setOpponentScore(value === "" ? 0 : Number(value)); // If empty, reset to 0
+   
     }} 
     required 
 />

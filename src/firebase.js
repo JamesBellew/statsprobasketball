@@ -13,9 +13,8 @@ const firebaseConfig = {
   appId: "1:1099103495228:web:3e76c85e414d6636450f39",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app); // ✅ You can name this `firestore`
 
-// Export shared services
-export const db = getFirestore(app);
 export const auth = getAuth(app);
+export { firestore }; 
