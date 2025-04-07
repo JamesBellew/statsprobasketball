@@ -33,6 +33,9 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">07/04/2025 - Version 1.71</p>
+<hr></hr>
+<li className="py-2">Court now scales for horizontal viewing on tablets</li>
 <p className="font-bold text-primary-danger text-sm">07/04/2025 - Version 1.70</p>
 <hr></hr>
 <li className="py-2">Some animations for when games are savign and when games are synching </li>
