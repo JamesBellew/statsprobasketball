@@ -19,6 +19,9 @@ export default function StartGame() {
 
   const location = useLocation();
   const selectedLineoutFromNav = location.state?.lineout;
+  const passedTeamName = location.state?.teamName || "Home";
+  console.log('team name ',passedTeamName);
+  
   
   const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
   
@@ -95,7 +98,8 @@ export default function StartGame() {
       playerStatsEnabled,
       lineout: selectedLineoutData,
       opponentLogo, // Pass logo data
-      minutesTracked
+      minutesTracked,
+      passedTeamName
     };
 
     navigate("/ingame", { state: gameState });
@@ -128,14 +132,15 @@ export default function StartGame() {
 
   return (
     <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">
+
+      <div className="container mx-auto">
       <button onClick={()=>{
    navigate("/homedashboard"); 
-      }} className="bg-primary-danger px-5 py-2 rounded-md cursor-pointer absolute top-5 left-5 w-48 flex items-center justify-center  ">
+      }} className="bg-primary-cta  py-2 px-10 rounded-md cursor-pointer absolute top-5 mx-10 w-auto flex items-center justify-center  ">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
   <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
 </svg>
 Back</button>
-      <div className="container mx-auto">
         <div className="w-full px-10 my-auto flex-row justify-center items-center">
           <label htmlFor="small-input" className="block mb-2 text-sm font-medium text-gray-200">
             Opponent

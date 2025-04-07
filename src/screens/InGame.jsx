@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { doc as firestoreDoc, getDoc,setDoc } from "firebase/firestore";
 import { db } from "../db";
 import { Menu } from '@headlessui/react';
 import head1 from '../assets/steph-curry.webp';
@@ -16,6 +17,11 @@ import { ResponsiveBar } from '@nivo/bar';
 import { uploadGameToCloud } from "../utils/syncGameToCloud"; // adjust path
 import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
 import { cleanForFirestore } from "../utils/cleanForFirestore";
+import { fetchTeamSettings } from "../utils/fetchTeamSettings";
+import { firestore } from "../firebase";
+// import { db } from "../db";
+
+
 export default function InGame() {
   const navigate = useNavigate();
   //old singular filter feature
@@ -66,7 +72,8 @@ const quartersNew = ["Q1", "Q2", "Q3", "Q4"];
 const [selectedQuarter, setSelectedQuarter] = useState("All");
 const availableQuarters = [...new Set(leadChanges.map((lead) => lead.q))].sort((a, b) => a - b);
 const [prevTeamScore, setPrevTeamScore] = useState(teamScore);
-
+const [teamName, setTeamName] = useState(null);
+const [teamImage,setTeamImage] = useState("");
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
 const [opponentActions, setOpponentActions] = useState(savedGame?.opponentActions || []);
@@ -88,7 +95,57 @@ const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   3: { minutes: 10, seconds: 0 },
   4: { minutes: 10, seconds: 0 },
 });
+const locationGameState = location.state || {};
+const [homeTeamName, setHomeTeamName] = useState("Home");
+// console.log('this is the team name', homeTeamName);
 
+useEffect(() => {
+  const loadTeamSettings = async () => {
+    const settings = await fetchTeamSettings(user);
+    if (settings?.teamImage) {
+      setTeamImage(settings.teamImage); // ✅ local state
+    }
+  };
+  loadTeamSettings();
+}, [user]);
+
+useEffect(() => {
+  const initTeamName = async () => {
+    // 🧠 1. Check if game was opened (location.state is empty) — use savedGame instead
+    if (locationGameState.homeTeamName) {
+      setHomeTeamName(locationGameState.homeTeamName);
+      return;
+    }
+
+    // 🧠 2. If game is already saved and has homeTeamName
+    if (savedGame?.homeTeamName) {
+      setHomeTeamName(savedGame.homeTeamName);
+      return;
+    }
+
+    // 🧠 3. Fallback: load from settings
+    try {
+      let name = null;
+      if (user) {
+        const ref = firestoreDoc(firestore, "users", user.uid, "settings", "preferences");
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          name = snap.data().teamName;
+        }
+      } else {
+        const localSettings = await db.settings.get("preferences");
+        name = localSettings?.teamName;
+      }
+
+      setHomeTeamName(name || "Home");
+    } catch (err) {
+      console.error("Error loading team name:", err);
+      setHomeTeamName("Home");
+    }
+  };
+
+  initTeamName();
+}, [user, savedGame, locationGameState]);
 const opponentScore = gameActions
   .filter(a => a.type === 'score' && a.team === 'away')
   .reduce((sum, a) => sum + a.points, 0);
@@ -184,6 +241,34 @@ useEffect(() => {
 
   return () => clearInterval(intervalRef.current);
 }, [isRunning, hasFirstMinutePassed]);
+
+
+useEffect(() => {
+  const fetchTeamName = async () => {
+    let name = null;
+
+    try {
+      if (user) {
+        const ref = firestoreDoc(firestore, "users", user.uid, "settings", "preferences");
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          name = snap.data()?.teamName;
+        }
+      } else {
+        const localSettings = await db.settings.get("preferences");
+        name = localSettings?.teamName;
+      }
+    } catch (err) {
+      console.error("Error fetching team name:", err);
+    }
+
+    setTeamName(name || "Opponent");
+    console.log("🏀 Team Name:", name || "Opponent");
+  };
+
+  fetchTeamName();
+}, [user]);
+
 
 
 const updatePlayerMinutes = () => {
@@ -702,21 +787,18 @@ useEffect(() => {
   }
 }, [currentGameId]);
 
-
 const handleSaveGame = async () => {
   if (gameActions.length === 0 && opponentActions.length === 0) {
     setAlertMessage("No actions to save!");
     setTimeout(() => setAlertMessage(""), 2000);
     return;
   }
-  
 
   let gameId = currentGameId;
 
   if (!gameId && savedGame?.id) {
     gameId = savedGame.id;
   } else if (!gameId) {
-    // 🔍 Try to find a game by opponentName + venue
     const existing = await db.games.where({ opponentName, selectedVenue }).first();
     if (existing) {
       gameId = existing.id;
@@ -724,6 +806,7 @@ const handleSaveGame = async () => {
       gameId = `game_${opponentName}_${Date.now()}`;
     }
   }
+
   const gameData = {
     id: gameId,
     opponentName,
@@ -737,50 +820,39 @@ const handleSaveGame = async () => {
     quarterTimes,
     timestamp: new Date().toISOString(),
     opponentLogo,
+    score: {
+      home: teamScore,
+      opponent: opponentScore,
+    },
+    homeTeamName,
+    userId: user ? user.uid : null,
+    synced: !!user,
   };
-  
+
   try {
-    const existingGame = await db.games.get(gameId);
-    if (existingGame) {
-      await db.games.update(gameId, gameData);
-      console.log("Game updated locally:", gameData);
+    if (user) {
+      // 🔥 Save only to Firestore if logged in
+      const cleaned = cleanForFirestore(gameData);
+      const docRef = firestoreDoc(firestore, "users", user.uid, "games", gameId);
+      await setDoc(docRef, cleaned);
+      console.log("✅ Game synced to Firestore!");
     } else {
-      await db.games.put(gameData);
-      console.log("New game saved locally:", gameData);
+      // 💾 Save locally only if user is not logged in
+      const existingGame = await db.games.get(gameId);
+      if (existingGame) {
+        await db.games.update(gameId, gameData);
+        console.log("📝 Game updated locally:", gameData);
+      } else {
+        await db.games.put(gameData);
+        console.log("🆕 New game saved locally:", gameData);
+      }
     }
-
-    // 🔥 Cloud sync only if logged in
-// ✅ Move this before the testData
-if (user) {
-  try {
-    const fullGameData = {
-      ...gameData,
-      id: gameId, // just to be sure
-      actions: gameActions,
- 
-      opponentActions,
-      leadChanges,
-      lineout: savedGame?.lineout || passedLineout,
-      minutesTracked,
-      playerMinutes,
-      quarterTimes,
-      opponentLogo,
-    };
-
-    const cleaned = cleanForFirestore(fullGameData);
-    await uploadGameToCloud(user.email, cleaned);
-    console.log("✅ Game synced to Firestore!");
-  } catch (err) {
-    console.error("🔥 Failed to sync game:", err);
-  }
-}
-
 
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
     setCurrentGameId(gameId);
   } catch (error) {
-    console.error("Error saving game:", error);
+    console.error("❌ Error saving game:", error);
     setAlertMessage("Error saving game. Please try again.");
   }
 
@@ -872,21 +944,30 @@ const handleCourtClick = (e) => {
       quarter: currentQuater,
       x,
       y,
-      ...timeData, // ✅ Attach clock time
+      team: 'home',
+      ...timeData,
     });
     setShowPlayerModal(true);
   } else {
-    // No player modal, save immediately
+    // ✅ This is where you want to put the updated newAction
     const newAction = {
       quarter: currentQuater,
       actionName: actionSelected,
       x,
       y,
-      ...timeData, // ✅ Attach clock time
+      team: "home",
+      type: "score",
+      timestamp: Date.now(),
+      points: actionSelected === "3 Points" ? 3
+            : actionSelected === "2 Points" ? 2
+            : actionSelected === "FT Score" ? 1
+            : 0,
+      ...timeData,
     };
+
     setGameActions((prev) => [...prev, newAction]);
     setAlertMessage(`${actionSelected} recorded.`);
-    setPendingAction(null); // Clear temp dot
+    setPendingAction(null);
     setTimeout(() => setAlertMessage(""), 3000);
   }
 };
@@ -1230,7 +1311,7 @@ gameActions.forEach((action) => {
 };
   
   //! this is the chart render logic
-  const transformGameActionsToLineData = (gameActions, currentQuarter) => {
+  const transformGameActionsToLineData = (gameActions, currentQuarter, homeTeamName = "Home") => {
     const quarterPoints = {};        // home
     const quarterOpponentPoints = {}; // away
   
@@ -1253,7 +1334,7 @@ gameActions.forEach((action) => {
   
     return [
       {
-        id: "Ravens",
+        id: homeTeamName || "home", // ✅ dynamic label
         color: "#007AFF",
         data: filteredQuarters.map(q => ({ x: `Q${q}`, y: quarterPoints[q] }))
       },
@@ -1265,6 +1346,8 @@ gameActions.forEach((action) => {
     ];
   };
   
+  
+  console.log(gameActions);
   
 
   
@@ -1346,7 +1429,7 @@ gameActions.forEach((action) => {
   
   // Update the line chart data with opponentActions
   // const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
-  const gameLineChartData = transformGameActionsToLineData(gameActions, currentQuater);
+  const gameLineChartData = transformGameActionsToLineData(gameActions, currentQuater, homeTeamName);
 
 
   const barData = transformGameActionsToBarData(gameActions);
@@ -1519,10 +1602,12 @@ useEffect(() => {
 }, [passedLineout]);
 
 function getCurrentRun(actions) {
-  const minRunLength = 2;
+  const minRunPoints = 6; // Start tracking runs only after 6 points
   let run = {
     team: null,
     points: 0,
+    opponentPoints: 0,
+    opponentScores: 0,
     actions: [],
   };
 
@@ -1531,20 +1616,32 @@ function getCurrentRun(actions) {
     if (action.type !== "score" || !action.team) continue;
 
     if (!run.team) {
+      // First action in run
       run.team = action.team;
       run.points = action.points;
       run.actions = [action];
     } else if (action.team === run.team) {
+      // Same team scored
       run.points += action.points;
       run.actions.unshift(action);
     } else {
-      // Opposing team scored — run ends
-      break;
+      // Opponent scored
+      run.opponentScores += 1;
+      run.opponentPoints += action.points || 0;
+
+      if (run.opponentScores === 1) {
+        // Include the first opposing score in the run (but don't stop it yet)
+        run.actions.unshift(action);
+      } else {
+        break; // Second opponent bucket = run ends
+      }
     }
   }
 
-  return run.actions.length >= minRunLength ? run : null;
+  // Require run to be significant (6–0, 10–2, etc.)
+  return run.points >= minRunPoints ? run : null;
 }
+
 
 
 
@@ -1580,7 +1677,8 @@ const currentRun = useMemo(() => {
 
 
 const runPoints = currentRun?.points || 0;
-const opponentPoints = currentRun ? 0 : null;
+const opponentPoints = currentRun?.opponentPoints || 0;
+
 
 
 
@@ -1947,14 +2045,16 @@ const runStartScore = useMemo(() => {
     </span>
 
     {/* Home Team (Ravens) */}
-    <img 
+    {/* <img 
       className="w-8 h-8 rounded-full ml-2"
       src={ravensLogo} 
       alt="Ravens" 
-    />
+    /> */}
+    <img   className="w-8 h-8 rounded-full ml-2"      alt="HomeLogo"  src={teamImage || ravensLogo} />
+
 
     <span className={`text-white ml-2 font-semibold ${teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"}`}>
-      Ravens
+      {teamName}
     </span>
 
   </p>
@@ -2979,8 +3079,9 @@ console.log("Final Selected Player Details:", playerDetails);
 >
   {/* Team Score Row */}
   <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
+    <img className="w-10 h-10 rounded-full mr-2" src={teamImage || ravensLogo} alt="Ravens" />
+    
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{teamName}</span>
     <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
   </div>
 
@@ -3133,11 +3234,12 @@ space-y-2`}>
     <div className="text-3xl font-extrabold flex flex-row text-white items-center">
   {/* Left Logo (Ravens) */}
   {currentRun.team === "home" && (
-    <img
-      src={ravensLogo}
-      alt="Ravens Logo"
-      className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"
-    />
+    // <img
+    //   src={ravensLogo}
+    //   alt="Ravens Logo"
+    //   className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"
+    // />
+    <img   className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"     alt="HomeLogo"  src={teamImage || ravensLogo} />
   )}
 
   {/* Run Score */}
@@ -3334,7 +3436,8 @@ space-y-2`}>
   <div className="h-28 flex flex-col w-1/12 ">
   <div className={`w-14 px-2 flex items-center justify-center h-1/2 bg-white/10 rounded-full
    ${teamScore>opponentScore ? "border-2 border-primary-cta" : ""} `}>
-  <img className="w-10  mx-auto h-10 rounded-full " src={ravensLogo} alt={opponentName} />
+  {/* <img className="w-10  mx-auto h-10 rounded-full " src={ravensLogo} alt={opponentName} /> */}
+  <img   className="w-10 h-10 rounded-full "      alt="HomeLogo"  src={teamImage || ravensLogo} />
   </div>
   <div className={`w-14 flex  items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
     
@@ -3451,7 +3554,7 @@ space-y-2`}>
       legendPosition: "middle"
     }}
     pointLabelColor="#FFFFFFF"
-    colors={({ id }) => (id === "Ravens" ? "#0b63fb" : "#10B981")}
+    colors={({ id }) => (id === homeTeamName ? "#0b63fb" : "#10B981")}
     pointColor={({ id }) => (id === "Opponent" ? "#10B981" : "#0b63fb")}
     pointSize={10}
     pointBorderWidth={2}
@@ -3700,8 +3803,9 @@ space-y-2`}>
 >
   {/* Team Score Row */}
   <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" />
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>Ravens</span>
+    {/* <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" /> */}
+    <img   className="w-10 h-10 rounded-full mr-2"      alt="HomeLogo"  src={teamImage || ravensLogo} />
+    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{teamName}</span>
     <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
   </div>
 

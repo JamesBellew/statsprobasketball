@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.61 (01/04/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.7 (07/04/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is a Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,6 +33,20 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">07/04/2025 - Version 1.70</p>
+<hr></hr>
+<li className="py-2">Some animations for when games are savign and when games are synching </li>
+<li className="py-2">More redundencie checks when user uploads to database to prevent overwrite's and leaks. using UID instead of email prevents overlaps</li>
+<li className="py-2">HomeDashbaord(saved games) - now shows the opponent logo instead of placeholder jersey</li>
+<li className="py-2">User database is now using user UID instead of email for storing of the data(makes more sense)</li>
+<li className="py-2">HomeDashboard is now split up into compoenents for future proofing</li>
+<li className="py-2">Team image and name or now dynamic with a fallback on OG ravesn icon</li>
+<li className="py-2">Fixed deletion of cloud games</li>
+<li className="py-2">Major UX/UI improvements to the home dashboard saved games section</li>
+<li className="py-2">Added a pop up modal if the user tries to start a game with no team name in settings saved</li>
+<li className="py-2">Added a settings page to allow user to upload team image and change name, for other teams besides the Ravens</li>
+<li className="py-2">Added more flexibility to the current run, can now do multiple itterations like 12-2</li>
+<p className="font-bold text-primary-danger text-sm">01/04/2025</p>
 <p className="font-bold text-primary-danger text-sm">01/04/2025</p>
 <hr></hr>
 <li className="py-2">Sync to cloud UX/UI change needed</li>

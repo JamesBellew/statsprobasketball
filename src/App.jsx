@@ -131,8 +131,8 @@ const triggerToast = (message, type = "success") => {
         <details>
           <summary className=' text-white'>{user.email}</summary>
           <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
-            <li><a>Settings</a></li>
-            <hr className='my-2'></hr>
+            {/* <li><a> ⚙️    Team Settings</a></li>
+            <hr className='my-2'></hr> */}
             <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
           </ul>
         </details>

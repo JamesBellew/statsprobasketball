@@ -2,17 +2,20 @@
 import { getDocs, collection } from "firebase/firestore";
 import { firestore } from "../firebase"; // ✅ Firestore instance
 import { db } from "../db"; // ✅ Dexie DB
+export async function downloadGamesFromCloud(uid) {
+  if (!uid) return;
 
-export async function downloadGamesFromCloud(userId) {
   try {
-    const snapshot = await getDocs(collection(firestore, `users/${userId}/games`));
+    const snapshot = await getDocs(collection(firestore, `users/${uid}/games`));
     const allGames = snapshot.docs.map(doc => doc.data());
 
-    // 🔒 Optional safety check
-    const filteredGames = allGames.filter(game => game.userId === userId);
-
-    for (let game of filteredGames) {
-      await db.games.put(game);
+    for (let game of allGames) {
+      // ✅ Force overwrite with synced + userId
+      await db.games.put({
+        ...game,
+        synced: true,
+        userId: uid,
+      });
     }
 
     console.log("✅ Downloaded cloud games into IndexedDB");
