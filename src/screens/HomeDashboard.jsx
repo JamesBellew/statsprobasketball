@@ -42,10 +42,7 @@ const [alertMessage, setAlertMessage] = useState("");
   const [editingLineoutId, setEditingLineoutId] = useState(null);
   const [gameToReopen, setGameToReopen] = useState(null);
   // New states for editing a saved game
-  const [showGameEditModal, setShowGameEditModal] = useState(false);
-  const [editingGame, setEditingGame] = useState(null);
-  const [editedOpponentName, setEditedOpponentName] = useState("");
-  const [editedVenue, setEditedVenue] = useState("");
+
   const [showReopenModal, setShowReopenModal] = useState(false);
   // Dropdown state for inline dropdowns (used for both saved games and lineouts)
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -322,30 +319,7 @@ const handleConfirmCompleteGame = async () => {
     navigate("/ingame", { state: game });
   };
 
-  // --- Saved Game Handlers (Inline Editing) ---
-  const openGameEditModal = (game) => {
-    setEditingGame(game);
-    setEditedOpponentName(game.opponentName || "");
-    setEditedVenue(game.venue || "");
-    setActiveDropdown(null);
-    setShowGameEditModal(true);
-  };
 
-  const handleSaveGameEdit = async () => {
-    if (!editedOpponentName.trim() || !editedVenue.trim()) {
-      alert("Please fill in both opponent name and venue.");
-      return;
-    }
-    const updatedGame = {
-      ...editingGame,
-      opponentName: editedOpponentName,
-      venue: editedVenue,
-    };
-    await db.games.put(updatedGame);
-    await refreshGames();
-    setShowGameEditModal(false);
-    setEditingGame(null);
-  };
 
   
 
@@ -711,6 +685,7 @@ const handleConfirmCompleteGame = async () => {
   teamImage={teamImage} // ✅ NEW
   handleGameClick={handleGameClick}
   handleCompleteGameClick={handleCompleteGameClick}
+  handleStatisticsClick={handleStatisticsClick}
   handleSetInProgress={handleSetInProgress}
   handleDeleteGame={handleDeleteGame}
   handleSyncToCloud={handleSyncToCloud}
@@ -855,58 +830,7 @@ const handleConfirmCompleteGame = async () => {
       )}
 
       {/* Modal for Editing a Saved Game */}
-      {showGameEditModal && editingGame && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50"
-          onClick={() => setShowGameEditModal(false)}
-        >
-          <div className="absolute inset-0 bg-black opacity-50"></div>
-          <div
-            className="relative bg-gray-800 p-6 rounded-lg w-11/12 md:w-1/2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-2xl font-bold mb-4">Edit Game</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Opponent Name
-              </label>
-              <input
-                type="text"
-                value={editedOpponentName}
-                onChange={(e) => setEditedOpponentName(e.target.value)}
-                className="w-full px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter opponent name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Venue
-              </label>
-              <input
-                type="text"
-                value={editedVenue}
-                onChange={(e) => setEditedVenue(e.target.value)}
-                className="w-full px-3 py-2 bg-white/10 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter venue"
-              />
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowGameEditModal(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveGameEdit}
-                className="px-4 py-2 bg-indigo-600 hover:bg-primary-cta rounded"
-              >
-                Save Game
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+  
 { !checkingProfile && showProfileProgressModal && 
 <ProfileProgressModal
           onClose={handleCloseModal}

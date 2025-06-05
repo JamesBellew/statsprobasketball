@@ -3,7 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faForward,faBackward} from '@fortawesome/free-solid-svg-icons';
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { doc as firestoreDoc, getDoc,setDoc } from "firebase/firestore";
+// import { doc as firestoreDoc, getDoc,setDoc } from "firebase/firestore";
+import { getFirestore,  deleteDoc } from "firebase/firestore";
 import { db } from "../db";
 import { Menu } from '@headlessui/react';
 import head1 from '../assets/steph-curry.webp';
@@ -19,35 +20,68 @@ import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass u
 import { cleanForFirestore } from "../utils/cleanForFirestore";
 import { fetchTeamSettings } from "../utils/fetchTeamSettings";
 import { firestore } from "../firebase";
-// import { db } from "../db";
-
+import LineChartScoringQuarter from "./Components/Charts/LineChartScoringQuarter";
+import ActionButtons from "./InGameComponents/Components/ActionButtons";
+import BottomNav from "./InGameComponents/Components/BottomNav";
+import QuarterDiv from "./InGameComponents/Components/TopRowSection/QuarterDiv";
+import BroadcastDiv from "./InGameComponents/Components/TopRowSection/BroadcastDiv";
+import GameStatsDiv from "./InGameComponents/Components/TopRowSection/GameStatsDiv";
+import FilterDiv from "./InGameComponents/Components/TopRowSection/FilterDiv";
+import PlayerStatsDiv from "./InGameComponents/Components/TopRowSection/PlayerStats";
+import Scoreboard from "./InGameComponents/Components/SecondRowTopSection/Scoreboard";
+import OpponentActionButtons from "./InGameComponents/Components/SecondRowTopSection/OpponentActionButtons";
+import Court from "./InGameComponents/Components/Court";
+import LineoutModal from "./InGameComponents/Modals/LineoutModal";
+import ExitModal from "./InGameComponents/Modals/ExitModal"
+import GameStatsModal from "./InGameComponents/Modals/GameStatsModal";
+import PlayerStatsModal from "./InGameComponents/Modals/PlayerStatsModal";
+import BroadcastModal from "./InGameComponents/Modals/BroadcastModal";
+import BroadcastInfoModal from "./InGameComponents/Modals/BroadcastInfoModal"
+import { doc as firestoreDoc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
 export default function InGame() {
-  const navigate = useNavigate();
-  //old singular filter feature
-  const { user } = useAuth();
   
-  //! remove when multile is implemented
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentGameActionFilter,setCurrentGameActionFilter] = useState(null);
-  //for the new multiple filters feature
   const [currentGameActionFilters, setCurrentGameActionFilters] = useState([]);
-
-
-
-
-
-
   const [currentQuater,setCurrentQuarter]=useState(1)
   const [leadChanges,setleadChanges] = useState([])
   const location = useLocation();
-  const savedGame = location.state; // Now savedGame will have the data passed from StartGame/HomeDashboard
-  const [playerPoints, setPlayerPoints] = useState({}); // Store player points
+const [gameFinsihedFlag,setGameFinsihedFlag] = useState(false)
+const savedGame = location.state; // passed from dashboard or startGame
+const [broadcast, setBroadcast] = useState(false);
+const [slug, setSlug] = useState(null);
+const [broadcastLinkName,setBroadcastLinkName] = useState("")
+const [playerPoints, setPlayerPoints] = useState({}); // Store player points
+const [liveBroadcastGameFinished,setLiveBroadcastGameFinished]= useState(true);
   useEffect(() => {
     if (savedGame && savedGame.id) {
       setCurrentGameId(savedGame.id);
     }
   }, [savedGame]);
+
+  useEffect(() => {
+    if (location.state) {
+      console.log("🛰️ Broadcast?", broadcast);
+
+
+      setBroadcast(location.state.broadcast || false);
+      setSlug(location.state.slug || null);
+      console.log("🔗 Slug:", slug);
+      setBroadcastLinkName(location.state.slug)
+      // Optionally save to localStorage if you want even more persistence
+      localStorage.setItem("broadcast", JSON.stringify(location.state.broadcast || false));
+      localStorage.setItem("slug", location.state.slug || "");
+    } else {
+      // fallback if state is lost (e.g. user refreshed)
+      const savedBroadcast = JSON.parse(localStorage.getItem("broadcast") || "false");
+      const savedSlug = localStorage.getItem("slug") || null;
   
+      setBroadcast(savedBroadcast);
+      setSlug(savedSlug);
+    }
+  }, []);
   const [gameActions, setGameActions] = useState(savedGame?.actions || []); // Use saved game actions if present
   const [actionSelected, setActionSelected] = useState(null); // Tracks selected action
   const [alertMessage, setAlertMessage] = useState(""); // Tracks the alert message
@@ -58,9 +92,10 @@ export default function InGame() {
   const [threePointPercentage,setThreePointPercentage]=useState(0);
   const [SaveGameBtnText,setSaveGameBtnText]= useState('Save Game')
   const [opponentName, setOpponentName] = useState(savedGame?.opponentName || "New Game");
+  const [isBroadcasting,setIsBroadcasting] = useState(savedGame?.broadcast || false);
   const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
-  const [minutesTracked, setMinutesTracked] = useState(savedGame?.minutesTracked || null);
-const [selectedVenue, setSelectedVenue] = useState(savedGame?.venue || "Home");
+  const [minutesTracked, utesTracked] = useState(savedGame?.minutesTracked || null);
+const [selectedVenue, setSelectedVenue] = useState(savedGame?.selectedVenue || "Homejj");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -77,8 +112,8 @@ const [teamImage,setTeamImage] = useState("");
 const [teamScoreChange, setTeamScoreChange] = useState(0);
 const [opponentScoreChange, setOpponentScoreChange] = useState(0);
 const [opponentActions, setOpponentActions] = useState(savedGame?.opponentActions || []);
-const [minutes, setMinutes] = useState(savedGame?.quarterTimes?.[1]?.minutes || 10);
-const [seconds, setSeconds] = useState(savedGame?.quarterTimes?.[1]?.seconds || 0);
+const [minutes, setMinutes] = useState(savedGame?.quarterTimes?.[savedGame?.lastVisitedQuarter || 1]?.minutes || 10);
+const [seconds, setSeconds] = useState(savedGame?.quarterTimes?.[savedGame?.lastVisitedQuarter || 1]?.seconds || 0);
 const minutesRef = useRef(minutes);
 const secondsRef = useRef(seconds);
 const [isRunning, setIsRunning] = useState(false);
@@ -86,18 +121,38 @@ const intervalRef = useRef(null); // To keep track of interval
 const [showTimeModal, setShowTimeModal] = useState(false);
 const [onCourtPlayers, setOnCourtPlayers] = useState([]);
 const onCourtPlayersRef = useRef(onCourtPlayers);
+const [showBroadcastModal,setShowBroadcastModal] = useState(savedGame?.broadcast || false)
 const [showLineoutModal, setShowLineoutModal] = useState(false);
 const [playerMinutes, setPlayerMinutes] = useState(savedGame?.playerMinutes || {});
 const [hasFirstMinutePassed, setHasFirstMinutePassed] = useState(false);
+const [broadcastUpdateSentFlag,setBroadcastUpdateSentFlag] = useState(false)
+const [showBroadcastInformationModal,setShowBroadcastInformationModal] = useState(savedGame?.broadcast || false);
+const broadcastLink = `${window.location.origin}/liveGames/${slug}`;
+const [lastVisitedQuarter, setLastVisitedQuarter] = useState(savedGame?.lastVisitedQuarter || 1); 
+const [selectedDate, setSelectedDate] = useState("2026-01-01");     // <-- Date
+const [selectedTime, setSelectedTime] = useState("00-00");     // <-- Time
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
   2: { minutes: 10, seconds: 0 },
   3: { minutes: 10, seconds: 0 },
   4: { minutes: 10, seconds: 0 },
 });
+const [broadcastUpdate,setBroadcastUpdate]= useState(null);
+const broadcastUpdatesText=[
+  "Waiting Game Start",
+  "Waiting QTR Start",
+  "Timeout",
+  "Quarter End",
+  "Half Time",
+  "Stoppage",
+  "Overtime"
+]
+
+
 const locationGameState = location.state || {};
 const [homeTeamName, setHomeTeamName] = useState("Home");
 // console.log('this is the team name', homeTeamName);
+
 
 useEffect(() => {
   const loadTeamSettings = async () => {
@@ -180,54 +235,57 @@ useEffect(() => {
   setTeamScore(totalPoints);
 }, [gameActions]); // Recalculate when `gameActions` change
 
-//?use effect for the timer 
-// useEffect(() => {
-//   if (isRunning) {
-//     intervalRef.current = setInterval(() => {
-//       setSeconds(prevSeconds => {
-//         if (prevSeconds === 0) {
-//           if (minutes === 0) {
-//             clearInterval(intervalRef.current);
-//             setIsRunning(false);
-//             return 0;
-//           } else {
-//             setMinutes(prev => prev - 1);
-//             return 59;
-//           }
-//         }
-//         return prevSeconds - 1;
-//       });
-//     }, 1000);
-//   } else {
-//     clearInterval(intervalRef.current);
-//   }
 
-//   return () => clearInterval(intervalRef.current);
-// }, [isRunning, minutes]);
+const updateLiveClock = async () => {
+  console.log('updaiting da clock haii');
+  
+  console.log('⏱️ Clock Minutes Left:', minutesRef.current);
+
+  if (broadcast && slug) {
+    await setDoc(firestoreDoc(firestore, "liveGameClocks", slug), {
+      currentQuarter: currentQuater,
+      minutesLeft: minutesRef.current,
+      secondsLeft: secondsRef.current,
+      lastUpdated: new Date(),
+    }, { merge: true });
+  }
+};
+const previousMinuteRef = useRef(minutes);
+// useeffect for the clock timer
 useEffect(() => {
   if (isRunning) {
     intervalRef.current = setInterval(() => {
       if (secondsRef.current === 0) {
         if (minutesRef.current === 0) {
-          setAlertMessage('finished ',currentQuater)
+
+
+          console.log("Clock hit 0:00"); // ✅ Log when timer hits 0:00
+
+
+          setAlertMessage('finished ' + currentQuater);
           clearInterval(intervalRef.current);
           intervalRef.current = null;
           setIsRunning(false);
           setTimeout(() => setAlertMessage(""), 3000);
+      updateLiveClock()
+   
         } else {
           setMinutes(prev => prev - 1);
           minutesRef.current = minutesRef.current - 1;
 
           if (hasFirstMinutePassed) {
-            // Only after first full minute
             updatePlayerMinutes();
           } else {
-            // First minute passed!
             setHasFirstMinutePassed(true);
           }
 
           setSeconds(59);
           secondsRef.current = 59;
+
+          if (minutesRef.current !== previousMinuteRef.current) {
+            previousMinuteRef.current = minutesRef.current;
+            updateLiveClock();
+          }
         }
       } else {
         setSeconds(prev => prev - 1);
@@ -241,7 +299,6 @@ useEffect(() => {
 
   return () => clearInterval(intervalRef.current);
 }, [isRunning, hasFirstMinutePassed]);
-
 
 useEffect(() => {
   const fetchTeamName = async () => {
@@ -269,8 +326,6 @@ useEffect(() => {
   fetchTeamName();
 }, [user]);
 
-
-
 const updatePlayerMinutes = () => {
   onCourtPlayersRef.current.forEach(playerNumber => {
     setPlayerMinutes(prev => ({
@@ -280,14 +335,10 @@ const updatePlayerMinutes = () => {
   });
 };
 
-
-
 const extractPlayerNumber = (playerString) => {
   const match = playerString.match(/\((\d+)\)/);
   return match ? match[1] : null; // returns the number as string (e.g., "2")
 };
-
-
 //? use effect for counting minutes for players 
 //4 overtimes added
 const calculateQuarterScores = () => {
@@ -322,15 +373,7 @@ useEffect(() => {
 
 // this is the start of the testing of the new db (glhf)
 // Function to save a game
-async function saveGame(gameData) {
-  try {
-    // Add a new game entry; Dexie returns the generated id.
-    const id = await db.games.add(gameData);
-    console.log("Game saved with id: ", id);
-  } catch (error) {
-    console.error("Failed to save game:", error);
-  }
-}
+
 // this is the function to track leadchanges to add a new lradchange
 const addNewLeadChange = async (q, team, score) => {
   const newLeadChanges = [...leadChanges, { q, team, score }];
@@ -375,17 +418,7 @@ useEffect(() => {
   console.log("useEffect updated for lead history");
 }, [teamScore, opponentScore]);
 
-
-// Example usage:
-const gameData = {
-  opponentName: "Lakers",
-  venue: "Home",
-  timestamp: new Date().toISOString(),
-  // Add other properties as needed
-};
-
 // this is the end of the testing of the db
-
 const [showPlayerModal, setShowPlayerModal] = useState(false);
 const [pendingAction, setPendingAction] = useState(null);
 const [isGameSaved, setIsGameSaved] = useState(false);
@@ -554,7 +587,49 @@ useEffect(() => {
 
     return () => clearTimeout(autoSaveTimer);
   }
+  //update the last visited quarter
+  setLastVisitedQuarter(currentQuater);
+
 }, [gameActions, opponentName]);
+
+
+const updateLiveBroadcast = async () => {
+  if (!broadcast || !slug) return;
+
+  try {
+    await setDoc(
+      firestoreDoc(firestore, "liveGames", slug),
+      {
+      
+        gameState: liveBroadcastGameFinished,
+        teamNames:{
+home:homeTeamName,
+away:opponentName
+        },
+        logos: {
+          home: teamImage ,       // <-- Your local variable or image URL
+          away: opponentLogo    // <-- Your local variable or image URL
+        },
+        scheduledStart:{
+          date: selectedDate,
+          time:selectedTime
+        },
+        link:broadcastLink,
+        score: {
+          home: teamScore,
+          away: opponentScore,
+        },
+        quarter: currentQuater,
+        gameActions,
+        lastUpdated: new Date(),
+      },
+      { merge: true }
+    );
+    console.log("📡 Live broadcast updated:", slug);
+  } catch (err) {
+    console.error("❌ Error updating live game broadcast:", err);
+  }
+};
 
 const updateOpponentScore = async (points) => {
   const newAction = {
@@ -580,8 +655,81 @@ const updateOpponentScore = async (points) => {
   }
 };
 
+const  handlebroadcastUpdate=async(isFinished = gameFinsihedFlag)=>{
+    await setDoc(firestoreDoc(firestore, "liveGameupdates", slug), {
+    gameFinsihedFlag:gameFinsihedFlag,
+    message: broadcastUpdate,
+    cleared: false,
+    update: true,
+    timestamp: new Date(),
+  }, { merge: true });
+   setShowBroadcastModal(false)
+  setBroadcastUpdateSentFlag(true)
+
+}
+const handleFinishGame = async (slug) => {
+    //checking to see if there is a valid gamelink 
+    if(broadcastLinkName.length >=1){
+      console.log('we can proceed with the deletion if choosen');
+      console.log(broadcastLinkName);
+    }else{
+      console.log('we have a problem with the broadcastlink name ');
+    }
+      const confirmFinish = window.confirm(
+        "Are you sure you want to finish this game?\n\nThis action cannot be undone and the live broadcast will be removed."
+      );
+      if (!confirmFinish){ console.log('nononononono');
+       return;
+      }
+      try {
+        console.log('we in this bitchhhhaa');
+        setLiveBroadcastGameFinished(true)
+        // const db = getFirestore();
+        // await deleteDoc(firestoreDoc(db, "liveGames", slug));
+        // console.log("Live game removed successfully.");
+        // setBroadcast(false)
+        handleSaveGame('wee small update')
+        // navigate("/homedashboard")
+        // Optional: show a success toast or navigate somewhere
+      } catch (error) {
+        console.error("Error removing live game:", error);
+        // Optional: show error feedback
+      }
+  
 
 
+};
+
+
+
+
+
+
+
+const handleResumeGame = async (slug) =>{
+if(broadcastLinkName.length >=1){
+}else{
+  console.log('we have a problem with the broadcastlink name ');
+}
+  const confirmResume = window.confirm(
+    "Are you sure you want to Resume this game?\n\n."
+  );
+  if (!confirmResume) return;
+setLiveBroadcastGameFinished(false)
+handleSaveGame('game Resumed ! auto save');
+}
+
+const handleBroadcastUpdateClear=async()=>{
+  await setDoc(firestoreDoc(firestore, "liveGameupdates", slug), {
+    cleared: true,
+    update: false,
+    message: null, // <-- better than "" for clearing
+    timestamp: new Date(),
+  }, { merge: true });
+  
+  setBroadcastUpdateSentFlag(false)
+  setBroadcastUpdate("")
+}
   const handleGameAction = (action) => {
     if (!actionSelected) {
       setAlertMessage("Please select an action before plotting!");
@@ -645,13 +793,7 @@ const updateOpponentScore = async (points) => {
     setAlertMessage(`${actionName} recorded for ${player.name}!`);
     setTimeout(() => setAlertMessage(""), 3000);
   };
-  
 
-// this is the handler for entering the OT
-const handleOTClick = ()=>{
-  console.log('lets start OT');
-  
-}
 //hanlder for going to next period/quarter
 const handleNextPeriodClick = () => {
   // Save current quarter time before moving
@@ -715,7 +857,25 @@ const handlePreviousPeriodClick = () => {
     console.log('we have issue');
   }
 };
-
+const BroadcastLinkCopyHandler = (link)=>{
+  if (!navigator.clipboard) {
+    console.warn("Clipboard API not available");
+    return;
+  }
+  navigator.clipboard.writeText(link)
+    .then(() => {
+      console.log("Copied to clipboard:", link);
+      // Optionally show success toast or feedback
+      setAlertMessage("Copied to Clipboard!");
+      setTimeout(() => setAlertMessage(""), 2000);
+    })
+    .catch((err) => {
+      console.error("Failed to copy:", err);
+      setAlertMessage("Failed to copy:", err);
+      setTimeout(() => setAlertMessage(""), 2000);
+    });
+  
+}
 const handleUndoLastActionHandler = () => {
   if (gameActions.length === 0) {
     setAlertMessage("No actions to undo!");
@@ -748,7 +908,17 @@ const fetchOpponentGameActions = async () => {
     console.log("Fetching opponent actions for game ID:", currentGameId);
     const gameData = await db.games.get(currentGameId);
     console.log("Fetched game data:", gameData);
-    
+    if(savedGame?.lastVisitedQuarter){
+
+      setCurrentQuarter(lastVisitedQuarter)
+      console.log('yaaa brah');
+      console.log('we want to make the current quarter ', lastVisitedQuarter);
+      
+      
+    }else{
+      console.log('nahh brahh');
+      
+    }
     // Check for both potential property names
     if (gameData) {
       if (gameData.opponentActions && gameData.opponentActions.length > 0) {
@@ -788,11 +958,24 @@ useEffect(() => {
 }, [currentGameId]);
 
 const handleSaveGame = async () => {
-  if (gameActions.length === 0 && opponentActions.length === 0) {
-    setAlertMessage("No actions to save!");
-    setTimeout(() => setAlertMessage(""), 2000);
-    return;
-  }
+  const trackingMinutes = minutesTracked !== null;
+  const trackingPlayers = gameActions.some(action => action.playerName);
+
+  
+  setLastVisitedQuarter(currentQuater)
+  setQuarterTimes(prev => ({
+    ...prev,
+    [currentQuater]: { minutes, seconds },
+  }));
+  //* We may want to uncomment this back in for safety
+// console.log("what the fuck is going on")
+//   if (gameActions.length === 0 && opponentActions.length === 0 && broadcastUpdate === null) {
+//     setAlertMessage("No actions to save!");
+//     console.log("No Actions to save");
+    
+//     setTimeout(() => setAlertMessage(""), 2000);
+//     return;
+//   }
 
   let gameId = currentGameId;
 
@@ -816,6 +999,9 @@ const handleSaveGame = async () => {
     leadChanges,
     lineout: savedGame?.lineout || passedLineout,
     minutesTracked,
+    trackingMinutes,
+    trackingPlayers,
+    lastVisitedQuarter:lastVisitedQuarter,
     playerMinutes,
     quarterTimes,
     timestamp: new Date().toISOString(),
@@ -827,17 +1013,17 @@ const handleSaveGame = async () => {
     homeTeamName,
     userId: user ? user.uid : null,
     synced: !!user,
+    broadcast,
+    slug,
   };
 
   try {
     if (user) {
-      // 🔥 Save only to Firestore if logged in
       const cleaned = cleanForFirestore(gameData);
       const docRef = firestoreDoc(firestore, "users", user.uid, "games", gameId);
       await setDoc(docRef, cleaned);
       console.log("✅ Game synced to Firestore!");
     } else {
-      // 💾 Save locally only if user is not logged in
       const existingGame = await db.games.get(gameId);
       if (existingGame) {
         await db.games.update(gameId, gameData);
@@ -848,6 +1034,8 @@ const handleSaveGame = async () => {
       }
     }
 
+    await updateLiveBroadcast(); // ✅ Externalized live sync
+
     setAlertMessage("Game saved successfully!");
     setIsGameSaved(true);
     setCurrentGameId(gameId);
@@ -857,51 +1045,85 @@ const handleSaveGame = async () => {
   }
 
   setTimeout(() => setAlertMessage(""), 3000);
+
+
+console.log('we just saved the modafukin game');
+
+
 };
 
+// this is the use effect for chekcing if its a loaded saved game andif so then set all the usestates to saved data, if not it is a new game 
 useEffect(() => {
-  if (savedGame && savedGame.id) {
-    setCurrentGameId(savedGame.id);
- 
-    
-    setOpponentActions(savedGame.opponentActions || []);
-    setleadChanges(savedGame.leadChanges || []);
-    setOpponentLogo(savedGame.opponentLogo || null);
-    setMinutesTracked(savedGame.minutesTracked || null);
-    setPlayerMinutes(savedGame.playerMinutes || {});
+  const loadFinishedFlagIfNeeded = async () => {
+    if (savedGame && savedGame.id) {
+      setCurrentGameId(savedGame.id);
+      setOpponentActions(savedGame.opponentActions || []);
+      setleadChanges(savedGame.leadChanges || []);
+      setOpponentLogo(savedGame.opponentLogo || null);
+      setMinutesTracked(savedGame.minutesTracked || null);
+      setPlayerMinutes(savedGame.playerMinutes || {});
 
-    if (savedGame.quarterTimes) {
-      setQuarterTimes(savedGame.quarterTimes);
+      if (savedGame.quarterTimes) {
+        setQuarterTimes(savedGame.quarterTimes);
 
-      // ✅ Apply Q1 saved time immediately
-      const q1Time = savedGame.quarterTimes[1];
-      if (q1Time) {
-        setMinutes(q1Time.minutes);
-        setSeconds(q1Time.seconds);
+        const q1Time = savedGame.quarterTimes[1];
+        if (q1Time) {
+          setMinutes(q1Time.minutes);
+          setSeconds(q1Time.seconds);
+        }
+      } else {
+        setMinutes(10);
+        setSeconds(0);
       }
+
+      console.log("Loaded saved game:", savedGame);
+
+      // 🧠 Only fetch if broadcast slug is set
+      const gameSlug = savedGame.slug;
+      console.log();
+      
+      if (gameSlug) {
+        console.log('we in the slug');
+        
+        try {
+          const updatesDoc = await getDoc(firestoreDoc(firestore, "liveGameupdates", gameSlug));
+          if (updatesDoc.exists()) {
+            const updateData = updatesDoc.data();
+            if (updateData.gameFinsihedFlag) {
+              setGameFinsihedFlag(true);
+              console.log("✅ Game finished flag found:", updateData.gameFinsihedFlag);
+            }
+            if(updateData.message){
+              setBroadcastUpdate(updateData.message)
+              console.log("🐒 we have some broadcast update", updateData.message);
+              
+            }else{
+              setBroadcastUpdate(null)
+console.log('no update 😭');
+
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching broadcast update:", err);
+        }
+      }else{
+        console.log('no slug found for saved game');
+        
+      }
+
     } else {
-      // Default fallback
-      setMinutes(10);
-      setSeconds(0);
+      console.log("Starting a new game.");
     }
+  };
 
-    console.log("Loaded saved game:", savedGame);
-  } else {
-    console.log("Starting a new game.");
-  }
+   loadFinishedFlagIfNeeded();
 }, [savedGame]);
-
-
 
 useEffect(() => {
   if (savedGame && savedGame.id) {
     setCurrentGameId(savedGame.id);
   }
 }, [savedGame]);
-
-
-
-
 
 const handleFilterSelection = (filter) => {
   setCurrentGameActionFilters((prevFilters) => {
@@ -914,14 +1136,12 @@ const handleFilterSelection = (filter) => {
   });
 };
 
-
-
-
-
-
 // Handle click on the court
 // Render actions on the court
 const handleCourtClick = (e) => {
+        // Restore if previously visited
+ 
+ 
   if (!actionSelected) {
     setAlertMessage("Please select an action before plotting!");
     setTimeout(() => setAlertMessage(""), 3000);
@@ -969,13 +1189,10 @@ const handleCourtClick = (e) => {
     setAlertMessage(`${actionSelected} recorded.`);
     setPendingAction(null);
     setTimeout(() => setAlertMessage(""), 3000);
+    //lets save the quarter times 
+
   }
 };
-
-
-
-
-
 
 const filteredActions=[
   "2 Points",
@@ -1250,13 +1467,7 @@ useEffect(() => {
   let selectedPlayerStat = playersStatsArray.find(player => player.player.includes(selectedPlayer)) || {};
   const twoPtMade = selectedPlayerStat.fgMade - selectedPlayerStat.threePtMade;
   const points = (2 * twoPtMade) + (3 * selectedPlayerStat.threePtMade) + selectedPlayerStat.ftMade;
-  
-  // console.log('ddedededede');
-  
-  // console.log(points);
-  
-  
-// const tsPercentage = (points / (2 * (selectedPlayerStat.fgAttempts + (0.44 * selectedPlayerStat.ftAttempts)))) * 100;
+
    const tsPercentage = (points / (2 * (selectedPlayerStat.fgAttempts + (0.44 * selectedPlayerStat.ftAttempts)))) * 100;
 let trueShootingPercentage = tsPercentage ? tsPercentage.toFixed(1) : '0.0';
 
@@ -1278,7 +1489,7 @@ if (selectedPlayerStat && selectedPlayerStat.player) {
 
 
 } else {
-  console.log("No selected player found.");
+  // console.log("No selected player found.");
 }
 
 
@@ -1345,13 +1556,7 @@ gameActions.forEach((action) => {
       }
     ];
   };
-  
-  
-  console.log(gameActions);
-  
 
-  
-  
   // Function to process gameActions into Pie Chart data
   const transformGameActionsToPieData = (gameActions) => {
     let twoPoints = 0;
@@ -1424,11 +1629,6 @@ gameActions.forEach((action) => {
     ];
 };
 
-
-
-  
-  // Update the line chart data with opponentActions
-  // const gameLineChartData = transformGameActionsToLineData(gameActions, opponentActions);
   const gameLineChartData = transformGameActionsToLineData(gameActions, currentQuater, homeTeamName);
 
 
@@ -1642,12 +1842,6 @@ function getCurrentRun(actions) {
   return run.points >= minRunPoints ? run : null;
 }
 
-
-
-
-
-
-
 // const [currentRun, setCurrentRun] = useState(null);
 function getOpponentPointsDuringRun(run, allActions) {
   if (!run || !run.actions || run.actions.length === 0) return 0;
@@ -1679,9 +1873,6 @@ const currentRun = useMemo(() => {
 const runPoints = currentRun?.points || 0;
 const opponentPoints = currentRun?.opponentPoints || 0;
 
-
-
-
 // const opponentPoints = currentRun?.opponentPoints ?? 0;
 const total = currentRun?.points + opponentPoints;
 // const progress = total > 0 ? (currentRun?.points / total) * 100 : 100;
@@ -1710,9 +1901,98 @@ const runStartScore = useMemo(() => {
   return getRunStartScore(currentRun, [...gameActions, ...opponentActions]);
 }, [currentRun, gameActions, opponentActions]);
 
+  const prevBroadcastData = useRef(null);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!broadcast || !slug) return;
+  
+      const newData = {
+        score: {
+          home: teamScore,
+          away: opponentScore,
+        },
+        quarter: currentQuater,
+      };
+  
+      // Compare to previous broadcast (shallow check)
+      const prevData = prevBroadcastData.current;
+      const isChanged =
+        !prevData ||
+        prevData.score.home !== newData.score.home ||
+        prevData.score.away !== newData.score.away ||
+        prevData.quarter !== newData.quarter;
+  
+      if (isChanged) {
+        updateLiveClock();
+        updateLiveBroadcast();
+        // if we are pushing the slkug for game actions we should check if the game is full time. If you push an action then the game is not technically full time 
+        //so we need to chang the game state to in progress and maybe a notificayion to indicate that the game is going back to in progress
+        if(gameFinsihedFlag){
+console.log('⚠️ game is set to finihed, we should change that');
+//first we set the flag to false
+//and now we need to send the slug, but is this already being done in the update, we shall see. It did not
+//lets send the update via SHLUGG
+setGameFinsihedFlag(false);
+handlebroadcastUpdate(false)
 
 
 
+        }else{
+          console.log('game is already in progress');
+          
+        }
+        prevBroadcastData.current = newData;
+      }
+    }, 1000); // Delay 1s after changes
+  
+    return () => clearTimeout(timeout);
+  }, [gameActions, teamScore, opponentScore, currentQuater]);
+  
+  useEffect(() => {
+    console.log('running this sluggy thing');
+    if(!slug){
+      console.log('we have no slug');
+      
+    }
+    if (!slug) return;
+  
+    const unsub = onSnapshot(firestoreDoc(firestore, "liveGames", slug), (docSnap) => {
+      if (docSnap.exists()) {
+        console.log('doc exists');
+         const data = docSnap.data();
+         console.log('this is the doc data', data);
+         
+         const scheduled = data?.scheduledStart;
+  
+         if (scheduled?.date){
+          setSelectedDate(scheduled.date);
+          console.log('we got the correct date');
+          
+         } else{
+          console.log('uhh ohh shaggy, no date in db');
+          
+         }
+         if (scheduled?.time){
+          setSelectedTime(scheduled.time);
+          console.log('we got the correct time');
+          
+         } else{
+          console.log('uhh ohh shaggy, no time in db');
+          
+         }
+        // else setSelectedDate("");
+  
+        // if (scheduled?.time) setSelectedTime(scheduled.time);
+        // else setSelectedTime("");
+      }else{
+        console.log('doc does not exist');
+        
+      }
+    });
+  
+    return () => unsub();
+  }, [slug]);
+  
 //!MAIN -----------------------------------------------------
 //!RETURN ---------------------------------------------------
 //!JSX     --------------------------------------------------
@@ -1749,225 +2029,28 @@ const runStartScore = useMemo(() => {
   <p>Logo here</p>
   </div>
 }
-<div className="w-1/5  h-full bg-secondary-bg mt-1 flex items-center rounded-md overflow-hidden relative">
-  <AnimatePresence mode="wait">
-    <motion.p
-      key={currentQuater} // Ensures animation triggers when quarter changes
-      initial={{ x: 50, opacity: 0 }} // New quarter slides in from right
-      animate={{ x: 0, opacity: 1 }} // Comes to center
-      exit={{ x: -50, opacity: 0 }} // Old quarter slides out left
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-      className="absolute w-full text-center"
-    >
-      {currentQuater > 4 ? `OT ${currentQuater - 4}` : `Q${currentQuater}`}
-    </motion.p>
-  </AnimatePresence>
-</div>
-<div
-  onClick={() => setShowGameStatsModal(true)}
-  className="w-1/5 bg-secondary-bg h-full mt-1  text-sm rounded-lg text-center flex items-center cursor-pointer hover:bg-white/10 transition"
->
-  <p className="text-center mx-auto">Game Stats</p>
-</div>
-<Menu as="div" className="relative inline-block mt-1 text-left w-1/5 h-full">
-  <Menu.Button
+<QuarterDiv currentQuater={currentQuater} />
+<BroadcastDiv 
+gameFinsihedFlag={gameFinsihedFlag}
+ setShowBroadcastModal={setShowBroadcastModal}
+  showBroadCastDiv={broadcast} 
+  broadcastUpdate={broadcastUpdate}
+  />
+<GameStatsDiv setShowGameStatsModal={setShowGameStatsModal} />
 
-  className={`w-full h-full bg-secondary-bg   hover:bg-white/10 rounded-lg flex items-center justify-center text-sm
-  ${currentGameActionFilters.length >=1 ? "bg-primary-bg  text-primary-cta  rounded-none" : "text-white" }
+<FilterDiv
+  currentQuater={currentQuater}
+  currentGameActionFilters={currentGameActionFilters}
+  currentGameActionFilter={currentGameActionFilter}
+  gameActions={gameActions}
+  filteredActions={filteredActions}
+  passedLineout={passedLineout}
+  handleFilterSelection={handleFilterSelection}
+  setCurrentGameActionFilter={setCurrentGameActionFilter}
+/>
 
+<PlayerStatsDiv setShowPlayerStatsModal={setShowPlayerStatsModal} />
 
-  `}>
-    {
-    currentGameActionFilters.length ==1 ? currentGameActionFilters :
-    currentGameActionFilters.length ==2 ? "Filters"
-    : "Filter"}
-  </Menu.Button>
-  <Menu.Items className="absolute right-0 mt-2 w-full origin-top-right  bg-primary-bg divide-y divide-gray-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[9999]">
-    <div className="px-1 py-1">
-
-      {currentGameActionFilter &&
-      <Menu.Item>
-        {({ active }) => (
-          <button
-          onClick={()=>{
-            // setCurrentGameActionFilter(null)   ,
-            handleFilterSelection('Current Q')
-          }}
-            className={`${
-              active ? 'bg-gray-700  text-white' : 'text-gray-200'
-            } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
-          >
-            Current Q
-          </button>
-        )}
-      </Menu.Item>
-}
-
-
-
-      <Menu.Item>
-        {({ active }) => (
-          <button
-          onClick={()=>{
-            // setCurrentGameActionFilter('All Game'),
-            handleFilterSelection('All Game')
-          }}
-            className={`${
-              active ? 'bg-gray-700 text-white' : 'text-gray-200'
-            } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
-          >
-           All Game
-          </button>
-        )}
-      </Menu.Item>
-      <Menu.Item>
-  {({ active }) => (
-    <div
-      className={`relative group flex rounded-md items-center w-full px-2 py-2 text-sm ${
-        active ? "bg-gray-700 text-white" : "text-gray-200"
-      }`}
-    >
-      <span className="flex-1">Action</span>
-      {/* Optional arrow icon */}
-      <svg
-        className={`w-4 h-4 ml-auto
-          ${filteredActions.includes(currentGameActionFilter) ? " text-primary-cta" : ""}
-         `}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-
-      {/* Sub-menu (hidden by default, visible on hover) */}
-      <div
-        className="hidden group-hover:block absolute left-full top-0
-                   w-48 bg-secondary-bg border border-gray-700 rounded-md
-                   shadow-lg z-50"
-      >
-{gameActions.length === 0 ? (
-  <div className="px-3 py-2 text-gray-400">No actions recorded</div>
-) : (
-  filteredActions
-    .filter(action => gameActions.some(g => g.actionName === action))
-    .map((action, idx) => (
-      <button
-        key={idx}
-        onClick={() => {
-          // setCurrentGameActionFilter(action),
-          handleFilterSelection(action)
-        }}
-        className={`block w-full text-left px-3 py-2
-                   hover:bg-gray-700 hover:text-white text-gray-200
-                   ${action === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
-                  `}
-      >
-        {action}
-      </button>
-    ))
-)}
-
-
-      </div>
-    </div>
-  )}
-</Menu.Item>
-<Menu.Item>
-  {({ active }) => (
-    <div
-      className={`relative group flex rounded-md items-center w-full px-2 py-2 text-sm ${
-        active ? "bg-gray-700 text-white" : "text-gray-200"
-      }`}
-    >
-      <span className="flex-1">Player</span>
-      {/* Optional arrow icon */}
-      <svg
-         className="w-4 h-4 ml-auto"
-         fill="none"
-         stroke="currentColor"
-         strokeWidth={2}
-         viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-
-      {/* Sub-menu: Only show players with recorded actions */}
-      <div
-        className="hidden group-hover:block absolute left-full top-0
-                   w-48 bg-secondary-bg border border-gray-700 rounded-md
-                   shadow-lg z-50"
-      >
-        {passedLineout?.players?.filter(player =>
-          gameActions.some(action => action.playerName === player.name)
-        ).length > 0 ? (
-          passedLineout.players
-            .filter(player => gameActions.some(action => action.playerName === player.name))
-            .map((player, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  // setCurrentGameActionFilter(player.name),
-                  handleFilterSelection(player.name)
-                }}
-                className={`block w-full text-left px-3 py-2
-                hover:bg-gray-700 hover:text-white text-gray-200
-                ${player.name === currentGameActionFilter ? "text-primary-cta border-r-2 border-r-primary-cta" : ""}
-                `}
-              >
-                {player.name} ({player.number})
-              </button>
-            ))
-        ) : (
-          <div className="px-3 py-2 text-gray-400">No players found</div>
-        )}
-      </div>
-    </div>
-  )}
-</Menu.Item>
-
-
-
-{currentGameActionFilter &&
-<>
-  {/* <div className="h-[.5px] w-full bg-primary-danger"></div> */}
-<Menu.Item>
-  {({ active }) => (
-    <div
-    onClick={()=>{
-      setCurrentGameActionFilter(null)
-    }}
-      className={`relative group mt-1  flex rounded-md items-center w-full px-2 py-2 text-sm bg-secondary-bg hover:bg-primary-cta hover:text-primary-bg group`}
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-2 text-primary-cta group-hover:text-primary-bg">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" />
-</svg>
-
-      <span className="flex-1 text-primary-cta group-hover:text-primary-bg">{currentGameActionFilter}</span>
-      <div className=" text-center justify-center items-center text-primary-cta flex group-hover:text-primary-bg">X</div>
-      {/* Optional arrow icon */}
-
-
-    </div>
-  )}
-</Menu.Item>
-</>
-}
-    </div>
-  </Menu.Items>
-
-</Menu>
-
-{/* <div className="w-1/5 bg-indigo-300 rounded-md"></div> */}
-{/* <div className=" w-1/4 h-full text-center flex items-center bg-secondary-bg rounded-lg "><p className="text-center mx-auto">21-12-2024</p></div> */}
-
-
-
-<div onClick={()=>{
-  setShowPlayerStatsModal(true)
-}} className=" w-1/5 bg-secondary-bg h-full  mt-1 cursor-pointer hover:bg-white/10 rounded-lg text-center flex items-center"><p className="text-center mx-auto text-sm">Player Stats</p>
-</div> 
 
 <button
   onClick={() => {
@@ -1992,122 +2075,41 @@ const runStartScore = useMemo(() => {
 
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white space-x-1 px-2 p-1 h-1/2 items-center    w-full">
-<motion.div className="w-[45%] px-7 h-full text-center flex items-center rounded-lg   bg-secondary-bg">
-  <p className="text-center text-nd capitalize mx-auto flex items-center">
-    
-    {/* Away Team (Opponent) */}
-    <img 
-      className="w-8 h-8 rounded-full mr-2"
-      src={opponentLogo || opponentJerseyDefault} 
-      alt={opponentName} 
-    />
-
-    <span className="relative">
-      <span className={`text-md font-semibold text-white ${opponentScoreChange > 0 ? "text-white" : "text-gray-400"}`}>
-        {opponentName}
-      </span>
-      <AnimatePresence>
-        {opponentScoreChange > 0 && (
-          <motion.span
-            className="absolute -top-4 left-full text-gray-200 font-bold"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5 }}
-          >
-            +{opponentScoreChange}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
-
-    <span className={`ml-2 text-md text-gray-400 font-semibold ${opponentScoreChange > 0 ? "text-primary-cta font-bold" : "text-gray-400"}`}>
-      {opponentScore}
-    </span>
-    
-    <span className="mx-2">-</span>
-
-    <span className={` text-md font-bold text-gray-400 relative ${teamScoreChange > 0 ? "font-bold text-green-400" : "font-normal text-gray-400"}`}>
-      {teamScore}
-      <AnimatePresence>
-        {teamScoreChange > 0 && (
-          <motion.span
-            className="absolute -top-4 left-full text-green-400 font-bold"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5 }}
-          >
-            +{teamScoreChange}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
-
-    {/* Home Team (Ravens) */}
-    {/* <img 
-      className="w-8 h-8 rounded-full ml-2"
-      src={ravensLogo} 
-      alt="Ravens" 
-    /> */}
-    <img   className="w-8 h-8 rounded-full ml-2"      alt="HomeLogo"  src={teamImage || ravensLogo} />
-
-
-    <span className={`text-white ml-2 font-semibold ${teamScoreChange > 0 ? "font-bold text-white font-bold" : "font-normal text-gray-400"}`}>
-      {teamName}
-    </span>
-
-  </p>
-</motion.div>
-
+<Scoreboard
+  opponentName={opponentName}
+  opponentLogo={opponentLogo}
+  opponentScore={opponentScore}
+  opponentScoreChange={opponentScoreChange}
+  opponentJerseyDefault={opponentJerseyDefault}
+  teamScore={teamScore}
+  teamScoreChange={teamScoreChange}
+  teamImage={teamImage}
+  teamName={teamName}
+  ravensLogo={ravensLogo}
+/>
 {showFiltersPlayerStat ?
 <>
-{!savedGame.isComplete ?
-  <div className={`w-[45%]
-
-     h-full text-center flex space-x-1 px-1 items-center rounded-lg `}>
-  <button
-   onClick={() => updateOpponentScore(2)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +2
-  </button>
-  <button
-   onClick={() => updateOpponentScore(3)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +3
-  </button>
-  <button
-onClick={() => updateOpponentScore(1)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    +1
-  </button>
-  <button
-onClick={() => updateOpponentScore(-1)}
-    className="bg-secondary-bg shadow-md w-1/2 h-full rounded-md"
-  >
-    -1
-  </button>
-</div>
-:<div className='w-[45%] h-full bg-secondary-bg flex items-center justify-center'>
-  <p>BarChart here</p>
-</div>
-}
+<OpponentActionButtons 
+  showFiltersPlayerStat={showFiltersPlayerStat}
+  savedGame={savedGame}
+  updateOpponentScore={updateOpponentScore}
+/>
 
 
 
-<div onClick={handleSaveGame} className={` w-[10%] px-5 h-full cursor-pointer hover:bg-primary-cta hover:text-black rounded-lg text-center flex items-center
- text-primary-cta bg-secondary-bg
+<div onClick={handleSaveGame} className={` w-[10%] px-5 h-full bg-secondary-bg cursor-pointer hover:bg-primary-cta hover:text-black rounded-lg text-center flex items-center
+ text-primary-cta bg-
   `}>
 <p className="text-center mx-auto text-sm"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.923a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z" />
 </svg>
 </p></div>
+
+
+
 </>
 :
-<div className=" bg-primary-bg w-[55%] space-x-1 grid grid-cols-3 h-full rounded-md">
+<div className=" bg-primary-bg w-[55%]  space-x-1 grid grid-cols-3 h-full rounded-md">
 
 <div className="bg-primary-bg col-span-2">
 <table className="w-full text-sm text-left rtl:text-right h-full border-separate border-spacing-0 rounded-md overflow-hidden bg-secondary-bg shadow-md text-gray-500 dark:text-gray-400">
@@ -2179,237 +2181,21 @@ onClick={() => updateOpponentScore(-1)}
 
         </div>
 
-{/* Court */}
-<div
-    onClick={!savedGame.isComplete ? handleCourtClick : undefined}
-    className={`
-      relative z-50 mx-auto h-[55vh] w-full 
-      max-w-[600px] sm:max-w-[640px] md:max-w-[768px] 
-      ${actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
-        ? "bg-white/10"
-        : "bg-secondary-bg"
-      }
-    `}
-  >
-{showPlayerModal && (
-  <div
-    className="fixed inset-0 flex items-center justify-center z-50"
-    onClick={() => {
-      setShowPlayerModal(false);
-      setPendingAction(null);
-    }}
-  >
-    {/* Modal Overlay */}
-    <div className="absolute inset-0 bg-black opacity-50"></div>
-
-    {/* Modal Content */}
-    <div
-      className="relative p-6 rounded-lg w-1/2 bg-secondary-bg"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 className="text-white text-lg mb-4">Select Player</h3>
-
-      {passedLineout && passedLineout.players && passedLineout.players.length > 0 ? (
-        <>
-          {(() => {
-            const sortedPlayers = [...passedLineout.players].sort((a, b) => {
-              const aOn = onCourtPlayers.includes(a.number);
-              const bOn = onCourtPlayers.includes(b.number);
-              return aOn === bOn ? 0 : aOn ? -1 : 1;
-            });
-
-            const onFloorPlayers = sortedPlayers.slice(0, 5);
-            const benchPlayers = sortedPlayers.slice(5);
-
-            return (
-              <div className="flex flex-col space-y-2">
-                {/* On Floor Label */}
-                <p className="text-gray-400 text-sm mb-1">On Floor</p>
-
-                {/* On Floor Players */}
-                <div className="grid grid-cols-2 gap-2">
-                  {onFloorPlayers.map((player, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handlePlayerSelection(player)}
-                      className={`w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white border-l-2 ${
-                        onCourtPlayers.includes(player.number)
-                          ? 'border-l-primary-cta'
-                          : 'border-l-gray-400'
-                      }`}
-                    >
-                      <span className={`${
-                        onCourtPlayers.includes(player.number) ? 'text-white' : 'text-gray-400'
-                      } group-hover:text-black`}>
-                        ({player.number}){" "}
-                      </span>
-                      {player.name}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Divider */}
-                <hr className="border-gray-600 my-2" />
-
-                {/* Bench Label */}
-                <p className="text-gray-400 text-sm mb-1">Bench</p>
-
-                {/* Bench Players */}
-                <div className="grid grid-cols-2 gap-2">
-                  {benchPlayers.map((player, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handlePlayerSelection(player)}
-                      className={`w-full text-left p-2 rounded group transition-all bg-white/10 hover:bg-primary-cta text-white border-l-2 ${
-                        onCourtPlayers.includes(player.number)
-                          ? 'border-l-primary-cta'
-                          : 'border-l-gray-400'
-                      }`}
-                    >
-                      <span className={`${
-                        onCourtPlayers.includes(player.number) ? 'text-white' : 'text-gray-400'
-                      } group-hover:text-black`}>
-                        ({player.number}){" "}
-                      </span>
-                      {player.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </>
-      ) : (
-        <p className="text-gray-400">No players available.</p>
-      )}
-
-      <button
-        onClick={() => {
-          setShowPlayerModal(false);
-          setPendingAction(null);
-        }}
-        className="mt-4 w-full p-2 bg-primary-danger/50 hover:bg-primary-danger text-white rounded"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
-
-
-<div
-    className={`absolute w-[90%] h-[90%] rounded-b-full left-[6%] relative box-border
-      z-auto
-      ${
-      actionSelected && ["2 Points", "2Pt Miss"].includes(actionSelected)
-        ? "bg-white/10" // Highlight inner arc in blue for 2-point actions
-        : "bg-secondary-bg" // Default color
-    }
-    border-gray-500 border-2`}
-  >
-
-    {/* Court Key */}
-    <div
-      className={`absolute
-        sm:w-1/3
-        border-2
-        w-1/3
-         left-1/3 sm:left-1/3 border border-gray-500    h-[65%]`}
-    ></div>
-    <div className="absolute 
-    sm:w-1/3 w-1/3 left-1/3 sm:left-1/3
-      sm:w-1/4 sm:left-[37.5%]
-    border-2 border-gray-500 
-     h-[17.5%] top-[65%]
-      rounded-b-full "></div>
-       <div className="absolute 
-    sm:w-1/4 sm:left-[37.5%]
-    w-1/3 left-2/4 
-    border-2 border-gray-500 
-    h-[17.5%] top-[47.5%]
-      rounded-b-full 
-       border-dashed rotate-180"></div>
-
-{/* semi key */}
-<div className="absolute w-[15%] left-[42.5%] rounded-t-full h-16 border-t-2 border-t-gray-500 top-[12%] rotate-180 "></div>
-
-    {/* Render Actions as Dots */}
-
-  </div>
-
- {/* Render Actions */}
-
- {pendingAction && (
-  <div
-    className="absolute w-4 h-4 rounded-full bg-blue-500 opacity-75"
-    style={{
-      top: `${pendingAction.y}%`,
-      left: `${pendingAction.x}%`,
-      transform: "translate(-50%, -50%)",
-    }}
-  />
-)}
-
-
-
-{
-
-gameActions.filter((action) => {
-  if (currentGameActionFilters.length === 0) {
-    return action.quarter === currentQuater;
-  }
-
-  const allGameSelected = currentGameActionFilters.includes("All Game");
-  const playerFilters = currentGameActionFilters.filter((f) => !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(f));
-  const actionFilters = currentGameActionFilters.filter((f) => ["2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(f));
-
-  if (allGameSelected) {
-    // If "All Game" is selected, allow all quarters but filter by actions & player
-    return (
-      (playerFilters.length === 0 || playerFilters.includes(action.playerName)) &&
-      (actionFilters.length === 0 || actionFilters.includes(action.actionName))
-    );
-  }
-
-  // If "All Game" is NOT selected, restrict to current quarter while filtering
-  return (
-    action.quarter === currentQuater &&
-    (playerFilters.length === 0 || playerFilters.includes(action.playerName)) &&
-    (actionFilters.length === 0 || actionFilters.includes(action.actionName))
-  );
-})
-
-
-  .map((action, index) => {
-    if (typeof action.x === "number" && typeof action.y === "number") {
-      return (
-        <div
-          key={index}
-          className={`absolute w-4 h-4 rounded-full ${
-            ["2Pt Miss", "3Pt Miss"].includes(action.actionName)
-              ? "bg-secondary-danger"
-              : "bg-primary-cta"
-          }`}
-          style={{
-            top: `${action.y}%`,
-            left: `${action.x}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-          title={`Action: ${action.actionName} | Quarter: ${action.quarter}`}
-        ></div>
-      );
-    }
-    return null;
-  })}
-
-
-
-
-
-
-  {/* Court outline */}
-
-</div>
+<Court
+  savedGame={savedGame}
+  handleCourtClick={handleCourtClick}
+  actionSelected={actionSelected}
+  showPlayerModal={showPlayerModal}
+  setShowPlayerModal={setShowPlayerModal}
+  setPendingAction={setPendingAction}
+  passedLineout={passedLineout}
+  onCourtPlayers={onCourtPlayers}
+  handlePlayerSelection={handlePlayerSelection}
+  pendingAction={pendingAction}
+  gameActions={gameActions}
+  currentGameActionFilters={currentGameActionFilters}
+  currentQuater={currentQuater}
+/>
 
 
 
@@ -2650,7 +2436,7 @@ console.log("Final Selected Player Details:", playerDetails);
         <div className="relative w-[40%]  flex flex-row h-full">
         {alertMessage && (
   <motion.div
-    className="absolute bottom-8 text-center left-0 w-full transform -translate-x-1/2 bg-primary-cta text-white  py-3 rounded-lg shadow-lg flex items-center space-x-3"
+    className="absolute bottom-8  text-center left-0 w-full transform -translate-x-1/2 bg-primary-cta -z-50  text-white  py-3 rounded-lg shadow-lg flex items-center space-x-3"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: 20 }}
@@ -2721,1308 +2507,158 @@ console.log("Final Selected Player Details:", playerDetails);
 
 
 
-
-        {/* quick stats end  */}
-        {/* Main Actions Buttons Section */}
-        {!savedGame.isComplete ? 
-        <div className="grid grid-cols-6 h-2/4 w-full my-auto gap-1 lg:grid-cols-6 mx-auto xl:grid-cols-6">
-  {actions.map((action, index) => (
-    <button
-      key={index}
-      onClick={() => {
-        if (["FT Score", "FT Miss", "Assist", "Steal", "Block", "T/O", "Rebound", "OffRebound"].includes(action.id)) {
-          if (passedLineout) {
-            setPendingAction((prevAction) =>
-              prevAction?.actionName === action.id ? null : {
-                actionName: action.id,
-                quarter: currentQuater,
-                x: null,
-                y: null,
-                timestamp: Date.now(),
-              }
-            );
-            setShowPlayerModal(true);
-          } else {
-            setGameActions((prevActions) => [
-              ...prevActions,
-              {
-                quarter: currentQuater,
-                actionName: action.id,
-                x: null,
-                y: null,
-                timestamp: Date.now(),
-              },
-            ]);
-            setAlertMessage(`${action.name} recorded!`);
-            setTimeout(() => setAlertMessage(""), 3000);
-          }
-          return;
-        } else {
-          // **Deselect action if clicking the same button again**
-          setActionSelected((prevAction) => (prevAction === action.id ? null : action.id));
-        }
-      }}
-      className={`${
-        actionSelected === action.id ? "bg-primary-cta text-white" : "bg-secondary-bg"
-      }  font-semibold py-2 px-4 rounded-lg shadow hover:bg-primary-cta transition transform hover:scale-105 focus:ring-4 focus:ring-secondary-bg 
-      
-      
-      ${action.category === "plus" ? "text-white" : "text-gray-200"}
-      flex items-center justify-center `}
-    >
-      {action.displayIcon}
-      <span className="ml-1 font-bold text-2xl text-white">{action.name}</span>
-    </button>
-  ))}
-</div>
-: 
-<div className="w-full flex items-center justify-center h-2/4 bg-secondary-bg rounded-md">
-<p>Stats Here</p></div>
-}
-
-{/* Game Quick Settings Section */}
-<div className="text-white relative    text-center flex-row p-2 space-x-4 flex w-full flex items-center justify-center h-1/4">
-
-
-        <button
-        disabled={currentQuater ===1}
-        onClick={
-         handlePreviousPeriodClick
-
-        }
-        className={`h-full
-
-          flex-row bg-secondary-bg rounded-lg  flex 
-          ${minutesTracked ? "w-1/4" : "w-2/4"}
-           my-auto  justify-center items-center
-          ${currentQuater==1 ? " line-through bg-secondary-bg/50 text-gray-400" : "text-white"}
-          `}>
-        <FontAwesomeIcon className="mr-2 " icon={faBackward} />  Previous Period
-
-        </button>
-        {!minutesTracked &&
-        <div className="flex items-center justify-center w-1/4 bg-secondary-bg h-full rounded-md"   id="teamLineoutDiv"
-  onClick={() => setShowLineoutModal(true)}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-</svg>
-
-        </div>
-}
-       {/* renderinf the game clock */}
-       {
-        minutesTracked &&
-        <>
- {showTimeModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-secondary-bg p-6 rounded-md flex flex-col items-center space-y-4">
-      <p className="text-white text-lg">Adjust Time</p>
-
-      <div className="flex space-x-4 items-center">
-        {/* Minutes Input */}
-        <input
-          type="number"
-          min="0"
-          max="59"
-          value={minutes}
-          onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
-          className="bg-gray-800 text-white text-3xl text-center w-16 rounded-md"
-        />
-        <span className="text-white text-3xl">:</span>
-        {/* Seconds Input */}
-        <input
-          type="number"
-          min="0"
-          max="59"
-          value={seconds}
-          onChange={(e) => setSeconds(parseInt(e.target.value) || 0)}
-          className="bg-gray-800 text-white text-3xl text-center w-16 rounded-md"
-        />
-      </div>
-
-      <button
-        onClick={() => setShowTimeModal(false)}
-        className="mt-4 bg-primary-cta px-4 py-2 rounded text-white"
-      >
-        Done
-      </button>
-    </div>
-  </div>
-)}
-
-        <div className="py-1 w-2/4 grid grid-cols-8 grid-flow-col rounded-md h-full">
-        
-        <div className="flex items-center justify-center col-span-2"   id="teamLineoutDiv"
-  onClick={() => setShowLineoutModal(true)}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-</svg>
-
-        </div>
-        <div
-  className="col-span-4 grid grid-cols-2 px-2 space-x-2 cursor-pointer"
-  id="gameClockDiv"
-  onClick={() => setShowTimeModal(true)} // Open modal
->
-<AnimatePresence mode="wait">
-<motion.div
-  key={minutes}
-  initial={{ y: 50, opacity: 0, rotateX: -90 }}
-  animate={{
-    y: 0,
-    opacity: 1,
-    rotateX: 0,
-    scale: minutes === 0 && seconds === 0 ? [1, 1.5, 1] : 1, // Pulse when clock hits 0
-    color: minutes === 0 && seconds === 0 ? '#8B5CF6' : undefined // Flash red at 0
-  }}
-  exit={{ y: -50, opacity: 0, rotateX: 90 }}
-  transition={{ duration: 0.4, ease: "easeInOut" }}
-  className={`relative h-full bg-secondary-bg rounded-md text-3xl items-center justify-center
-    ${isRunning ? "text-primary-cta" : "text-gray-400"}
-    flex`}
->
-  <p>{minutes}</p>
-</motion.div>
-
-</AnimatePresence>
-
-<motion.div
-  key={seconds}
-  animate={{
-    scale: minutes === 0 && seconds === 0 ? [1, 1.5, 1] : 1, // Pulse at 0
-    color: minutes === 0 && seconds === 0 ? '#8B5CF6' : undefined, // Flash red
-  }}
-  transition={{ duration: 0.4, ease: "easeInOut" }}
-  className={`h-full bg-secondary-bg rounded-md text-3xl items-center justify-center 
-    ${isRunning ? "text-primary-cta" : "text-gray-400"} flex`}
->
-  <p>{seconds < 10 ? `0${seconds}` : seconds}</p>
-</motion.div>
-
-</div>
-
-        <div
-  className="col-span-2 justify-center flex items-center cursor-pointer"
-  id="gameClockControlsDiv"
-  onClick={() => setIsRunning(!isRunning)} // Toggle play/pause
->
-  {isRunning ? (
-    // Pause Icon
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-    </svg>
-  ) : (
-    // Play Icon
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-    </svg>
-  )}
-</div>
-
-        </div>
-        </>
-       }
-        <button
-          disabled={currentQuater ===8}
-        onClick={handleNextPeriodClick}
-
-        className={`h-full flex-row bg-secondary-bg rounded-lg  flex 
-              ${minutesTracked ? "w-1/4" : "w-2/4"}
-   my-auto  justify-center items-center
-
-           ${currentQuater==4 ? "  bg-secondary-bg text-gray-200" : ""}
-           
-              ${currentQuater === 8  ? "line-through text-gray-500" : ""}
-           `}
-
-           >
-
-
-            {currentQuater<=3 ? "Next Period" : "OT "+ (currentQuater-3)}
-
-          
-{/* Next Period  */}
-          <FontAwesomeIcon className={` ml-2 ${currentQuater===4 ? "   text-primary-cta" : "text-white"}`}
-            icon={faForward} />
-
-        </button>
-
-                </div>
-        </div>
-      </div>
-      {showLineoutModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-secondary-bg p-6 rounded-md flex flex-col space-y-4 w-80">
-      <h3 className="text-white text-lg text-center mb-4">Manage On-Court Players</h3>
-
-      {/* Sort first */}
-      {(() => {
-        const sortedPlayers = [...passedLineout.players].sort((a, b) => {
-          const aOn = onCourtPlayers.includes(a.number);
-          const bOn = onCourtPlayers.includes(b.number);
-          return aOn === bOn ? 0 : aOn ? -1 : 1;
-        });
-
-        const onFloorPlayers = sortedPlayers.slice(0, 5);
-        const benchPlayers = sortedPlayers.slice(5);
-
-        return (
-          <>
-            {/* On Floor Section */}
-            <p className="text-gray-400 text-sm mb-1">On Floor</p>
-            {onFloorPlayers.map((player) => (
-              <div key={player.number} className="flex justify-between items-center text-white">
-                <span>{player.name} #{player.number}</span>
-                <input
-                  type="checkbox"
-                  checked={onCourtPlayers.includes(player.number)}
-                  onChange={() => handleTogglePlayer(player.number)}
-                  className="w-5 h-5"
-                />
-              </div>
-            ))}
-
-            {/* Divider */}
-            <hr className="border-gray-600 my-2" />
-
-            {/* Bench Section */}
-            <p className="text-gray-400 text-sm mb-1">Bench</p>
-            {benchPlayers.map((player) => (
-              <div key={player.number} className="flex justify-between items-center text-white">
-                <span>{player.name} #{player.number}</span>
-                <input
-                  type="checkbox"
-                  checked={onCourtPlayers.includes(player.number)}
-                  onChange={() => handleTogglePlayer(player.number)}
-                  className="w-5 h-5"
-                />
-              </div>
-            ))}
-          </>
-        );
-      })()}
-
-      <button
-        onClick={() => setShowLineoutModal(false)}
-        className="mt-4 bg-primary-cta px-4 py-2 rounded text-white"
-      >
-        Done
-      </button>
-    </div>
-  </div>
-)}
-
-
-      {showExitModal && (
-  <div
-    className="fixed inset-0 flex items-center justify-center z-50"
-    onClick={() => {
-      setShowExitModal(false);
-    }}
-  >
-    {/* Modal Overlay */}
-    <div className="absolute inset-0 bg-black opacity-50"></div>
-    {/* Modal Content */}
-    <div
-      className="relative bg-secondary-bg p-6 rounded-lg w-72"
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-      <h3 className="text-white text-lg mb-4">Exit Game?</h3>
-      <p className="text-gray-300 mb-4">
-        Unsaved game data will be lost. Are you sure you want to exit?
-      </p>
-      <div className="flex justify-end space-x-2">
-        <button
-          onClick={() => setShowExitModal(false)}
-          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => navigate('/homedashboard')}
-          className="px-4 py-2 bg-primary-danger hover:bg-red-500 text-white rounded"
-        >
-          Exit
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-{/* this is the modal for the game stats  */}
-{showGameStatsModal && (
-  <div
-    className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
-    onClick={() => setShowGameStatsModal(false)} // Clicking outside closes the modal
-  >
-    
-    {/* Modal Content */}
-    <div
-      className="relative bg-primary-bg items-end right-0 p-4 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-              <button
-          onClick={() => setShowGameStatsModal(false)}
-          className="text-white absolute right-5 top-2 bg-primary-danger  px-2 py-2 rounded"
-        >
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-</svg>
-
-
-        </button>
-      <div className="w-auto   h-auto py-5 flex  ">
-    {/* Score Section */}
-    <div
-  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
-  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-secondary-bg w-2/5 mr-10 "
->
-  {/* Team Score Row */}
-  <div className="flex items-center w-full">
-    <img className="w-10 h-10 rounded-full mr-2" src={teamImage || ravensLogo} alt="Ravens" />
-    
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{teamName}</span>
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
-  </div>
-
-  {/* Opponent Score Row */}
-  <div className="flex items-center w-full">
-    {/* <img className="w-10 h-10 rounded-full mr-2" src={opponentJerseyDefault} alt={opponentName} /> */}
-    <img 
-  className="w-10 h-10 rounded-full mr-2"
-  src={opponentLogo || opponentJerseyDefault} 
-  alt={opponentName} 
+<ActionButtons
+  savedGame={savedGame}
+  actions={actions}
+  passedLineout={passedLineout}
+  currentQuater={currentQuater}
+  setPendingAction={setPendingAction}
+  setShowPlayerModal={setShowPlayerModal}
+  setGameActions={setGameActions}
+  setAlertMessage={setAlertMessage}
+  setActionSelected={setActionSelected}
+  actionSelected={actionSelected}
 />
 
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
-  </div>
-</div>
 
-  
-  <div className="flex flex-col  w-2/5  ">
-
-
-  <div class="relative overflow-x-auto ">
-  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-  <thead className="text-xs uppercase border-b-4 border-b-secondary-bg">
-    <tr>
-      {/* Render Q1-Q4 */}
-      {[1, 2, 3, 4].map((q) => (
-        <th
-          key={q}
-          className={`px-6 py-3 ${q === 1 ? "rounded-s-lg" : ""} 
-          ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""} 
-          ${q === currentQuater ? "text-white" : "text-gray-400"}`}
-        >
-          Q{q}
-        </th>
-      ))}
-
-      {/* Render OT dynamically if currentQuater > 4 */}
-      {currentQuater > 4 &&
-        [...Array(currentQuater - 4)].map((_, index) => {
-          const otNumber = index + 1;
-          return (
-            <th
-              key={`OT${otNumber}`}
-              className={`px-6 py-3 ${currentQuater === otNumber + 4 ? "text-white" : "text-gray-400"} 
-              ${otNumber + 4 === currentQuater ? "rounded-e-lg" : ""}`}
-            >
-              OT{otNumber}
-            </th>
-          );
-        })}
-    </tr>
-  </thead>
-  <tbody>
-    <tr className="bg-primary-bg">
-      {/* Render Q1-Q4 scores */}
-      {[1, 2, 3, 4].map((q) => (
-        <td
-          key={q}
-          className={`px-6 py-4 ${q === currentQuater ? "text-white" : "text-gray-400"}`}
-        >
-          {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= q ? "0" : "-"}
-        </td>
-      ))}
-
-      {/* Render OT scores dynamically */}
-      {currentQuater > 4 &&
-        [...Array(currentQuater - 4)].map((_, index) => {
-          const otNumber = index + 5; // OT starts from Q5 (1st OT)
-          return (
-            <td
-              key={`OT${otNumber}`}
-              className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}
-            >
-              {quarterScores[otNumber] > 0 ? quarterScores[otNumber] : "0"}
-            </td>
-          );
-        })}
-    </tr>
-  </tbody>
-</table>
+<BottomNav
+passedLineout={passedLineout}
+  currentQuater={currentQuater}
+  minutesTracked={minutesTracked}
+  handlePreviousPeriodClick={handlePreviousPeriodClick}
+  handleNextPeriodClick={handleNextPeriodClick}
+  setShowLineoutModal={setShowLineoutModal}
+  showTimeModal={showTimeModal}
+  setShowTimeModal={setShowTimeModal}
+  minutes={minutes}
+  seconds={seconds}
+  setMinutes={setMinutes}
+  setSeconds={setSeconds}
+  isRunning={isRunning}
+  setIsRunning={setIsRunning}
+/>
 
 
 
 
-
-
-</div>
-
-  </div>
-  
-</div>
-
-      <div className=" bg-red-600 flex justify-center">
-  <div className="flex items-center justify-start w-screen overflow-x-auto scrollbar-hide bg-primary-bg py-3">
-    <div className="flex space-x-3 px-2 w-max">
-
-      {/* FG */}
-      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  
-space-y-2`}>
-
-        {/* Icon Badge */}
-        <div className={`flex items-center justify-center p-3 rounded-full
-          ${fgPercentage === 0
-            ? "bg-gray-700"
-            : fgPercentage >= 25
-              ? "bg-primary-cta"
-              : "bg-primary-danger"}`}>
-          <span className="text-white text-sm font-bold">FG</span>
         </div>
-
-        {/* Stat */}
-        <span className={`text-2xl font-bold 
-       text-gray-200`}>
-          {fgPercentage}%
-        </span>
-
-        {/* Label */}
-        <span className="text-sm text-gray-400">{fgMade}-{fgAttempts}</span>
       </div>
-
-      {/* 3PT */}
-      <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
-
-        <div className={`flex items-center justify-center p-2 py-3 rounded-full
-          ${threePtPercentage === 0
-            ? "bg-gray-700"
-            : threePtPercentage >= 25
-              ? "bg-primary-cta"
-              : "bg-primary-danger"}`}>
-          <span className="text-white text-sm font-bold">3PT</span>
-        </div>
-
-        <span className={`text-2xl font-bold 
-        text-gray-200`}>
-          {threePtPercentage}%
-        </span>
-
-        <span className="text-sm text-gray-400">{threePtMade}-{threePtAttempts}</span>
-      </div>
-
-   
-     {/* Runs */}
-     {currentRun && (
-  <div className="flex flex-col items-center text-white w-full space-y-2 bg-[#1e222a9b] p-4 min-w-[240px]">
-    {/* Header */}
-    <div className="text-md uppercase tracking-wide text-gray-200">Current Run</div>
-
-    {/* Run Score */}
-    <div className="text-3xl font-extrabold flex flex-row text-white items-center">
-  {/* Left Logo (Ravens) */}
-  {currentRun.team === "home" && (
-    // <img
-    //   src={ravensLogo}
-    //   alt="Ravens Logo"
-    //   className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"
-    // />
-    <img   className="w-10 h-10 rounded-full border-2 border-primary-cta shadow mr-3"     alt="HomeLogo"  src={teamImage || ravensLogo} />
-  )}
-
-  {/* Run Score */}
-  <span>{runPoints}</span>
-<span className="mx-1 text-gray-400">–</span>
-<span className="text-gray-400">{opponentPoints ?? ''}</span>
+      <LineoutModal
+  showLineoutModal={showLineoutModal}
+  setShowLineoutModal={setShowLineoutModal}
+  passedLineout={passedLineout}
+  onCourtPlayers={onCourtPlayers}
+  handleTogglePlayer={handleTogglePlayer}
+/>
 
 
-
-  {/* Right Logo (Opponent) */}
-  {currentRun.team === "away" && (
-    <img
-      src={opponentLogo || opponentJerseyDefault}
-      alt="Opponent Logo"
-      className="w-10 h-10 rounded-full border-2 border-secondary-cta shadow ml-3"
+<ExitModal
+      showExitModal={showExitModal}
+      setShowExitModal={setShowExitModal}
+      onExit={() => navigate("/homedashboard")}
     />
-  )}
-</div>
 
-
-    {/* Subtext */}
-    {runStartScore && (
-  <div className="flex items-center space-x-2 text-sm text-gray-400">
-    {/* Start Score */}
-    <span className="bg-gray-700 rounded-full px-2 py-0.5">
-      {runStartScore.teamScore}–{runStartScore.opponentScore}
-    </span>
-
-    {/* Arrow */}
-    <span className="text-lg">→</span>
-
-    {/* Current Score */}
-    <span className="bg-gray-700 rounded-full px-2 py-0.5">
-      {teamScore}–{opponentScore}
-    </span>
-  </div>
-)}
-
-
-
-    {/* Progress Bar */}
-
-  </div>
-)}
-
-   {/* FT */}
-   <div className={`flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2`}>
-
-<div className={`flex items-center justify-center p-2 rounded-full
-  ${ftPercentage === 0
-    ? "bg-gray-700"
-    : ftPercentage >= 25
-      ? "bg-primary-cta"
-      : "bg-primary-danger"}`}>
-  <span className="text-white text-sm font-bold">FT</span>
-</div>
-
-<span className={`text-2xl font-bold 
-  text-gray-200`}>
-  {ftPercentage}%
-</span>
-
-<span className="text-sm text-gray-400">{ftMade}-{ftAttempts}</span>
-</div>
-
-
-
-      {/* Blocks */}
-      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px] 
-       space-y-2">
-
-        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
-          <span className="text-white text-sm font-bold">BLK</span>
-        </div>
-
-        <span className="text-2xl text-gray-200 font-bold">{blocks}</span>
-        {/* <span className="text-sm text-gray-400">{blocks}</span> */}
-      </div>
-
-      {/* Dummy Cards — Similar style, static colors */}
-      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2">
-        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
-          <span className="text-white text-sm font-bold">AST</span>
-        </div>
-        <span className="text-2xl text-gray-200 font-bold">{asists}</span>
-        {/* <span className="text-sm text-gray-400">10</span> */}
-      </div>
-
-      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]   space-y-2">
-        <div className="flex items-center justify-center p-2 rounded-full bg-primary-danger">
-          <span className="text-white text-sm font-bold">ORB</span>
-        </div>
-        <span className="text-2xl text-gray-200 font-bold">{offRebounds}</span>
-        {/* <span className="text-sm text-gray-400">5</span> */}
-      </div>
-
-      <div className="flex flex-col items-center justify-center bg-[#1e222a9b] shadow-lg rounded-lg p-4 min-w-[120px]  space-y-2">
-        <div className="flex items-center justify-center p-2 rounded-full bg-primary-cta">
-          <span className="text-white text-sm font-bold">RB</span>
-        </div>
-        <span className="text-2xl text-gray-200 text- font-bold">{rebounds}</span>
-        {/* <span className="text-sm text-gray-400">8</span> */}
-      </div>
-
-    </div>
-  </div>
-</div>
-
-
-
-
-
-<div className=" w-full    h-auto my-4">
-  <h1 className="text-md font-semibold text-center mt-2 mb-4 text-white font-semibold ">Lead Changes   <span className="px-3">-</span> 
- {/* renderign the lea changes into the label for space savings ❤️ */}
-<span className="text-gray-300 ">
-  
-        {(() => {
-          // Check if Ravens are currently leading
-          if (teamScore > opponentScore) {
-            // Find when they LAST took the lead
-            const lastLeadChange = leadChanges
-            .slice()
-            .reverse()
-            .find((lead) => lead.team === "Ravens");
-          
-          if (lastLeadChange) {
-            return (
-              <span className="text-primary-cta">
-                Lead since Q{lastLeadChange.q} ({lastLeadChange.score})
-              </span>
-            );
-          }
-          
-
-            return <span className="text-primary-cta">Currently Leading</span>;
-          }
-
-          // Find the last time Ravens had the lead
-          const lastRavensLead = leadChanges
-          .slice()
-          .reverse()
-          .find((lead, index, arr) => {
-            // Find the last instance where Ravens were in the lead *before* they lost it
-            const nextLead = arr[index - 1]; // The lead change right after it
-            return lead.team === "Ravens" && nextLead && nextLead.team !== "Ravens";
-          });
-        
-        if (lastRavensLead) {
-          return (
-            <span className="text-gray-300">
-              Last lead Q{lastRavensLead.q} ({lastRavensLead.score})
-            </span>
-          );
-        }
-        
-          // If they never led
-          return <span className="text-primary-danger">Never in Lead</span>;
-        })()}
-      </span>
-
-  
-  </h1>
-  {/* timeline for lead changes will go here  */}
-  <div className="w-full h-auto ">
-      {/* 🔹 Quarter Navigation */}
-      <div className="flex space-x-2 mb-4 ">
-  {/* Always show "All" button */}
-  <button
-    onClick={() => setSelectedQuarter("All")}
-    className={`px-4 py-2 rounded ${
-      selectedQuarter === "All" ? "bg-white/10 text-white" : "bg-secondary-bg text-gray-400"
-    }`}
-  >
-    All
-  </button>
-
-  {/* Only show quarters that have data */}
-  {availableQuarters.map((q) => (
-    <button
-  key={q}
-  onClick={() => setSelectedQuarter(q)}
-  className={`px-4 py-2 rounded ${
-    selectedQuarter === q ? "bg-white/10 text-white" : "bg-secondary-bg text-gray-400"
-  }`}
->
-  {q > 4 ? `OT${q - 4}` : `Q${q}`}
-</button>
-
-  ))}
-</div>
-
-<div className=" h-28 flex flex-row ">
-  <div className="h-28 flex flex-col w-1/12 ">
-  <div className={`w-14 px-2 flex items-center justify-center h-1/2 bg-white/10 rounded-full
-   ${teamScore>opponentScore ? "border-2 border-primary-cta" : ""} `}>
-  {/* <img className="w-10  mx-auto h-10 rounded-full " src={ravensLogo} alt={opponentName} /> */}
-  <img   className="w-10 h-10 rounded-full "      alt="HomeLogo"  src={teamImage || ravensLogo} />
-  </div>
-  <div className={`w-14 flex  items-center justify-center h-1/2 bg-white/10 rounded-full mt-2
-    
-    ${teamScore<opponentScore ? "border-2 border-[#10B981]" : ""}`}>
-  {/* <img className="w-10  mx-auto h-10 rounded-full " src={opponentJerseyDefault} alt={opponentName} /> */}
-  <img 
-  className="w-10 h-10 mx-auto rounded-full "
-  src={opponentLogo || opponentJerseyDefault} 
-  alt={opponentName} 
+<GameStatsModal
+  showGameStatsModal={showGameStatsModal}
+  setShowGameStatsModal={setShowGameStatsModal}
+  setShowEditOpponentScoreModal={setShowEditOpponentScoreModal}
+  teamScore={teamScore}
+  opponentScore={opponentScore}
+  teamName={teamName}
+  teamImage={teamImage}
+  ravensLogo={ravensLogo}
+  opponentName={opponentName}
+  opponentLogo={opponentLogo}
+  opponentJerseyDefault={opponentJerseyDefault}
+  currentQuater={currentQuater}
+  quarterScores={quarterScores}
+  fgPercentage={fgPercentage}
+  fgMade={fgMade}
+  fgAttempts={fgAttempts}
+  threePtPercentage={threePtPercentage}
+  threePtMade={threePtMade}
+  threePtAttempts={threePtAttempts}
+  ftPercentage={ftPercentage}
+  ftMade={ftMade}
+  ftAttempts={ftAttempts}
+  blocks={blocks}
+  asists={asists}
+  offRebounds={offRebounds}
+  rebounds={rebounds}
+  currentRun={currentRun}
+  runPoints={runPoints}
+  opponentPoints={opponentPoints}
+  runStartScore={runStartScore}
+  leadChanges={leadChanges}
+  selectedQuarter={selectedQuarter}
+  setSelectedQuarter={setSelectedQuarter}
+  availableQuarters={availableQuarters}
+  filteredLeadChanges={filteredLeadChanges}
+  latestLeadChange={latestLeadChange}
+  pieData={pieData}
+  steals={steals}
+  turnovers={turnovers}
+  fgPercentages={fgPercentages}
+  stealsTurnoversData={stealsTurnoversData}
+  customTheme={customTheme}
+  gameLineChartData={gameLineChartData}
+  homeTeamName={homeTeamName}
 />
-
-  </div>
-  </div>
-  <ul className="timeline flex overflow-x-auto w-11/12 space-x-2 relative">
-  {filteredLeadChanges.map((lead, index) => {
-    const isLatest = lead === latestLeadChange; // Now correctly highlighting the first (left-most) lead
-
-    return (
-      <li key={index} className="flex-shrink-0 relative flex flex-col items-center">
-        {/* Top Score Box (Ravens lead) */}
-        {lead.team === "Ravens" && (
-          <div className={`timeline-start timeline-box border-none ${isLatest ? "bg-[#0b63fb] text-white" : "bg-secondary-bg text-gray-300"}`}>
-            {lead.score}
-          </div>
-        )}
-
-        {/* Icon + Connecting Line */}
-  {/* Icon + Connecting Line */}
-<div className={`timeline-middle relative bg-secondary-bg  p-2 rounded-full border-none flex items-center ${lead.team === 'Ravens' ? "text-primary-cta" : "text-gray-400"}`}>
-  {(() => {
-    // Extract the scores from the lead.score string (assuming format like "6-5")
-    const scoreParts = lead.score.split('-');
-    const homeScore = parseInt(scoreParts[0], 10);
-    const awayScore = parseInt(scoreParts[1], 10);
-    const isTied = homeScore === awayScore;
-    
-    if (lead.team === "Ravens") {
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-      );
-    } else if (isTied) {
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-        </svg>
-      );
-    } else {
-      return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 text-secondary-cta">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
-        </svg>
-      );
-    }
-  })()}
-  {/* ✅ Horizontal Line (only if there's another lead change after this one) */}
-  {index !== filteredLeadChanges.length - 1 && (
-    <div className="absolute top-1/2 left-full w-14 h-1 bg-secondary-bg"></div>
-  )}
-</div>
-
-        {/* Bottom Score Box (Opponent lead) */}
-        {lead.team !== "Ravens" && (
-          <div className={`timeline-end border-none timeline-box ${isLatest ? "bg-red-600 text-white" : 
-          "bg-secondary-bg text-gray-300"}`}>
-            {lead.score}
-          </div>
-        )}
-      </li>
-    );
-  })}
-</ul>
-
-
-
-
-</div>
-    </div>
-
-<div className=" rounded-xl p-2" style={{ height: "200px", width: "100%",marginTop:"40px" }}>
-<h4 className="" style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Quarter Split</h4>
-
-<div className="bg-primary-bg h-full w-full  py-2 rounded-md">
-  <ResponsiveLine
-    animate={true} 
-    motionConfig={{ mass: 1, tension: 250, friction: 20 }}
-    data={gameLineChartData}
-    margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
-    xScale={{ type: "point" }}
-    yScale={{
-      type: "linear",
-      min: 0,
-      max: "auto",
-      stacked: false,
-      nice: true
-    }}
-    axisBottom={{
-      tickSize: 5,
-      tickPadding: 5,
-      tickRotation: 0,
-      legend: "Quarter",
-      legendOffset: 36,
-      legendPosition: "middle"
-    }}
-    pointLabel={(point) => `${point.data.y}`}
-    pointLabelYOffset={-12}
-    pointLabelTextColor={{ from: "color", modifiers: [["brighter", 1.5]] }}
-    theme={customTheme}
-    axisLeft={{
-      tickValues: Array.from({ length: 21 }, (_, i) => i * 5),
-      legend: "Score",
-      legendOffset: -40,
-      legendPosition: "middle"
-    }}
-    pointLabelColor="#FFFFFFF"
-    colors={({ id }) => (id === homeTeamName ? "#0b63fb" : "#10B981")}
-    pointColor={({ id }) => (id === "Opponent" ? "#10B981" : "#0b63fb")}
-    pointSize={10}
-    pointBorderWidth={2}
-    pointBorderColor={{ from: "serieColor" }}
-    enablePointLabel={true}
-    useMesh={true}
-  />
-</div>
-
-
-  </div>
-  <div className="w-full mt-10 flex flex-row">
-  <div className=" rounded-md  w-1/2" style={{ height: "200px" }}>
-  <h4 style={{ textAlign: 'center', color: '#fff', marginBottom: '10px' }}>Scoring Split</h4>
-      <ResponsivePie
-        data={pieData}
-        margin={{ top: 20, right: 80, bottom: 80, left: 80 }}
-        innerRadius={0.5}
-        padAngle={0.7}
-        cornerRadius={3}
-        colors={({ data }) => data.color}
-        borderWidth={2}
-        borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
-        enableArcLabels={true}
-        arcLabelsSkipAngle={10}
-        arcLabelsTextColor="#FFFFFF"
-        axisBottom={{
-          tickSize: 5,
-          tickPadding: 5,
-          tickRotation: 0,
-          legend: 'FG Percentage',
-          legendPosition: 'middle',
-          legendOffset: 40,
-        }}
-        theme={customTheme}
-      />
-      
-    </div>
-    
-    <div className="w-1/2 ">
-
-    <ResponsiveBar
-  data={[{ category: "Possessions", steals: steals, turnovers: turnovers }]} // Example data
-  keys={["steals", "turnovers"]}
-  indexBy="category"
-  layout="horizontal" // ✅ Horizontal bar
-  margin={{ top: 20, right: 20, bottom: 50, left: 20 }} // Extra space for legend
-  padding={0.5}
-  colors={["#0b63fb", "#10B981"]} // ✅ Yellow (steals) & Blue (turnovers)
-  axisLeft={null} // ✅ No left axis labels
-  axisBottom={null} // ✅ No bottom axis labels
-  enableGridX={false} // ✅ No gridlines
-  borderRadius={5} // ✅ Rounded corners
-  labelSkipWidth={10} // ✅ Only show label if bar is wide enough
-  labelSkipHeight={10}
-  labelTextColor="black" // ✅ Numbers inside bars
-  theme={{
-    axis: { ticks: { text: { fill: "#fff" } } }
-  }}
-  legends={[
-    {
-      data: [
-        { id: "steals", label: "Steals", color: "#0b63fb" },
-        { id: "turnovers", label: "Turnovers", color: "#10B981" }
-      ],
-      anchor: "top",
-      direction: "row",
-
-      justify: false,
-      translateY: 10, // ✅ Space below for legend
-      itemsSpacing: 10,
-      itemWidth: 80,
-      itemHeight: 20,
-      itemDirection: "left-to-right",
-      symbolSize: 15,
-      symbolShape: "square",
-      itemTextColor: "#fff"
-    }
-  ]}
-/>
-
-
-    </div>
-
-    </div>
-    <div className="w-full h-48 flex flex-row">
-      <div className="w-1/2 h-full">
-      <ResponsiveBar
-     
-  data={fgPercentages}
-  keys={['percentage']}
-  indexBy="quarter"
-  margin={{ top: 20, right: 50, bottom: 50, left: 60 }}
-  padding={0.3}
-  colors="#0b63fb"
-  theme={customTheme}
-  valueScale={{ type: 'linear' }}
-  indexScale={{ type: 'band', round: true }}
-  axisTop={null}
-  axisRight={null}
-  legends={[
-    {
-      anchor: "top", // 🔥 Position it at the top
-      direction: "row",
-      justify: false,
-      translateY: -20, // Move it up/down if needed
-      itemsSpacing: 10,
-      itemWidth: 100,
-      itemHeight: 18,
-      itemTextColor: "#fff", // Customize text color
-      symbolSize: 18,
-      symbolShape: "circle",
-    }
-  ]}
-  axisLeft={null} // ✅ Remove Y-axis numbers
-  enableGridX={false} // ✅ Remove grid lines
-  enableGridY={false}
-  labelSkipWidth={12}
-  labelSkipHeight={12}
-  labelTextColor="#ffffff"
-  label={({ value }) => `${value}%`} // ✅ Adds % to inside bar labels
-  animate={true}
-  motionConfig="wobbly"
-/>
-
-    </div>
-    <div className="w-1/2 h-full">
-    <ResponsiveBar
-  data={stealsTurnoversData}
-  keys={['steals', 'turnovers']}
-  indexBy="quarter"
-  margin={{ top: 20, right: 50, bottom: 50, left: 50 }}
-  padding={0.3}
-  layout="vertical"
-  valueScale={{ type: 'linear' }}
-  indexScale={{ type: 'band', round: true }}
-  colors={({ id }) => (id === 'steals' ? '#0b63fb' : '#10B981')} // Green & Red split
-  borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
-  theme={customTheme} // Using your theme
-  labelTextColor="#fff"
-  axisTop={null}
-  axisRight={null}
-  axisLeft={null} // Remove numbers
-  axisBottom={{
-    tickSize: 5,
-    tickPadding: 5,
-    tickRotation: 0,
-    legend: '',
-    legendPosition: 'middle',
-    legendOffset: 40,
-  }}
-  enableGridX={false}
-  enableGridY={false}
-  labelSkipWidth={12}
-  labelSkipHeight={12}
-  label={({ value }) => `${value}`} // Show values
-  legends={[
-    {
-      anchor: 'top',
-      direction: 'row',
-      translateY: -20,
-      itemsSpacing: 10,
-      itemWidth: 80,
-      itemHeight: 20,
-      itemTextColor: '#fff',
-      symbolSize: 18,
-      symbolShape: 'circle',
-      data: [
-        { id: 'steals', label: 'Steals', color: '#0b63fb' },
-        { id: 'turnovers', label: 'Turnovers', color: '#10B981' },
-      ],
-    },
-  ]}
-/>
-    </div>
-    </div>
-</div>
-      {/* <div className="flex w-full flex-row  mt-10 ">
-        <svg onClick={()=>{
-          setGameStatsExpanded(!gameStatsExpanded)
-        }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2 my-auto text-gray-400">
-
-  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-
-</svg>
-
-
-      <div className={`overflow-x-auto max-h-80 overflow-auto w-full
-      ${gameStatsExpanded ? "h-auto" : " h-10"}
-
-      `}>
-        <table className="min-w-full  w-full text-white border-collapse">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 border-b">Quarter</th>
-              <th className="px-4 py-2 border-b">Action</th>
-              <th className="px-4 py-2 border-b">Time</th>
-              <th className="px-4 py-2 border-b">Player</th>
-           
-            </tr>
-          </thead>
-          <tbody>
-            {gameActions.map((action, index) => (
-              <tr key={index} className="hover:bg-white/10">
-                <td className={`px-4 py-2 border-b text-center  `}>{action.quarter}</td>
-                <td className="px-4 py-2 border-b text-center">{action.actionName}</td>
-                <td className="px-4 py-2 border-b text-center">
-                  {action.timestamp ? new Date(action.timestamp).toLocaleTimeString() : "-"}
-                </td>
-                <td className="px-4 py-2 border-b text-center">
-                  {action.playerName ? `${action.playerName} (${action.playerNumber})` : "-"}
-                </td>
- 
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      </div> */}
-    </div>
-  </div>
-)}
 {/* this will be the modal for the player stats
  */}
-{showPlayerStatsModal && (
-  <div
-    className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
-    onClick={() => setShowPlayerStatsModal(false)} // Clicking outside closes the modal
-  >
-    {/* Modal Content */}
-    <div
-      className="relative bg-secondary-bg p-6 rounded-lg w-full max-w-4xl mx-4 my-8 overflow-auto max-h-full"
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-    >
-   
-   <div className="flex  justify-between items-center mb-4 p-4 ">
-  {/* Player Stats Header */}
-  {/* <div className="flex">
-    <h2 className="text-white text-2xl font-bold  px-4 py-2">Player Stats</h2>
-  </div> */}
-
-  {/* Score Section */}
-  <div
-  onClick={() => setShowEditOpponentScoreModal(!showEditOpponentScoreModal)}
-  className="flex flex-col space-y-2 pe-10 border-r-2 border-r-gray-400 w-2/5 "
->
-  {/* Team Score Row */}
-  <div className="flex items-center w-full">
-    {/* <img className="w-10 h-10 rounded-full mr-2" src={ravensLogo} alt="Ravens" /> */}
-    <img   className="w-10 h-10 rounded-full mr-2"      alt="HomeLogo"  src={teamImage || ravensLogo} />
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{teamName}</span>
-    <span className={`${teamScore > opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{teamScore}</span>
-  </div>
-
-  {/* Opponent Score Row */}
-  <div className="flex items-center w-full">
-  <img 
-  className="w-10 h-10 mx-auto rounded-full mr-2"
-  src={opponentLogo || opponentJerseyDefault} 
-  alt={opponentName} 
-/>
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-semibold flex-1`}>{opponentName}</span>
-    <span className={`${teamScore < opponentScore ? "text-white" :"text-gray-400"} text-lg font-bold`}>{opponentScore}</span>
-  </div>
-</div>
-
-  
-  <div className="flex flex-col  w-2/5  ">
-
-
-  <div class="relative overflow-x-auto ">
-  <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-  <thead className="text-xs uppercase bg-primary-bg">
-    <tr>
-      {/* Render Q1-Q4 dynamically */}
-      {[1, 2, 3, 4].map((q) => (
-        <th
-          key={q}
-          className={`px-6 py-3 ${q === 1 ? "rounded-s-lg" : ""} 
-          ${q === 4 && currentQuater <= 4 ? "rounded-e-lg" : ""} 
-          ${q === currentQuater ? "text-white" : "text-gray-400"}`}
-        >
-          Q{q}
-        </th>
-      ))}
-
-      {/* Render OT dynamically if currentQuater > 4 */}
-      {currentQuater > 4 &&
-        [...Array(currentQuater - 4)].map((_, index) => {
-          const otNumber = index + 1;
-          return (
-            <th
-              key={`OT${otNumber}`}
-              className={`px-6 py-3 ${currentQuater === otNumber + 4 ? "text-white" : "text-gray-400"} 
-              ${otNumber + 4 === currentQuater ? "rounded-e-lg" : ""}`}
-            >
-              OT{otNumber}
-            </th>
-          );
-        })}
-    </tr>
-  </thead>
-  <tbody>
-    <tr className="bg-secondary-bg">
-      {/* Render Q1-Q4 scores dynamically */}
-      {[1, 2, 3, 4].map((q) => (
-        <td
-          key={q}
-          className={`px-6 py-4 ${q === currentQuater ? "text-white" : "text-gray-400"}`}
-        >
-          {quarterScores[q] > 0 ? quarterScores[q] : currentQuater >= q ? "0" : "-"}
-        </td>
-      ))}
-
-      {/* Render OT scores dynamically */}
-      {currentQuater > 4 &&
-        [...Array(currentQuater - 4)].map((_, index) => {
-          const otNumber = index + 5; // OT starts from Q5 (1st OT)
-          return (
-            <td
-              key={`OT${otNumber}`}
-              className={`px-6 py-4 ${currentQuater === otNumber ? "text-white" : "text-gray-400"}`}
-            >
-              {quarterScores[otNumber] > 0 ? quarterScores[otNumber] : "0"}
-            </td>
-          );
-        })}
-    </tr>
-  </tbody>
-</table>
-
-
-
-
-
-</div>
-
-  </div>
-<div className=" h-full">
-  {/* Close Button */}
-  <button
-    onClick={() => setShowPlayerStatsModal(false)}
-    className="text-white bg-primary-danger/50 hover:bg-red-500 px-4 py-2 rounded"
-  >
-    Close
-  </button>
-  </div>
-</div>
-<div>
-{showEditOpponentScoreModal &&
-<>
-<div className="flex  items-center">
-<form className="max-w-56 my-5 px-5">
-    <label htmlFor="number-input" className="block mb-2 text-sm font-medium text-white">
-        {opponentName} Score
-    </label>
-    <input 
-    type="number" 
-    id="number-input" 
-    aria-describedby="helper-text-explanation" 
-    className="bg-primary-bg border border-secondary-bg text-gray-200 text-sm rounded-lg block w-full p-2.5 placeholder-gray-400"
-    placeholder="0" 
-    value={opponentScore} // Bind input value to state
-    onChange={(e) => {
-        let value = e.target.value.replace(/^0+(?=\d)/, ""); // Remove leading zeros
-   
-    }} 
-    required 
+<PlayerStatsModal
+  showPlayerStatsModal={showPlayerStatsModal}
+  setShowPlayerStatsModal={setShowPlayerStatsModal}
+  teamImage={teamImage}
+  ravensLogo={ravensLogo}
+  teamScore={teamScore}
+  teamName={teamName}
+  opponentLogo={opponentLogo}
+  opponentJerseyDefault={opponentJerseyDefault}
+  opponentScore={opponentScore}
+  opponentName={opponentName}
+  setShowEditOpponentScoreModal={setShowEditOpponentScoreModal}
+  showEditOpponentScoreModal={showEditOpponentScoreModal}
+  currentQuater={currentQuater}
+  quarterScores={quarterScores}
+  // opponentScoreInput={opponentScoreInput}
+  // setOpponentScoreInput={setOpponentScoreInput}
+  minutesTracked={minutesTracked}
+  playersStatsArray={playersStatsArray}
+  extractPlayerNumber={extractPlayerNumber}
+  playerMinutes={playerMinutes}
 />
 
-</form>
-<svg onClick={()=>{
-  setShowEditOpponentScoreModal(!showEditOpponentScoreModal)
-}} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-primary-cta">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-</svg>
-</div>
-</>
-}
-
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-white border-collapse">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 border-b  text-left">PlayerName</th>
-              
-              {minutesTracked && (
-      <th className="px-4 py-2 border-b text-left">Mins</th>
-    )}
-              <th className="px-4 py-2 border-b  text-left">PTS</th>
-              <th className="px-4 py-2 border-b text-left">FG</th>
-              <th className="px-4 py-2 border-b text-left">3PT</th>
-              <th className="px-4 py-2 border-b text-left">FT</th>
-              <th className="px-4 py-2 border-b text-left">AST</th>
-              <th className="px-4 py-2 border-b text-left">RB</th>
-              <th className="px-4 py-2 border-b text-left">BLK</th>
-              <th className="px-4 py-2 border-b text-left">STL</th>
-              <th className="px-4 py-2 border-b text-left">TO</th>
-              <th className="px-4 py-2 border-b text-left">ORB</th>
-            </tr>
-          </thead>
-          <tbody>
-          {playersStatsArray.length > 0 ? (
-  [...playersStatsArray] // Create a copy to avoid mutating the original array
-    .map(stat => ({
-      ...stat,
-      totalPoints: (stat.fgMade * 2) + (stat.threePtMade * 1) + (stat.ftMade * 1)
-    })) // Compute points
-    .sort((a, b) => b.totalPoints - a.totalPoints) // Sort by points (highest first)
-    .map((stat, index) => {
-      const fgPct = stat.fgAttempts ? Math.round((stat.fgMade / stat.fgAttempts) * 100) : 0;
-      const threePct = stat.threePtAttempts ? Math.round((stat.threePtMade / stat.threePtAttempts) * 100) : 0;
-      const ftPct = stat.ftAttempts ? Math.round((stat.ftMade / stat.ftAttempts) * 100) : 0;
-
-      // Calculate total points for the player
-      const totalPoints = (stat.fgMade * 2) + (stat.threePtMade * 1) + (stat.ftMade * 1);
-        // 🔥 Get player's minutes based on playerNumber or name
-        const playerNumber = extractPlayerNumber(stat.player);
-        const minutesPlayed = playerNumber ? playerMinutes[playerNumber] || 0 : 0;
-        
+<BroadcastModal
+  showBroadcastModal={showBroadcastModal}
+  setShowBroadcastModal={setShowBroadcastModal}
+  liveBroadcastGameFinished={liveBroadcastGameFinished}
+  slug={slug}
+  gameFinsihedFlag={gameFinsihedFlag}
+  setGameFinsihedFlag={setGameFinsihedFlag}
+  broadcastUpdate={broadcastUpdate}
+  setBroadcastUpdate={setBroadcastUpdate}
+  broadcastUpdatesText={broadcastUpdatesText}
+  BroadcastLinkCopyHandler={BroadcastLinkCopyHandler}
+  selectedDate={selectedDate}
+  setSelectedDate={setSelectedDate}
+  selectedTime={selectedTime}
+  setSelectedTime={setSelectedTime}
+  handlebroadcastUpdate={handlebroadcastUpdate}
+  handleBroadcastUpdateClear={handleBroadcastUpdateClear}
+  handleFinishGame={handleFinishGame}
+  handleResumeGame={handleResumeGame}
+  broadcastLinkName={broadcastLinkName}
+/>
 
 
 
-        
 
-
-      return (
-        <tr key={index} className="hover:bg-primary-cta group odd:bg-secondary-bg even:bg-white/10 text-white hover:text-primary-bg">
-          <td className="px-4 py-2 border-b border-b-gray-500 "><span className="text-gray-200 group-hover:text-black">{stat.player}</span></td>
-          {minutesTracked && (
-<>
-
-             {/* New Minutes Column */}
-             <td className="px-4 py-2 border-b border-b-gray-500 font-bold text-white">
-
-              <span className="text-gray-200 group-hover:text-black">{minutesPlayed}</span>
-            </td>
-            </>
-                )}
-          <td className="px-4 py-2 border-b border-b-gray-500 font-bold text-white"><span className="text-gray-200 group-hover:text-black">{totalPoints}</span></td> {/* Player Points */}
-          <td className="px-4 py-2 border-b border-b-gray-500">{stat.fgMade}-{stat.fgAttempts} <span className="text-gray-400 group-hover:text-black">({fgPct}%)</span></td>
-          <td className="px-4 py-2 border-b border-b-gray-500">{stat.threePtMade}-{stat.threePtAttempts}  <span className="text-gray-400 group-hover:text-black">({threePct}%)</span></td>
-          <td className="px-4 py-2 border-b border-b-gray-500">{stat.ftMade}-{stat.ftAttempts}  <span className="text-gray-500 group-hover:text-black">({ftPct}%)</span></td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.assists === 0 ? "text-gray-500" : ""}`}>{stat.assists}</td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.rebounds === 0 ? "text-gray-500" : ""}`}>{stat.rebounds}</td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.blocks === 0 ? "text-gray-500" : ""}`}>{stat.blocks}</td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.steals === 0 ? "text-gray-500" : ""}`}>{stat.steals}</td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.turnovers === 0 ? "text-gray-500" : ""}`}>{stat.turnovers}</td>
-          <td className={`px-4 py-2 border-b border-b-gray-500 ${stat.offRebounds === 0 ? "text-gray-500" : ""}`}>{stat.offRebounds}</td>
-        </tr>
-      );
-    })
-  ) : (
-    <tr>
-      <td className="px-4 py-2 border-b text-center" colSpan="8">
-        No player stats available.
-      </td>
-    </tr>
-  )}
-</tbody>
-
-        </table>
-      </div>
-    </div>
-  </div>
-)}
+<BroadcastInfoModal
+  showBroadcastInformationModal={showBroadcastInformationModal}
+  setShowBroadcastInformationModal={setShowBroadcastInformationModal}
+  broadcastLink={broadcastLink}
+/>
 
 
 

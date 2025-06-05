@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState,useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState,useEffect,useRef } from 'react';
+import { useNavigate } from "react-router-dom";
 
 import Login from './screens/Login';
 import HomeDashboard from "./screens/HomeDashboard";
@@ -8,10 +9,18 @@ import InGame from './screens/InGame';
 import Statistics from './screens/Statistics';
 import StatisticsShotMap from './screens/StatisticsShotMap';
 import MobileBlocker from './screens/MobileBlocker';
+import kobe from './assets/kobe.jpg';
 import useAuth from "./hooks/useAuth";
 import HomeScreenCourtSVG from './screens/HomescreenCourtSVG'
+import LiveGameView from './screens/LiveGameView';
+import LiveGamesHomeDashboard from './screens/LiveGameHomeDashboard';
+import LandingPageTiles from './screens/Components/HomeScreen/LandingPageTiles';
 
 export default function App() {
+  // const navigate = useNavigate();
+  const hamburgerRef = useRef(null);
+const mobileMenuRef = useRef(null);
+const closeMenuRef = useRef(null);
   const { user, login, logout } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(true);
@@ -21,7 +30,10 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+ const liveGamesNavigationHandler=()=>{
+//I want to navigate to 
 
+ }
   console.log(user);
   
   useEffect(() => {
@@ -98,41 +110,78 @@ const triggerToast = (message, type = "success") => {
       });
   });
 }
+useEffect(() => {
+  const hamburger = hamburgerRef.current;
+  const mobileMenu = mobileMenuRef.current;
+  const closeMenu = closeMenuRef.current;
+
+  if (!hamburger || !mobileMenu || !closeMenu) return;
+
+  const openMenu = () => {
+    mobileMenu.classList.remove("hidden");
+    setTimeout(() => {
+      mobileMenu.classList.remove("-translate-x-full");
+    }, 10);
+  };
+
+  const closeMenuFn = () => {
+    mobileMenu.classList.add("-translate-x-full");
+    setTimeout(() => {
+      mobileMenu.classList.add("hidden");
+    }, 300);
+  };
+
+  hamburger.addEventListener("click", openMenu);
+  closeMenu.addEventListener("click", closeMenuFn);
+  mobileMenu.addEventListener("click", (e) => {
+    if (e.target === mobileMenu) closeMenuFn();
+  });
+
+  return () => {
+    hamburger.removeEventListener("click", openMenu);
+    closeMenu.removeEventListener("click", closeMenuFn);
+    mobileMenu.removeEventListener("click", closeMenuFn);
+  };
+}, []);
 
 
 
   return (
     
     <Router>
-      <MobileBlocker/>
+      {/* <MobileBlocker/> */}
       <Routes>
         <Route
           path="/"
           element={
             <>
-              <div className="bg-primary-bg min-h-screen">
-              {/* Passing the state and updater function as props to Login */}
-              <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
-            <section className="w-full bg-primary-bg px-8 text-gray-700 ">
+            <header className="bg-primary-bg shadow w-full px-2  z-50">
+  <div className="container mx-auto">
+  <div className="flex justify-between items-center  py-4 mx-auto">
+    <a onClick={()=>{
+navigate("/")
+    }} className="text-xl font-bold text-white">
+      StatsPro <span className="text-sm text-gray-400">| Basketball</span>
+    </a>
 
-<div className='container mx-auto'>
-              
-<div class="navbar bg-primary-bg shadow-sm">
-  <div class="flex-1">
-    <a class="btn btn-ghost text-white rounded-none text-xl border-r-2 border-r-gray-500">StatsPro</a>
-  </div>
-  <div class="flex-none">
-    <ul class="menu menu-horizontal text-gray-300 px-1">
-      <li><a href='https://www.instagram.com/james_bellew97/'>Request an account</a></li>
- 
+    {/* Desktop Nav */}
+    <nav className="hidden md:flex  text-gray-300 text-sm">
+      
+      {/* <a href="/" className="hover:text-white">Home</a>
+      <a href="#" className="hover:text-white">LiveGames</a> */}
+ <ul class="menu menu-horizontal text-gray-300 px-1">
+      {/* <li>
+        <a href='https://www.instagram.com/james_bellew97/'>Live Games</a></li> */}
+        <li>
+        <a href='https://www.instagram.com/james_bellew97/'>Request an account</a></li>
 
       {user ?
-      <li className=' border-l-2 border-l-primary-cta  rounded-md rounded-l-none'>
+      <li className=' border-l-2 z-50 border-l-primary-cta  rounded-md rounded-l-none'>
         <details>
           <summary className=' text-white'>{user.email}</summary>
           <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
-            {/* <li><a> ⚙️    Team Settings</a></li>
-            <hr className='my-2'></hr> */}
+            <li><a>Settings</a></li>
+            <hr className='my-2'></hr>
             <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
           </ul>
         </details>
@@ -160,21 +209,100 @@ const triggerToast = (message, type = "success") => {
 )}
 
     </ul>
+    </nav>
+
+    {/* Mobile Hamburger */}
+    <button ref={hamburgerRef} id="hamburger" className="text-white md:hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+      </svg>
+    </button>
+  </div>
+  </div>
+</header>
+
+
+<div ref={mobileMenuRef} id="mobile-menu" className="fixed inset-0 bg-primary-bg bg-opacity-98 md:hidden hidden z-50 transition-transform duration-300 transform -translate-x-full">
+  <div className="flex flex-col justify-between h-full p-6 text-white">
+    <div className="flex items-center justify-between mb-8">
+      <h2 className="text-xl font-bold">StatsPro</h2>
+      <ul class=" items-start  flex menu menu-horizontal text-gray-300 ">
+      {user ?
+      <li className='  z-50 border-l-primary-cta  rounded-md rounded-l-none'>
+        <details>
+          <summary className=' text-white'>{user.email}</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none ">
+            <li><a>Settings</a></li>
+            <hr className='my-2'></hr>
+            <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
+          </ul>
+        </details>
+      </li>
+          : <>
+              <li className='   w-32 rounded-md '>
+        <details>
+          <summary>Guest</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
+            
+            <li   onClick={()=>{setShowAuthModal(true)}} className='bg-primary-danger rounded-md text-white'><a>Login</a></li>
+          </ul>
+        </details>
+      </li>
+          </>}
+          {showInstallButton && deferredPrompt && (
+  <li>
+    <button
+      onClick={handleInstallClick}
+      className="text-white bg-primary-cta font-medium rounded-md text-sm px-5 py-1 hover:bg-indigo-600"
+    >
+      Download App
+    </button>
+  </li>
+)}
+
+    </ul>
+      <button ref={closeMenuRef} id="close-menu" className="text-2xl text-gray-300 hover:text-white">✕</button>
+    </div>
+    <nav className="space-y-6 text-lg">
+ 
+      <a  className="block hover:text-blue-400 border-l-2 border-l-primary-cta pl-4">Home</a>
+      {/* <a  onClick={()=>{
+        navigate('/liveGameHomeDashboard')
+      }} className="block hover:text-blue-400 text-white  ">Live Games</a> */}
+  
+    </nav>
+
+    <div>
+      <div  className="block text-center text-blue-500  font-semibold py-3 rounded-lg">
+       Beta Release 1.71
+      </div>
+    </div>
   </div>
 </div>
-</div>
+              <div className="bg-primary-bg min-h-screen">
+              {/* Passing the state and updater function as props to Login */}
+              <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
+            <section className="w-full bg-primary-bg px-8 text-gray-700 ">
+
+
             </section>
-             <section class="px-2 py-32 bg-primary-bg md:px-0">
+            <section class="bg-primary-bg w-full min-h-[50vh] py-12 ">
+  <LandingPageTiles/>
+</section>
+
+             <section class="px-2 py-32 min-h-[90vh] bg-primary-bg md:px-0">
        
              <div class="container items-center  px-8 mx-auto ">
                <div class="flex flex-wrap items-center sm:-mx-3">
                  <div class="w-full md:w-1/2 md:px-3">
                    <div class="w-full pb-6 space-y-6 sm:max-w-md lg:max-w-lg md:space-y-4 lg:space-y-8 xl:space-y-9 sm:pr-5 lg:pr-0 md:pb-0">
-                     <h1 class="text-4xl font-extrabold tracking-tight text-gray-100 sm:text-5xl md:text-4xl lg:text-5xl xl:text-6xl">
-                       <span class="block xl:inline">Just A Chill </span>
-                       <span class="block text-primary-danger  xl:inline">Basketball Stat Tracker.</span>
-                     </h1>
-                     <p class="mx-auto text-base text-gray-300 sm:max-w-md lg:text-xl md:max-w-3xl">Sport Tracking App. Up and Running In 2 Minutes And Easy To Use .</p>
+                   <h1 class="text-4xl font-extrabold tracking-tight text-gray-100 sm:text-5xl md:text-4xl lg:text-5xl xl:text-6xl">
+  <span class="block xl:inline">  Track Every Play. </span>
+  <span class="block text-primary-danger xl:inline"> Elevate Your Team.</span>
+</h1>
+
+                     <p class="mx-auto text-base text-gray-300 sm:max-w-md lg:text-xl md:max-w-3xl"> Log in to manage your team, track live stats, broadcast live games to viewers,  and get real-time insights that help you win more games</p>
                      <div class="relative flex flex-col sm:flex-row sm:space-x-4">
                      <a
                 onClick={() => {
@@ -201,6 +329,8 @@ const triggerToast = (message, type = "success") => {
 
         </button>
       )}
+
+
 
       {/* Modal */}
       {showAuthModal && (
@@ -294,6 +424,34 @@ const triggerToast = (message, type = "success") => {
                </div>
              </div>
            </section>
+
+
+
+<footer class="flex flex-col space-y-10 justify-center pb-5">
+
+<nav class="flex justify-center flex-wrap gap-6 text-gray-500 font-medium">
+    <a class="hover:text-gray-900" href="#">Home</a>
+    <a class="hover:text-gray-900" href="#">About</a>
+    <a class="hover:text-gray-900" href="#">Services</a>
+    
+</nav>
+
+<div class="flex justify-center space-x-5">
+    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+        <img src="https://img.icons8.com/fluent/30/000000/facebook-new.png" />
+    </a>
+
+    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+        <img src="https://img.icons8.com/fluent/30/000000/instagram-new.png" />
+    </a>
+    <a href="https://messenger.com" target="_blank" rel="noopener noreferrer">
+        <img src="https://img.icons8.com/fluent/30/000000/facebook-messenger--v2.png" />
+    </a>
+ 
+</div>
+<p class="text-center text-gray-700 font-medium">&copy; 2022 Company Ltd. All rights reservered.</p>
+</footer>
+
            </div>
            </>
           }
@@ -301,9 +459,12 @@ const triggerToast = (message, type = "success") => {
         <Route path="/Login" element={<Login />} />
         <Route path="/homedashboard" element={<HomeDashboard />} />
         <Route path="/startgame" element={<StartGame />} />
+        <Route path="/liveGames/:slug" element={<LiveGameView />} />
         <Route path="/ingame" element={<InGame />} />
+        <Route path="/liveGameHomeDashboard" element={<LiveGamesHomeDashboard />} />
         <Route path="/statistics" element={<Statistics />} />
         <Route path="/statisticsShotMap" element={<StatisticsShotMap />} />
+
         
 
   

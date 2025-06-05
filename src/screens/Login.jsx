@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.7 (07/04/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.71 (07/04/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is a Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,7 +33,14 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
-<p className="font-bold text-primary-danger text-sm">07/04/2025 - Version 1.71</p>
+<p className="font-bold text-primary-danger text-sm">05/06/2025 - Version 1.8</p>
+<li className="py-2">Re-design of home page to allow user to go to live games page</li>
+<li className="py-2">New LiveGameView dashboard to show all live/recent/scheduled games any viewer can visit</li>
+<li className="py-2">New LiveGameView page that shows updates from the livegames(scores etc.)</li>
+<li className="py-2">New Database Slug implementation that can send multiple slugs to live game view from the s=ingame stats page to serve to the clients viewing the livegame</li>
+<li className="py-2">InGame page is now completley modular to future proof further work, makiing it 10x easier to work on </li>
+<li className="py-2">HomeDashboard page is now completley modular to future proof further work, makiing it 10x easier to work on </li>
+<li className="py-2">Major amount of UX/UI improvements </li>
 <hr></hr>
 <li className="py-2">Court now scales for horizontal viewing on tablets</li>
 <p className="font-bold text-primary-danger text-sm">07/04/2025 - Version 1.70</p>

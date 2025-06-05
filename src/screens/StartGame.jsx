@@ -7,6 +7,11 @@ import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass u
 import { useLocation } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { firestore } from "../firebase"; // Adjust path based on your project structure
+import { doc, setDoc } from "firebase/firestore";
+import { firestore as firestoreDb } from "../firebase"; // 👈 Rename it on import
+
+
+
 
 export default function StartGame() {
   const { user } = useAuth();
@@ -14,35 +19,21 @@ export default function StartGame() {
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");
   const [lineouts, setLineouts] = useState([]);
-
-
-
   const location = useLocation();
   const selectedLineoutFromNav = location.state?.lineout;
   const passedTeamName = location.state?.teamName || "Home";
-  console.log('team name ',passedTeamName);
-  
-  
   const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
-  
-
-// const selectedLineoutFromNav = location.state?.lineout;
-// const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
-
-
-  // const [selectedLineout, setSelectedLineout] = useState(null);
   const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
+  const [broadcastToggle,setBroadcastToggle] = useState(false)
   const [minutesTracked, setMinutesTracked] = useState(false);
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
-
-  // const location = useLocation();
-  // const selectedLineout = location.state?.lineout;
   
   const handleGoBack = (e) => {
     e.preventDefault(); // Prevent form submission reload
     // Perform login logic here (e.g., validation, API call)
     navigate("/startgame"); // Navigate to HomeDashboard after login
   };
+
   useEffect(() => {
     const fetchLineouts = async () => {
       let allLineouts = [];
@@ -70,10 +61,18 @@ export default function StartGame() {
   }, [user]);
   
 
+
+const venueSelectedHandler=(venue)=>{
+  console.log('we are in the venuw handler '+venue);
+  setSelectedVenue(venue)
+  
+}
+
   useEffect(() => {
     if (playerStatsEnabled) {
       if (lineouts.length === 0) {
-        alert("Player Stats are enabled but there are no lineouts available!");
+        alert("You don't ave any saved lineout");
+        setPlayerStatsEnabled(false)
         setSelectedLineout(null);
       } else {
         setSelectedLineout(lineouts[lineouts.length - 1].id);
@@ -84,24 +83,48 @@ export default function StartGame() {
   const handleOpponentInputChange = (event) => {
     setOpponentName(event.target.value);
   };
-
-  const handleGameStart = () => {
+  const handleGameStart = async () => {
     const selectedLineoutData =
-    playerStatsEnabled && selectedLineout
-      ? lineouts.find((lineout) => lineout.id.toString() === selectedLineout.toString()) || null
-      : null;
+      playerStatsEnabled && selectedLineout
+        ? lineouts.find((lineout) => lineout.id.toString() === selectedLineout.toString()) || null
+        : null;
   
+    // 🧠 Create the slug (e.g., ravens-vs-wolves-2025-04-11)
+    const dateStr = new Date().toISOString().split("T")[0];
+    const slug = `${passedTeamName}-vs-${opponentName}-${dateStr}`
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+  
+    // ✅ Save public document if broadcasting
+    if (broadcastToggle) {
+      console.log('we have a broadcast toggle activated');
+      
+      await setDoc(doc(firestoreDb, "liveGames", slug), {
+        homeTeamName: passedTeamName,
+        opponentName,
+        createdAt: new Date(),
+        isLive: true,
+        slug, // Optional: makes it easier to reference later
+      });
+    }else{
+      console.log('no broadcast toggle');
+      
+    }
 
+  
+    // 📦 Package game state to send to InGame screen
     const gameState = {
       opponentName,
       selectedVenue,
       playerStatsEnabled,
       lineout: selectedLineoutData,
-      opponentLogo, // Pass logo data
+      opponentLogo,
       minutesTracked,
-      passedTeamName
+      passedTeamName,
+      broadcast: broadcastToggle, // Pass this if needed later
+      slug, // You may want to keep this around too
     };
-
+  
     navigate("/ingame", { state: gameState });
   };
 
@@ -130,6 +153,10 @@ export default function StartGame() {
     }
   };
 
+  //!Broadcasting logic below 
+  // const slug = `${homeTeamName}-vs-${opponentName}-${new Date().toISOString().split("T")[0]}`.toLowerCase().replace(/\s+/g, "-");
+
+
   return (
     <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">
 
@@ -154,8 +181,8 @@ Back</button>
           />
 
           {/* Toggle Section for Player Stats */}
-          <div className="grid grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800 h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
+          <div className="grid   grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
+            <div className="bg-secondary-bg  h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
               <label className="inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -167,19 +194,21 @@ Back</button>
                 <span className="ms-3 text-sm font-medium text-gray-300">Player Stats</span>
               </label>
             </div>
-
-            {/* Opponent Logo Upload */}
+            <div className=" mx-auto w-full space-x-2  h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
             <div
-              className="bg-gray-800 h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center cursor-pointer relative"
+              className={`bg-secondary-bg   h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center cursor-pointer relative
+                
+                ${user ? 'w-1/2' : "w-full"}
+                `}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
               {opponentLogo ? (
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative  w-full h-full flex items-center justify-center">
                   <img
                     src={opponentLogo}
                     alt="Opponent Logo"
-                    className="h-full object-contain rounded-lg"
+                    className="h-full object-contain rounded-full"
                   />
                   <button
                     onClick={(e) => {
@@ -188,7 +217,7 @@ Back</button>
                     }}
                     className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full"
                   >
-                    <FontAwesomeIcon icon={faTrash} />
+                    <FontAwesomeIcon className="w-6" icon={faTrash} />
                   </button>
                 </div>
               ) : (
@@ -199,6 +228,29 @@ Back</button>
                 </label>
               )}
             </div>
+            {user &&
+            <div className={`bg-secondary-bg justify-center items-center mx-auto flex h-24 rounded-md
+            
+            w-1/2
+             `}>
+            <label className="inline-flex items-center cursor-pointer">
+                <input
+                checked={broadcastToggle}
+                onClick={(e)=>{
+                  setBroadcastToggle(e.target.checked)
+                }}
+                  type="checkbox"
+                  className="sr-only peer mx-auto"
+                />
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span className="ms-3 text-sm font-medium text-gray-300">Broadcast</span>
+              </label>
+
+</div>
+}
+            </div>
+
+           
           </div>
 
           {/* Lineout Selector */}
@@ -244,19 +296,36 @@ Back</button>
 
           {/* Venue Toggle and Start Game Button */}
           <div className="grid grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800 col-span-4 lg:col-span-2 flex h-24 rounded-lg relative">
-              <div className="absolute w-1/2 h-full bg-white rounded-lg transition-transform duration-300" />
-              <div className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer" onClick={() => setSelectedVenue("home")}>
-                <button className={`px-4 py-2 rounded ${selectedVenue === "home" ? "text-gray-800 font-bold" : "text-white"}`}>
-                  Home
-                </button>
-              </div>
-              <div className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer" onClick={() => setSelectedVenue("away")}>
-                <button className={`px-4 py-2 rounded ${selectedVenue === "away" ? "text-gray-800 font-bold" : "text-white"}`}>
-                  Away
-                </button>
-              </div>
-            </div>
+          <div className="bg-secondary-bg col-span-4 lg:col-span-2 flex h-24 rounded-lg relative overflow-hidden">
+  {/* Sliding background */}
+  <div
+    className={`
+      absolute top-0 left-0 h-full w-1/2 bg-white rounded-lg transition-transform duration-300 ease-in-out
+      ${selectedVenue === "away" ? "translate-x-full" : "translate-x-0"}
+    `}
+  />
+
+  {/* Home Button */}
+  <div
+    className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
+    onClick={() => venueSelectedHandler('home')}
+  >
+    <button className={`px-4 py-2 rounded ${selectedVenue === "home" ? "text-gray-800 font-bold" : "text-white"}`}>
+      Home
+    </button>
+  </div>
+
+  {/* Away Button */}
+  <div
+    className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
+    onClick={() => venueSelectedHandler('away')}
+  >
+    <button className={`px-4 py-2 rounded ${selectedVenue === "away" ? "text-gray-800 font-bold" : "text-white"}`}>
+      Away
+    </button>
+  </div>
+</div>
+
 
             <button
               onClick={handleGameStart}
