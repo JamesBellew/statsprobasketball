@@ -29,7 +29,22 @@ export default function LiveGamesHomeDashboard() {
     return true;
   });
   
-const recentGamesOnly = liveGames.filter((game) => game.gameState === true);
+  const recentGamesOnly = liveGames.filter((game) => {
+    if (!game.gameState) return false;
+  
+    const { date, time } = game.scheduledStart || {};
+    const scheduledDateTime = date && time ? new Date(`${date}T${time}`) : null;
+    const now = new Date();
+  
+    const hasScore = (game.score?.home ?? 0) > 0 || (game.score?.away ?? 0) > 0;
+    const hasActions = game.gameActions?.length > 0;
+  
+    // ✅ Include if game is marked complete AND:
+    // - The scheduled time has passed, or
+    // - It clearly has actions or a score
+    return !scheduledDateTime || scheduledDateTime <= now || hasActions || hasScore;
+  });
+  
 
   //*USE STATES END
 
@@ -271,10 +286,32 @@ navigate("/")
     <h2 className="text-white text-xl font-semibold mb-6 mt-12">Scheduled Games</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {scheduledGames.map((game) => {
-        const scheduledDate = `${game.scheduledStart?.date || "TBD"} ${game.scheduledStart?.time || ""}`;
+        const dateStr = game.scheduledStart?.date || "";
+        const timeStr = game.scheduledStart?.time || "";
+        let displayDateTime = `${dateStr} @ ${timeStr}`;
+        
+        if (dateStr) {
+          const today = new Date();
+          const tomorrow = new Date();
+          tomorrow.setDate(today.getDate() + 1);
+        
+          const scheduledDate = new Date(`${dateStr}T${timeStr}`);
+          const isToday =
+            scheduledDate.toDateString() === today.toDateString();
+          const isTomorrow =
+            scheduledDate.toDateString() === tomorrow.toDateString();
+        
+          if (isToday) {
+            displayDateTime = `Today @ ${timeStr}`;
+          } else if (isTomorrow) {
+            displayDateTime = `Tomorrow @ ${timeStr}`;
+          }
+        }
+        
 
         return (
-          <div
+          <a
+          onClick={() => handleLiveGameClick(game.link)}
             key={game.id}
             className="bg-primary-bg hover:scale-95 transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
@@ -306,17 +343,19 @@ navigate("/")
 
               {/* Overlay text */}
               <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-50">
-                <p className="text-sm  font-semibold text-white">
-                  {scheduledDate}   
+                <p className="text-md  font-semibold text-white">
+   
+                  {game.teamNames?.home} vs {game.teamNames?.away} 
                 </p>
 
               </div>
             </div>
 
             <div className="text-center py-3 text-base bg-primary-bg text-white font-medium">
-            <p className="text-md mt-1 text-white">    {game.teamNames?.home} vs {game.teamNames?.away}</p>
+            <p className="text-sm mt-1 text-white">{displayDateTime}</p>
+
             </div>
-          </div>
+          </a>
         );
       })}
     </div>
@@ -380,18 +419,20 @@ navigate("/")
                 </p>
                 {/* <p className="text-xs mt-1 text-gray-300">Final Score</p> */}
               </div>
-              <div className="absolute top-2 left-2  text-gray-500 text-xs font-bold px-2 py-1 rounded z-40">
-     
+              <div className="absolute top-2 right-2  text-gray-500 text-xs font-bold px-2 py-1 rounded z-40">
 FT
-
+              </div>
+              <div className="absolute top-2 left-2  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
+              {game.lastUpdated?.toDate().toLocaleDateString()}
               </div>
             </div>
 
             {/* Winner display */}
-            <div className="text-center py-3  bg-primary-bg text-gray-400 text-sm ">
-             {/* {winner} Won */}
+                {/* {winner} Won */}
+            {/* <div className="text-center py-3  bg-primary-bg text-gray-400 text-sm ">
+         
              {game.lastUpdated?.toDate().toLocaleDateString()}
-            </div>
+            </div> */}
           </a>
         );
       })}

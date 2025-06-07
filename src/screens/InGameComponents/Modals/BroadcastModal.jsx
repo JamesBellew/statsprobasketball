@@ -22,8 +22,8 @@ const BroadcastModal = ({
   broadcastLinkName
 }) => {
   if (!showBroadcastModal) return null;
-  console.log("📅 Selected Date:", selectedDate);
-  console.log("⏰ Selected Time:", selectedTime);
+  // console.log("📅 Selected Date:", selectedDate);
+  // console.log("⏰ Selected Time:", selectedTime);
   
   const [showCopyClipCheck, setShowCopyClipCheck] = useState(false);
 

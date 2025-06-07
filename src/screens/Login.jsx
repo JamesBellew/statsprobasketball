@@ -21,8 +21,8 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.71 (07/04/2025)</h2>
-            <h2 className="text-xl font-bold text-primary-danger">This is a Alpha(calm down) !!</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.81 (07/06/2025)</h2>
+            <h2 className="text-xl font-bold text-primary-danger">This is in Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 ">Recent Features Added</h5>
@@ -33,7 +33,14 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
-<p className="font-bold text-primary-danger text-sm">05/06/2025 - Version 1.8</p>
+<p className="font-bold text-primary-danger text-sm">05/06/2025 - Version 1.81</p>
+<li className="py-2">Newly created broadcast now defaults to not finished</li>
+<li className="py-2">Background pattern added in LiveGameView</li>
+<li className="py-2">Fixed broken mobile nav menu in LiveGameView</li>
+<li className="py-2">Fixed Rectn/Scheduled games overlap logic</li>
+<li className="py-2">InGame user side now shows you when you have agame finsihed with a big warning</li>
+<li className="py-2">Minor UX/UI Improvements</li>
+<p className="font-bold text-primary-danger text-sm">05/06/2025 - Version 1.80</p>
 <li className="py-2">Re-design of home page to allow user to go to live games page</li>
 <li className="py-2">New LiveGameView dashboard to show all live/recent/scheduled games any viewer can visit</li>
 <li className="py-2">New LiveGameView page that shows updates from the livegames(scores etc.)</li>

@@ -1,22 +1,22 @@
 // components/BroadcastDiv.jsx
 import React from "react";
 
-const BroadcastDiv = ({ gameFinsihedFlag, setShowBroadcastModal, showBroadCastDiv ,broadcastUpdate}) => {
+const BroadcastDiv = ({ gameFinsihedFlag, setShowBroadcastModal, showBroadCastDiv ,broadcastUpdate,liveBroadcastGameFinished}) => {
   if (!showBroadCastDiv) return null;
   return (
     <div
       onClick={() => {
         setShowBroadcastModal(true);
       }}
-      className={`h-full flex justify-center
+      className={`h-full  flex justify-center
         ${
           broadcastUpdate ? 
 "   border-2      border-primary animate-pulse  "
-          : " border-none"
+          : " "
         }
 
        
-      items-center w-[15%] bg-secondary-bg mt-1 rounded-md`}
+      items-center w-[15%]  ${liveBroadcastGameFinished ? "border-2 border-red-500" : "bg-secondary-bg" } mt-1 rounded-md`}
     >
       {/* When game is not finished, show pulsing blue icon. When finished, show gray. */}
       <svg

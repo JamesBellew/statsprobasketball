@@ -54,7 +54,7 @@ const [broadcast, setBroadcast] = useState(false);
 const [slug, setSlug] = useState(null);
 const [broadcastLinkName,setBroadcastLinkName] = useState("")
 const [playerPoints, setPlayerPoints] = useState({}); // Store player points
-const [liveBroadcastGameFinished,setLiveBroadcastGameFinished]= useState(true);
+const [liveBroadcastGameFinished,setLiveBroadcastGameFinished]= useState(false);
   useEffect(() => {
     if (savedGame && savedGame.id) {
       setCurrentGameId(savedGame.id);
@@ -95,7 +95,7 @@ const [liveBroadcastGameFinished,setLiveBroadcastGameFinished]= useState(true);
   const [isBroadcasting,setIsBroadcasting] = useState(savedGame?.broadcast || false);
   const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
   const [minutesTracked, utesTracked] = useState(savedGame?.minutesTracked || null);
-const [selectedVenue, setSelectedVenue] = useState(savedGame?.selectedVenue || "Homejj");
+const [selectedVenue, setSelectedVenue] = useState(savedGame?.selectedVenue || "nahh");
 const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -151,7 +151,8 @@ const broadcastUpdatesText=[
 
 const locationGameState = location.state || {};
 const [homeTeamName, setHomeTeamName] = useState("Home");
-// console.log('this is the team name', homeTeamName);
+
+
 
 
 useEffect(() => {
@@ -594,7 +595,13 @@ useEffect(() => {
 
 
 const updateLiveBroadcast = async () => {
+  console.log('haliiiii  bruhh');
+  
   if (!broadcast || !slug) return;
+  const resolvedVenue = selectedVenue === "away"
+  ? opponentName || "Home"
+  : homeTeamName || "Home";
+console.log(selectedVenue,' is he him');
 
   try {
     await setDoc(
@@ -614,6 +621,7 @@ away:opponentName
           date: selectedDate,
           time:selectedTime
         },
+        venue: selectedVenue,
         link:broadcastLink,
         score: {
           home: teamScore,
@@ -670,7 +678,7 @@ const  handlebroadcastUpdate=async(isFinished = gameFinsihedFlag)=>{
 const handleFinishGame = async (slug) => {
     //checking to see if there is a valid gamelink 
     if(broadcastLinkName.length >=1){
-      console.log('we can proceed with the deletion if choosen');
+     
       console.log(broadcastLinkName);
     }else{
       console.log('we have a problem with the broadcastlink name ');
@@ -1055,14 +1063,27 @@ console.log('we just saved the modafukin game');
 // this is the use effect for chekcing if its a loaded saved game andif so then set all the usestates to saved data, if not it is a new game 
 useEffect(() => {
   const loadFinishedFlagIfNeeded = async () => {
+    console.log('🙈🙈🙈🙈🙈 WE RE IN THE LOAD FUNCTION🙈🙈🙈🙈🙈🙈');
     if (savedGame && savedGame.id) {
+      console.log('🙈🙈🙈🙈🙈🙈 WE ARE IN THE SAVED GAME LOOP');
+      
       setCurrentGameId(savedGame.id);
       setOpponentActions(savedGame.opponentActions || []);
       setleadChanges(savedGame.leadChanges || []);
       setOpponentLogo(savedGame.opponentLogo || null);
-      setMinutesTracked(savedGame.minutesTracked || null);
-      setPlayerMinutes(savedGame.playerMinutes || {});
+      setSelectedVenue(savedGame.selectedVenue || "fuck");
+      // setMinutesTracked(savedGame.minutesTracked || null);
+//       setPlayerMinutes(savedGame.playerMinutes || {});
+//       setSelectedVenue(savedGame.selectedVenue);
+// console.log('🙈🙈🙈🙈yep venue', selectedVenue);
 
+      // if (savedGame.selectedVenue) {
+      //   console.log('🙈🙈🙈🙈yep thats me 🙈');
+      //   setSelectedVenue(savedGame.selectedVenue);
+      // } else {
+      //   setSelectedVenue("Homeddd"); // Fallback just in case
+      // }
+      
       if (savedGame.quarterTimes) {
         setQuarterTimes(savedGame.quarterTimes);
 
@@ -1076,7 +1097,7 @@ useEffect(() => {
         setSeconds(0);
       }
 
-      console.log("Loaded saved game:", savedGame);
+      console.log("Loaded saved game: 🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈🙈", savedGame);
 
       // 🧠 Only fetch if broadcast slug is set
       const gameSlug = savedGame.slug;
@@ -1992,7 +2013,12 @@ handlebroadcastUpdate(false)
   
     return () => unsub();
   }, [slug]);
-  
+  useEffect(() => {
+  if (savedGame?.selectedVenue) {
+    setSelectedVenue(savedGame.selectedVenue);
+  }
+}, [savedGame]);
+
 //!MAIN -----------------------------------------------------
 //!RETURN ---------------------------------------------------
 //!JSX     --------------------------------------------------
@@ -2032,6 +2058,7 @@ handlebroadcastUpdate(false)
 <QuarterDiv currentQuater={currentQuater} />
 <BroadcastDiv 
 gameFinsihedFlag={gameFinsihedFlag}
+liveBroadcastGameFinished={liveBroadcastGameFinished}
  setShowBroadcastModal={setShowBroadcastModal}
   showBroadCastDiv={broadcast} 
   broadcastUpdate={broadcastUpdate}
