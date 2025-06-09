@@ -147,7 +147,7 @@ useEffect(() => {
 
 
   return (
-    
+    <div className="bg-[url('/assets/bg-pattern.svg')]  bg-repeat bg-[length:150px_150px]">
     <Router>
       {/* <MobileBlocker/> */}
       <Routes>
@@ -155,7 +155,7 @@ useEffect(() => {
           path="/"
           element={
             <>
-            <header className="bg-primary-bg shadow w-full px-2  z-50">
+            <header className="bg-primary-bg bg-opacity-60 shadow w-full px-2  z-50">
   <div className="container mx-auto">
   <div className="flex justify-between items-center  py-4 mx-auto">
     <a onClick={()=>{
@@ -274,24 +274,24 @@ navigate("/")
     </nav>
 
     <div>
-      <div  className="block text-center text-blue-500  font-semibold py-3 rounded-lg">
-       Beta Release 1.71
+    <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
+     StatsPro | Basketball<br></br> Beta
       </div>
     </div>
   </div>
 </div>
-              <div className="bg-primary-bg min-h-screen">
+              <div className=" min-h-screen " >
               {/* Passing the state and updater function as props to Login */}
               <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
             <section className="w-full bg-primary-bg px-8 text-gray-700 ">
 
 
             </section>
-            <section class="bg-primary-bg w-full min-h-[50vh] py-12 ">
+            <section class="  bg-repeat bg-[length:50px_50px w-full min-h-[50vh] py-12 ">
   <LandingPageTiles/>
 </section>
 
-             <section class="px-2 py-32 min-h-[90vh] bg-primary-bg md:px-0">
+             <section class="px-2 py-32 min-h-[90vh]  md:px-0">
        
              <div class="container items-center  px-8 mx-auto ">
                <div class="flex flex-wrap items-center sm:-mx-3">
@@ -471,5 +471,6 @@ navigate("/")
       </Routes>
     
     </Router>
+    </div>
   );
 }

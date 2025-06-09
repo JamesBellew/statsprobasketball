@@ -129,8 +129,13 @@ const [broadcastUpdateSentFlag,setBroadcastUpdateSentFlag] = useState(false)
 const [showBroadcastInformationModal,setShowBroadcastInformationModal] = useState(savedGame?.broadcast || false);
 const broadcastLink = `${window.location.origin}/liveGames/${slug}`;
 const [lastVisitedQuarter, setLastVisitedQuarter] = useState(savedGame?.lastVisitedQuarter || 1); 
-const [selectedDate, setSelectedDate] = useState("2026-01-01");     // <-- Date
-const [selectedTime, setSelectedTime] = useState("00-00");     // <-- Time
+// At the top of your component or file
+const nowPlus48 = new Date(Date.now() + 48 * 60 * 60 * 1000);
+const defaultDate = nowPlus48.toISOString().split('T')[0]; // "YYYY-MM-DD"
+const defaultTime = new Date().toTimeString().slice(0, 5);  // "HH:MM"
+const [selectedDate, setSelectedDate] = useState(defaultDate);
+const [selectedTime, setSelectedTime] = useState(defaultTime);
+
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
   2: { minutes: 10, seconds: 0 },

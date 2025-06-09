@@ -158,29 +158,38 @@ export default function LiveGameView() {
               handleCloseMobileMenu(); // Close menu after navigation
             }} className="block hover:text-blue-400">Home</a>
             <a onClick={()=>{
-              navigate("/LiveGamesHomeDashboard")
-            }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">LiveGames</a>
+              navigate("/../liveGameHomeDashboard")
+            }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Live Games</a>
           </nav>
           <div>
-            <div className="block text-center text-blue-500 font-semibold text-white py-3 rounded-lg">
-              Beta Release 1.71
-            </div>
+          <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
+     StatsPro | Basketball<br></br> Beta
+      </div>
           </div>
         </div>
       </div>
 
       <div className="w-full relative max-w-sm mx-auto text-white text-center">
         <div className="relative rounded-lg bg-secondary-bg bg-opacity-60 h-auto py-8 w-full mt-2 shadow-md grid grid-cols-8 items-center text-center">
-          <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
-            {/* LIVE Badge */}
-            {!gameFinsihedFlag && (
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-                <span className="bg-secondary-danger text-white text-xs uppercase px-3 py-1 rounded font-bold tracking-wide">
-                  LIVE <span className="pl-1 animate-pulse text-xs font-extralight">⚪️</span>
-                </span>
-              </div>
-            )}
-          </div>
+        <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
+  {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
+    // ✅ LIVE badge
+    <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+      <span className="bg-secondary-danger text-white text-xs uppercase px-3 py-1 rounded font-bold tracking-wide">
+        LIVE <span className="pl-1 animate-pulse text-xs font-extralight">⚪️</span>
+      </span>
+    </div>
+  ) : (
+    // 🕒 Scheduled date fallback
+    <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+      <span className="bg-primary-bg text-white text-xs px-4 py-2 rounded font-medium">
+        {gameData?.scheduledStart?.date || "Scheduled"}
+      </span>
+    </div>
+  )}
+</div>
+
+
 
           <div className="relative col-span-2">
             <div className="w-16 h-16 rounded-full bg-white mx-auto">
@@ -194,20 +203,23 @@ export default function LiveGameView() {
           </div>
 
           <div className="text-4xl col-span-4 flex-1 font-extrabold text-white">
-            {gameData.quarter && !gameFinsihedFlag &&
+            {gameData.quarter && !gameData.gameState &&
               <span className="text-md text-gray-200 font-semibold text-base text-gray-400">Q{gameData.quarter ?? "1"}</span>
             }
             <br />
             {gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}
-            {!gameFinsihedFlag ? (
-              <p className="text-base text-gray-400">
-                {gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
-                  ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}`
-                  : "--:--"}
-              </p>
-            ) : (
-              <p className="text-base text-gray-400">FT</p>
-            )}
+            <p className="text-base text-gray-400">
+  {gameData?.gameState ? (
+    "FT" // ✅ Finished game
+  ) : gameData?.gameActions?.length > 0 ? (
+    gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
+      ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}` // ✅ Live clock
+      : "--:--" // Edge fallback
+  ) : (
+    "" // 🕒 Scheduled, no actions yet
+  )}
+</p>
+
 
             {broadcastUpdate && (
               <div className="text-xs mt-2 mx-5 bg-white/5 rounded-md p-3">

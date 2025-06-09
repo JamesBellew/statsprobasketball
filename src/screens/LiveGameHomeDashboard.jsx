@@ -4,6 +4,7 @@ import { firestore } from "../firebase";
 import homeLogo from "../assets/logo.jpg";
 import opponentLogo from "../assets/jersey.webp";
 import { useNavigate } from "react-router-dom";
+import TeamFilter from "./Components/TeamFilter";
 
 export default function LiveGamesHomeDashboard() {
   //* CONSTS START
@@ -13,6 +14,9 @@ export default function LiveGamesHomeDashboard() {
   //*USE STATES START
   const [liveGames, setLiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+const [teamOptions, setTeamOptions] = useState([]);
+
   const liveGamesOnly = liveGames.filter((game) => {
     if (game.gameState === true) return false;
   
@@ -29,21 +33,31 @@ export default function LiveGamesHomeDashboard() {
     return true;
   });
   
-  const recentGamesOnly = liveGames.filter((game) => {
+  const recentGamesOnly = liveGames
+  .filter((game) => {
     if (!game.gameState) return false;
-  
-    const { date, time } = game.scheduledStart || {};
-    const scheduledDateTime = date && time ? new Date(`${date}T${time}`) : null;
+
+    const dateStr = game?.scheduledStart?.date;
+    const scheduledDate = dateStr ? new Date(dateStr) : null;
     const now = new Date();
-  
+
     const hasScore = (game.score?.home ?? 0) > 0 || (game.score?.away ?? 0) > 0;
     const hasActions = game.gameActions?.length > 0;
-  
-    // ✅ Include if game is marked complete AND:
-    // - The scheduled time has passed, or
-    // - It clearly has actions or a score
-    return !scheduledDateTime || scheduledDateTime <= now || hasActions || hasScore;
+
+    const matchesFilter =
+      !selectedTeam ||
+      game.teamNames?.home === selectedTeam ||
+      game.teamNames?.away === selectedTeam;
+
+    return matchesFilter && (!scheduledDate || scheduledDate <= now || hasActions || hasScore);
+  })
+  .sort((a, b) => {
+    const aDate = a?.scheduledStart?.date ? new Date(a.scheduledStart.date) : new Date(0);
+    const bDate = b?.scheduledStart?.date ? new Date(b.scheduledStart.date) : new Date(0);
+    return aDate - bDate; // Earliest date first
+
   });
+
   
 
   //*USE STATES END
@@ -56,6 +70,13 @@ export default function LiveGamesHomeDashboard() {
         ...doc.data(),
       }));
       setLiveGames(games);
+      const allTeams = new Set();
+games.forEach((game) => {
+  if (game?.teamNames?.home) allTeams.add(game.teamNames.home);
+  if (game?.teamNames?.away) allTeams.add(game.teamNames.away);
+});
+setTeamOptions([...allTeams]);
+
     });
 
     return () => unsubscribe();
@@ -148,16 +169,28 @@ const handleLiveGameClick = (link) => {
 
 //*FUNCTION HANDLERS END
 
-const scheduledGames = liveGames.filter((game) => {
-  const { date, time } = game.scheduledStart || {};
-  if (!date || !time) return false;
+const scheduledGames = liveGames
+  .filter((game) => {
+    const { date, time } = game.scheduledStart || {};
+    if (!date || !time) return false;
 
-  const scheduledDateTime = new Date(`${date}T${time}`);
-  const isFuture = scheduledDateTime > new Date();
-  const hasNoActions = !game.gameActions || game.gameActions.length === 0;
+    const scheduledDateTime = new Date(`${date}T${time}`);
+    const isFuture = scheduledDateTime > new Date();
+    const hasNoActions = !game.gameActions || game.gameActions.length === 0;
 
-  return isFuture && hasNoActions;
-});
+    const matchesFilter =
+      !selectedTeam ||
+      game.teamNames?.home === selectedTeam ||
+      game.teamNames?.away === selectedTeam;
+
+    return isFuture && hasNoActions && matchesFilter;
+  })
+  .sort((a, b) => {
+    const dateA = new Date(`${a.scheduledStart.date}T${a.scheduledStart.time}`);
+    const dateB = new Date(`${b.scheduledStart.date}T${b.scheduledStart.time}`);
+    return dateA - dateB; // Ascending order: earliest first
+  });
+
 
 
   return (
@@ -170,7 +203,7 @@ const scheduledGames = liveGames.filter((game) => {
           clip-path: polygon(55% 0, 100% 0, 100% 100%, 45% 100%);
         }
       `}</style>
-<header className="bg-primary-bg shadow w-full px-2 z-50">
+<header className="bg-primary-bg bg-opacity-60 shadow w-full px-2 z-50">
   <div className="container mx-auto">
   <div className="flex cursor-pointer justify-between items-center py-4  mx-auto">
     <a onClick={()=>{
@@ -212,17 +245,19 @@ navigate("/")
   
     </nav>
     <div>
-      <div className="block text-center text-blue-500 font-semibold text-white py-3 rounded-lg">
-     Beta Release 1.71
+      <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
+     StatsPro | Basketball<br></br> Beta
       </div>
     </div>
   </div>
 </div>
 
-      <section className="bg-primary-bg min-h-screen  pt-2  px-4">
+      <section className="bg-primary-bg min-h-screen bg-[url('/assets/bg-pattern.svg')]  bg-repeat bg-[length:150px_150px]  pt-2  px-4">
 
 
-<div className="container mx-auto py-12 h-auto">
+<div className="container mx-auto py-6 lg:py-12 h-auto">
+
+
 
   {/* Live Games */}
   <h2 className="text-white text-xl font-semibold mb-6">Live Games</h2>
@@ -240,7 +275,12 @@ navigate("/")
       {liveGamesOnly.length === 0 ? (
   <div className="text-gray-400 py-10 text-sm italic">No Live Games </div>
 ) : (
-  liveGamesOnly.map((game) => (
+  liveGamesOnly.map((game) => {
+    const homeScore = game.score?.home ?? 0;
+    const awayScore = game.score?.away ?? 0;
+    const currentQ = game.quarter ?? 2;
+
+    return(
     <a
       key={game.id}
       onClick={() => handleLiveGameClick(game.link)}
@@ -267,6 +307,25 @@ navigate("/")
 />
           </div>
         </div>
+        <div className="absolute inset-0 flex flex-col justify-center items-center z-40">
+  <div className="bg-secondary-bg bg-opacity-50 px-6 py-2 rounded-md">
+    <p className="text-2xl font-bold text-white">{homeScore} - {awayScore}</p>
+    <p className="text-sm text-gray-200 text-center">Q{currentQ} </p>
+  </div>
+</div>
+
+
+        {/* <div className="absolute inset-0 flex flex-col justify-center items-center z-40 group-hover:bg-opacity-0">
+        <p className="text-2xl font-bold text-white" style={{ textShadow: '0 0 4px rgba(0,0,0,0.7)' }}>
+  12 - 15
+</p>
+
+                <p className="text-sm   bottom-0 absolute mb-4 font-semibold my-autofont-extrabold px-4   text-center text-gray-100" style={{ textShadow: '0 0 4px rgba(0,0,0,0.7)' }}>
+                Q1<br></br> 4:15
+                </p>
+       
+              </div> */}
+              
         <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-40">
           LIVE <span className="animate-pulse">⚪️</span>
         </div>
@@ -275,10 +334,37 @@ navigate("/")
         {game.teamNames?.home} @ {game.teamNames?.away}
       </div>
     </a>
-  ))
+  )})
 )}
 
       </div>
+      <div className="mb-12">
+        <div className="flex flex-row">
+
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-2">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+</svg>
+<label htmlFor="teamSelect" className="block text-white mb-2">Filters </label>
+  </div>
+  <select
+    id="teamSelect"
+    value={selectedTeam || ""}
+    onChange={(e) => setSelectedTeam(e.target.value || null)}
+    className="bg-secondary-bg text-white border border-gray-800 bg-opacity-60 px-4 py-2 rounded-md"
+  >
+    <option value="">All Teams</option>
+    {teamOptions.map((team) => (
+      <option key={team} value={team}>{team}</option>
+    ))}
+  </select>
+
+  {selectedTeam && (
+    <div className="mt-2 ml-2 inline-flex items-center bg-primary-danger text-white px-4 py-2 rounded-xl text-sm">
+      <span>{selectedTeam}</span>
+      <button onClick={() => setSelectedTeam(null)} className="ml-2 text-white">&times;</button>
+    </div>
+  )}
+</div>
 
 {/* Scheduled Games */}
 {scheduledGames.length > 0 && (
@@ -313,7 +399,7 @@ navigate("/")
           <a
           onClick={() => handleLiveGameClick(game.link)}
             key={game.id}
-            className="bg-primary-bg hover:scale-95 transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
+            className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
             <div className="relative h-24 group w-full bg-black rounded-lg overflow-hidden">
               <div className="absolute inset-0 clip-right bg-slate-900 z-10" />
@@ -342,16 +428,17 @@ navigate("/")
               </div>
 
               {/* Overlay text */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-50">
+              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-50 group-hover:bg-opacity-0">
+                <div className="bg-black  bg-opacity-0  group-hover:bg-opacity-50  px-4 py-2 rounded-lg ">
                 <p className="text-md  font-semibold text-white">
    
                   {game.teamNames?.home} vs {game.teamNames?.away} 
                 </p>
-
+</div>
               </div>
             </div>
 
-            <div className="text-center py-3 text-base bg-primary-bg text-white font-medium">
+            <div className="text-center py-3 text-base bg-secondary-bg bg-opacity-10 text-white font-medium">
             <p className="text-sm mt-1 text-white">{displayDateTime}</p>
 
             </div>
@@ -366,8 +453,8 @@ navigate("/")
      {/* Recent Games */}
 {recentGamesOnly.length > 0 && (
   <>
-    <h2 className="text-white text-xl font-semibold mb-6">Recent Games</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <h2 className="text-white text-xl font-semibold my-6">Recent Games</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {recentGamesOnly.map((game) => {
         const homeScore = game.score?.home ?? 0;
         const awayScore = game.score?.away ?? 0;
@@ -381,7 +468,7 @@ navigate("/")
         return (
           <a onClick={() => handleLiveGameClick(game.link)}
             key={game.id} 
-            className="bg-primary-bg hover:scale-95 transition-all rounded-lg transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
+            className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
             <div className="relative h-24 group transition-all w-full bg-black rounded-lg overflow-hidden">
               <div className="absolute inset-0 clip-right bg-slate-900 z-10" />
@@ -410,20 +497,23 @@ navigate("/")
               </div>
 
               {/* Overlay text */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-80">
-                <p className="text-sm mb-2 font-medium text-gray-100">
+              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-80 group-hover:bg-opacity-0">
+                <div className="w-auto px-4 bg-opacity-0 group-hover:bg-opacity-50 rounded-lg  py-1 items-center justify-center flex flex-col bg-black">
+                <p className="text-sm  font-medium text-gray-100">
                   {game.teamNames?.home} vs {game.teamNames?.away}
                 </p>
                 <p className="text-2xl font-bold text-white">
                   {homeScore} - {awayScore}
                 </p>
+                </div>
                 {/* <p className="text-xs mt-1 text-gray-300">Final Score</p> */}
               </div>
-              <div className="absolute top-2 right-2  text-gray-500 text-xs font-bold px-2 py-1 rounded z-40">
+              <div className="absolute top-0 right-2 group-hover:text-gray-200  text-gray-500 text-xs font-bold px-2 py-1 rounded z-40">
 FT
               </div>
-              <div className="absolute top-2 left-2  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
-              {game.lastUpdated?.toDate().toLocaleDateString()}
+              <div className="absolute top-0 left-2 group-hover:text-primary-bg  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
+              {/* {game.lastUpdated?.toDate().toLocaleDateString()} */}
+              {game.scheduledStart?.date}
               </div>
             </div>
 

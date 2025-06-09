@@ -23,14 +23,14 @@ export default function HomeScreenCourtSVG() {
   }, []);
 
   return (
-    <div className="relative border-t-2   border-t-[#222] w-full h-[40vh] bg-[#12131A] flex justify-center items-start">
+    <div className="relative border-t-2   border-t-[#222] w-full h-[40vh] bg-[#12131A] bg-opacity-0 flex justify-center items-start">
       <svg
         viewBox="0 0 500 300"
-        className="absolute top-0 w-[95%] h-auto"
+        className="absolute top-0 w-[80%] h-auto"
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Court Background */}
-        <rect width="500" height="300" fill="#12131A" rx="20" />
+        <rect width="100%" height="300" fill="#12131A" opacity="0.6"  rx="20" />
 
         {/* 3-point Arc */}
         <path d="M25,0 A225,300 0 0,0 475,0" fill="none" stroke="#222" strokeWidth="4" />
