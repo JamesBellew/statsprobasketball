@@ -194,7 +194,8 @@ const scheduledGames = liveGames
 
 
   return (
-    <>
+
+    <div className="bg-primary-bg">
       <style>{`
         .clip-left {
           clip-path: polygon(0 0, 55% 0, 45% 100%, 0% 100%);
@@ -538,6 +539,7 @@ FT
 
  
       </section>
-    </>
+      </div>
+
   );
 }

@@ -147,7 +147,7 @@ useEffect(() => {
 
 
   return (
-    <div className="bg-[url('/assets/bg-pattern.svg')]  bg-repeat bg-[length:150px_150px]">
+    <div className="bg-[url('/assets/bg-pattern.svg')] bg-primary-bg   bg-repeat bg-[length:150px_150px]">
     <Router>
       {/* <MobileBlocker/> */}
       <Routes>
@@ -280,7 +280,7 @@ navigate("/")
     </div>
   </div>
 </div>
-              <div className=" min-h-screen " >
+              <div className=" min-h-screen  " >
               {/* Passing the state and updater function as props to Login */}
               <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />
             <section className="w-full bg-primary-bg px-8 text-gray-700 ">
