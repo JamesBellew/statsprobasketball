@@ -285,10 +285,10 @@ navigate("/")
     <a
       key={game.id}
       onClick={() => handleLiveGameClick(game.link)}
-      className="bg-primary-bg hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer rounded-lg overflow-hidden"
+      className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer rounded-lg overflow-hidden"
     >
       <div className="relative h-40 group transition-all w-full bg-black rounded-lg overflow-hidden">
-        <div className="absolute inset-0 clip-right bg-slate-900 z-10" />
+        <div className="absolute inset-0 clip-right  bg-slate-900  z-10" />
         <div className="absolute inset-0 clip-left bg-secondary-cta z-20" />
         <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
           <div className="w-14 h-14 rounded-full bg-white">

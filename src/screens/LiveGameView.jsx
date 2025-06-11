@@ -13,11 +13,13 @@ export default function LiveGameView() {
   const [loading, setLoading] = useState(true);
   const [gameClock, setGameClock] = useState(null);
   const [liveClock, setLiveClock] = useState(null);
+  const [showStatsModal,setShowStatsModal] = useState(false)
   const [broadcastUpdate, setBroadcastUpdate] = useState(null);
   const [gameFinsihedFlag, setGameFinsihedFlag] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
   const navigate = useNavigate();
 
+  const quarters=[1,2,3,4];
   // for game slugs
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, "liveGames", slug), (docSnap) => {
@@ -83,6 +85,35 @@ export default function LiveGameView() {
   const handleCloseMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
+  // Utility function to sum points per quarter for a given team
+  const getQuarterScores = (gameActions, teamKey) => {
+    const quarterScores = { 1: null, 2: null, 3: null, 4: null };
+  
+    if (!gameActions || gameActions.length === 0) return quarterScores;
+  
+    gameActions.forEach(action => {
+      if (action.type === 'score' && action.team === teamKey) {
+        const quarter = action.quarter;
+        const points = action.points || 0;
+  
+        if (quarter) {
+          if (!quarterScores[quarter]) quarterScores[quarter] = 0;
+          quarterScores[quarter] += points;
+        }
+      }
+    });
+  
+    return quarterScores;
+  };
+  
+// const quarters = [1, 2, 3, 4];
+
+const homeTeamName = gameData?.teamNames?.home;
+const awayTeamName = gameData?.teamNames?.away;
+const homeScores = getQuarterScores(gameData?.gameActions, "home");
+const awayScores = getQuarterScores(gameData?.gameActions, "away");
+console.log('this is the gamedata object', gameData);
+
 
   if (loading) {
     return (
@@ -169,8 +200,8 @@ export default function LiveGameView() {
         </div>
       </div>
 
-      <div className="w-full relative max-w-sm mx-auto text-white text-center">
-        <div className="relative rounded-lg bg-secondary-bg bg-opacity-60 h-auto py-8 w-full mt-2 shadow-md grid grid-cols-8 items-center text-center">
+      <div className="w-full relative max-w-sm mx-auto text-white  text-center">
+        <div className="relative rounded-t-lg  bg-secondary-bg bg-opacity-60 h-auto pt-8 pb-4 w-full  grid grid-cols-8 items-center text-center">
         <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
   {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
     // ✅ LIVE badge
@@ -202,7 +233,7 @@ export default function LiveGameView() {
             <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.home || "home"}</div>
           </div>
 
-          <div className="text-4xl col-span-4 flex-1 font-extrabold text-white">
+          <div className="text-4xl col-span-4 flex-1 font-extrabold text-white ">
             {gameData.quarter && !gameData.gameState &&
               <span className="text-md text-gray-200 font-semibold text-base text-gray-400">Q{gameData.quarter ?? "1"}</span>
             }
@@ -239,6 +270,80 @@ export default function LiveGameView() {
             <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.away || "Away"}</div>
           </div>
         </div>
+
+      {/*this is the game stats toggle section */}
+      <div className="w-full h-auto bg-secondary-bg bg-opacity-65 text-sm rounded-b-lg flex flex-col items-center justify-center">
+      <div className={`overflow-hidden transition-all w-full duration-300 ease-in-out ${
+        showStatsModal ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+      }`}>
+        <div className={`h-auto py-4 w-full transform transition-all duration-300 ease-in-out ${
+          showStatsModal ? 'translate-y-0' : '-translate-y-4'
+        }`}>
+          <div className="overflow-x-auto mt-6">
+  <table className="w-full text-sm text-center bg-secondary-bg bg-opacity-60 text-white rounded-lg">
+    <thead>
+      <tr>
+        <th className="py-2 px-4 text-left">Team</th>
+        {quarters.map((q) => (
+          <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-cta font-bold" : ""}`}>
+            Q{q}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      <tr className="border-t border-gray-700">
+        <td className="py-2 px-4 text-left font-semibold">{homeTeamName}</td>
+        {quarters.map((q) => {
+          const score = homeScores[q];
+          const value =
+            score !== null
+              ? score
+              : gameData?.quarter === q
+              ? 0
+              : "—";
+          return <td key={q} className="py-2 px-4">{value}</td>;
+        })}
+      </tr>
+      <tr className="border-t border-gray-700">
+        <td className="py-2 px-4 text-left font-semibold">{awayTeamName}</td>
+        {quarters.map((q) => {
+          const score = awayScores[q];
+          const value =
+            score !== null
+              ? score
+              : gameData?.quarter === q
+              ? 0
+              : "—";
+          return <td key={q} className="py-2 px-4">{value}</td>;
+        })}
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+        </div>
+      </div>
+      
+      <button 
+        onClick={() => setShowStatsModal(!showStatsModal)} 
+        className="flex items-center px-2 w-full justify-center hover:text-primary-danger px-4 flex-col transition-colors duration-200"
+      >
+        {!showStatsModal &&
+        <p>Game Stats</p>
+}
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          strokeWidth="1.5" 
+          stroke="currentColor" 
+          className={`w-6 h-6 transition-transform duration-300 ease-in-out ${showStatsModal ? "rotate-180" : ""}`}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+    </div>
       </div>
 
       {gameData?.gameActions?.length > 0 && (
