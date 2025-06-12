@@ -626,6 +626,24 @@ away:opponentName
           date: selectedDate,
           time:selectedTime
         },
+        stats:{
+          
+            fieldGoalPct: fgPercentage,
+            fieldGoalMade: fgMade,
+            fieldGoalMissed: (fgAttempts-fgMade),
+          
+            threePointPct: threePointPercentage,
+            threePointMade: threePtMade,
+            threePointMissed: (threePtAttempts-threePtMade),
+          
+            freeThrowPct: ftPercentage,
+            freeThrowMade: ftMade,
+            freeThrowMissed: (ftAttempts-ftMade),
+          
+            blocks: blocks,
+            steals: steals,
+            turnovers: turnovers,
+        },
         venue: selectedVenue,
         link:broadcastLink,
         score: {

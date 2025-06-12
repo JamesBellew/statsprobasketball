@@ -79,15 +79,21 @@ export default function LiveGameView() {
   // ✅ Remove the problematic DOM manipulation useEffect entirely
   // Replace with React event handlers
   const stats = {
-    fieldGoalPct: 52,
-    fieldGoals: "26/50",
-    threePointPct: 38,
-    threePoints: "8/21",
-    freeThrowPct: 85,
-    freeThrows: "17/20",
-    blocks: 4,
-    steals: 7,
-    turnovers: 12
+    fieldGoalPct: 80,
+    fieldGoalMade: 12,
+    fieldGoalMissed: 3,
+  
+    threePointPct: 40,
+    threePointMade: 4,
+    threePointMissed: 6,
+  
+    freeThrowPct: 75,
+    freeThrowMade: 9,
+    freeThrowMissed: 3,
+  
+    blocks: 5,
+    steals: 4,
+    turnovers: 7,
   };
   
   const handleOpenMobileMenu = () => {
@@ -393,7 +399,20 @@ console.log('this is the gamedata object', gameData);
           });
 
           const playersArray = Object.values(homePlayerScores);
-
+          const sortedPlayersArray = [...playersArray].sort((a, b) => b.points - a.points);
+          return sortedPlayersArray.map((player, index) => (
+            <div
+              key={index}
+              className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+            >
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                {player.number}
+              </div>
+              <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
+              <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+            </div>
+          ));
+          
           if (playersArray.length === 0) {
             return (
               <div className="text-white text-center w-full py-4">
@@ -418,33 +437,62 @@ console.log('this is the gamedata object', gameData);
       </div>
     </div>
   ) : (
-    <div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
-       <div className="flex justify-center items-center w-full  gap-4">
-  <p className=" bg-secondary-bg  w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
-  <p className=" bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">{awayTeamName || "Away"}</p>
+<div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
+
+<div className="flex justify-center items-center w-full gap-4">
+  <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">
+    {homeTeamName || "Home"}
+  </p>
+  <p className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">
+    {awayTeamName || "Away"}
+  </p>
 </div>
-    {[
-      { label: "FG%", value: stats.fieldGoalPct },
-      { label: "3PT%", value: stats.threePointPct },
-      { label: "FT%", value: stats.freeThrowPct }
-    ].map((stat, i) => (
-      <div key={i}>
-        <div className="flex justify-between text-white text-sm mb-1">
-          <span>{stat.label}</span>
-          <span>{stat.value}%</span>
-        </div>
-        <div className="w-full bg-white/10 rounded-full h-3">
-          <div className="bg-primary-danger h-3 rounded-full" style={{ width: `${stat.value}%` }}></div>
-        </div>
-      </div>
-    ))}
-  
-    <div className="grid grid-cols-3 gap-2 text-white text-center text-sm ">
-      <div className="bg-secondary-bg px-2 rounded-lg">Blocks<br/><span className="font-bold">{stats.blocks}</span></div>
-      <div className="bg-secondary-bg px-2 rounded-lg">Steals<br/><span className="font-bold">{stats.steals}</span></div>
-      <div className="bg-secondary-bg px-2 rounded-lg">Turnovers<br/><span className="font-bold">{stats.turnovers}</span></div>
+
+{[
+ { 
+  label: "FG%", 
+  value: gameData?.stats?.fieldGoalPct ?? 0, 
+  made: gameData?.stats?.fieldGoalMade ?? 0, 
+  missed: gameData?.stats?.fieldGoalMissed ?? 0 
+},
+{ 
+  label: "3PT%", 
+  value: gameData?.stats?.threePointPct.current ?? 0, 
+  made: gameData?.stats?.threePointMade ?? 0, 
+  missed: gameData?.stats?.threePointMissed ?? 0 
+},
+{ 
+  label: "FT%", 
+  value: gameData?.stats?.freeThrowPct ?? 0, 
+  made: gameData?.stats?.freeThrowMade ?? 0, 
+  missed: gameData?.stats?.freeThrowMissed ?? 0 
+}
+].map((stat, i) => (
+  <div key={i}>
+    <div className="flex w-full justify-between text-white text-sm mb-1">
+      <span>{stat.label} <span className="mx-1">-</span><span className="mx-2 text-gray-300 justify-end">{stat.made}/{stat.made + stat.missed}</span></span>
+      <span>{stat.value}%</span>
+    </div>
+    <div className="w-full bg-white/10 rounded-full h-2">
+      <div className="bg-primary-danger transition-all duration-700  h-2 rounded-full" style={{ width: `${stat.value}%` }}></div>
     </div>
   </div>
+))}
+
+<div className="grid grid-cols-3 gap-2 text-white text-center text-sm ">
+  <div className="bg-secondary-bg px-2 rounded-lg">
+    Blocks<br/><span className="font-bold">{gameData?.stats?.blocks ?? 0}</span>
+  </div>
+  <div className="bg-secondary-bg px-2 rounded-lg">
+    Steals<br/><span className="font-bold">{gameData?.stats?.steals ?? 0}</span>
+  </div>
+  <div className="bg-secondary-bg px-2 rounded-lg">
+    Turnovers<br/><span className="font-bold">{gameData?.stats?.turnovers ?? 0}</span>
+  </div>
+</div>
+
+</div>
+
   
   )}
 </div>

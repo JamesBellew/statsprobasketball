@@ -33,6 +33,9 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.87</p>
+<li className="py-2">Player scores in livegame view is now sorted by most points</li>
+<li className="py-2">Major UI for game stats in livegameview</li>
 <p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.86</p>
 <li className="py-2">Added in new section in livegame game stats</li>
 <p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.85</p>
