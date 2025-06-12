@@ -95,6 +95,12 @@ export default function LiveGameView() {
     steals: 4,
     turnovers: 7,
   };
+  const trackingPlayers = gameData?.gameActions?.some(
+    (action) =>
+      action.team === 'home' && 
+      (action.playerNumber || action.playerName)
+  );
+
   
   const handleOpenMobileMenu = () => {
     setIsMobileMenuOpen(true);
@@ -241,7 +247,7 @@ console.log('this is the gamedata object', gameData);
 
 
           <div className="relative col-span-2">
-            <div className="w-16 h-16 rounded-full bg-white mx-auto">
+            <div className="w-16 h-16 border-2 border-primary-danger rounded-full bg-white mx-auto">
               <img
                 src={gameData?.logos?.home || homeLogo}
                 className="w-full h-full rounded-full p-1"
@@ -278,7 +284,7 @@ console.log('this is the gamedata object', gameData);
           </div>
 
           <div className="col-span-2">
-            <div className="w-16 h-16 rounded-full bg-white mx-auto">
+            <div className="w-16 h-16 rounded-full border-2 border-primary-cta bg-white mx-auto">
               <img
                 src={gameData?.logos?.away || opponentJersey}
                 className="w-full h-full rounded-full p-1"
@@ -297,55 +303,62 @@ console.log('this is the gamedata object', gameData);
         <div className={`h-auto pb-4 w-full  transform transition-all duration-300 ease-in-out ${
           showStatsModal ? 'translate-y-0' : '-translate-y-4'
         }`}>
-     <div className="w-full flex justify-center">
-     <div className="relative flex bg-secondary-bg rounded-full p-1 w-[300px] mx-auto">
-  {/* Animated background */}
-  <div 
-    className={`absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(33.333%-4px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
-    style={{
-      transform: gameStatsToggleMode === 'Game' 
-        ? 'translateX(0%)' 
-        : gameStatsToggleMode === 'Player' 
-          ? 'translateX(100%)' 
-          : 'translateX(200%)'
-    }}
-  ></div>
+<div className="w-full flex justify-center">
+  <div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[300px]' : 'w-[220px]'} mx-auto`}>
+    
+    {/* Animated background */}
+    <div 
+      className={`absolute top-1 left-1 h-[calc(100%-8px)] ${trackingPlayers ? 'w-[calc(33.333%-4px)]' : 'w-[calc(50%-4px)]'} bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
+      style={{
+        transform: trackingPlayers 
+          ? (gameStatsToggleMode === 'Game' 
+              ? 'translateX(0%)' 
+              : gameStatsToggleMode === 'Player' 
+                ? 'translateX(100%)' 
+                : 'translateX(200%)')
+          : (gameStatsToggleMode === 'Game' 
+              ? 'translateX(0%)' 
+              : 'translateX(100%)') // <-- here was the issue for 2 buttons mode
+      }}
+    ></div>
 
-  {/* Buttons */}
-  <button 
-    onClick={() => setGameStatsToggleMode("Game")}
-    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-      gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
-    }`}
-  >
-    Game
-  </button>
+    {/* Buttons */}
+    <button 
+      onClick={() => setGameStatsToggleMode("Game")}
+      className={`relative ${trackingPlayers ? 'w-1/3' : 'w-1/2'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+        gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
+      }`}
+    >
+      Game
+    </button>
 
-  <button 
-    onClick={() => setGameStatsToggleMode("Player")}
-    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-      gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
-    }`}
-  >
-    Players
-  </button>
+    {trackingPlayers && (
+      <button 
+        onClick={() => setGameStatsToggleMode("Player")}
+        className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+          gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
+        }`}
+      >
+        Players
+      </button>
+    )}
 
-  <button 
-    onClick={() => setGameStatsToggleMode("Stats")}
-    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-      gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
-    }`}
-  >
-    Stats
-  </button>
+    <button 
+      onClick={() => setGameStatsToggleMode("Stats")}
+      className={`relative ${trackingPlayers ? 'w-1/3' : 'w-1/2'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+        gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
+      }`}
+    >
+      Stats
+    </button>
+  </div>
 </div>
 
 
-</div>
-
-<div className="overflow-x-auto mt-2">
+<div className="overflow-x-auto mt-2  min-h-[20vh]">
   {gameStatsToggleMode === 'Game' ? (
-    <table className="w-full min-h-[20vh] text-sm text-center bg-opacity-60 text-white rounded-lg">
+    
+    <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-lg">
       <thead>
         <tr>
           <th className="py-2 px-4 text-left">Team</th>
@@ -379,7 +392,25 @@ console.log('this is the gamedata object', gameData);
     <div className="w-full h-auto min-h-[20vh]">
  <div className="flex justify-center items-center w-full  gap-4">
   <p className=" bg-secondary-bg  w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
-  <p className=" bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">{awayTeamName || "Away"}</p>
+
+
+<div className="relative group">
+    <button 
+      type="button" 
+      className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center px-2 py-2"
+    >
+ {awayTeamName || "Away"}
+    </button>
+    <div 
+      className="absolute  top-2/2 w-auto h-auto  overflow-y-auto -translate-y-1/2 ml-2 
+                 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 
+                 whitespace-nowrap opacity-0 group-hover:opacity-100 
+                 transition-opacity duration-300 z-50"
+    >
+      Release 2.0
+    </div>
+  </div>
+
 </div>
 
       <div className="flex overflow-x-auto space-x-3 px-2 py-1 ">
@@ -443,9 +474,23 @@ console.log('this is the gamedata object', gameData);
   <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">
     {homeTeamName || "Home"}
   </p>
-  <p className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">
-    {awayTeamName || "Away"}
-  </p>
+  <div className="relative group">
+    <button 
+      type="button" 
+      className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center px-2 py-2"
+    >
+ {awayTeamName || "Away"}
+    </button>
+    <div 
+      className="absolute  top-2/2 w-auto h-auto  overflow-y-auto -translate-y-1/2 ml-2 
+                 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 
+                 whitespace-nowrap opacity-0 group-hover:opacity-100 
+                 transition-opacity duration-300 z-50"
+    >
+      Coming<br></br>
+      Release 2.0
+    </div>
+  </div>
 </div>
 
 {[
@@ -524,98 +569,101 @@ console.log('this is the gamedata object', gameData);
 
       {gameData?.gameActions?.length > 0 && (
         <div className="h-[65vh] mt-5 overflow-auto w-full px-4">
-          <ul className="timeline timeline-vertical">
-            {gameData?.gameActions?.length > 0 && (
-              <div className="h-full overflow-auto w-full px-4">
-                <ul className="timeline timeline-vertical w-full max-w-2xl mx-auto">
-                  {[...gameData?.gameActions].reverse().map((action, index, array) => {
-                    const isHome = action.team === "home";
-                    const nameText = action.playerName || "";
-                    const playerText = action.playerNumber ? `(${action.playerNumber})` : "";
-                    const timeLabel = `Q${action.quarter || "-"}`;
-                    const isNewQuarter = index === 0 || action.quarter !== array[index - 1]?.quarter;
-                    const clock = `${action.clockMinutesLeft ?? "-"}:${String(action.clockSecondsLeft).padStart(2, "0")}`;
+     <ul className="timeline timeline-vertical">
+  {gameData?.gameActions?.length > 0 && (
+    <div className="h-full overflow-auto w-full px-4">
+      <ul className="timeline timeline-vertical w-full max-w-2xl mx-auto">
+        {[...gameData?.gameActions].reverse().map((action, index, array) => {
+          const isHome = action.team === "home";
+          const nameText = action.playerName || "";
+          const playerText = action.playerNumber ? `(${action.playerNumber})` : "";
+          const timeLabel = `Q${action.quarter || "-"}`;
+          const isNewQuarter = index === 0 || action.quarter !== array[index - 1]?.quarter;
 
-                    // 🎯 Filter: show only scores, misses, FT, BLK, TO, STL
-                    const displayType = action.type?.toLowerCase();
-                    const isScore = action.points;
-                    const isMiss = displayType?.includes("miss");
-                    const isBlock = displayType?.includes("Block");
-                    const isTO = displayType?.includes("turnover");
-                    const isSteal = displayType?.includes("steal");
-                    const isFT = displayType?.includes("free throw");
+          // Build clock only if both values exist
+          let clock = "";
+          if (typeof action.clockMinutesLeft === "number" && typeof action.clockSecondsLeft === "number") {
+            clock = `${action.clockMinutesLeft}:${String(action.clockSecondsLeft).padStart(2, "0")}`;
+          }
 
-                    const shouldShow = isScore || isMiss || isBlock || isTO || isSteal || isFT;
+          // 🎯 Filter: show only scores, misses, FT, BLK, TO, STL
+          const displayType = action.type?.toLowerCase();
+          const isScore = action.points;
+          const isMiss = displayType?.includes("miss");
+          const isBlock = displayType?.includes("block");
+          const isTO = displayType?.includes("turnover");
+          const isSteal = displayType?.includes("steal");
+          const isFT = displayType?.includes("free throw");
 
-                    if (!shouldShow) return null;
+          const shouldShow = isScore || isMiss || isBlock || isTO || isSteal || isFT;
 
-                    return (
-                      <React.Fragment key={index}>
-                        {isNewQuarter && (
-                          <div className="w-auto py-2 items-center mx-auto justify-center text-center">
-                            <div className="w-full px-4 py-1 rounded-md shadow-sm">
-                              <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
-                                ── Q {action.quarter} ──
-                              </p>
-                            </div>
+          if (!shouldShow) return null;
+
+          return (
+            <React.Fragment key={index}>
+              {isNewQuarter && (
+                <div className="w-auto py-2 items-center mx-auto justify-center text-center">
+                  <div className="w-full px-4 py-1 rounded-md shadow-sm">
+                    <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
+                      ── Q {action.quarter} ──
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <li className="w-full">
+                {isScore ? (
+                  <>
+                    {isHome ? (
+                      <div className="timeline-start border-l-2 border-l-primary-danger timeline-box bg-secondary-bg text-white border border-gray-700 w-36">
+                        {(timeLabel || clock) && (
+                          <div className="flex justify-between text-xs text-gray-400 mb-1">
+                            <span>{timeLabel}</span>
+                            {clock && <span>{clock}</span>}
                           </div>
                         )}
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-white">
+                            <span className="text-gray-400">{playerText}</span>{nameText}
+                          </p>
+                          <p className="text-md font-bold text-primary-danger">+{action.points}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="timeline-end w-36 border-r-2 border-r-primary-cta timeline-box bg-secondary-bg text-white border border-gray-700">
+                        <p className="text-xs text-gray-400 mb-1">{timeLabel}</p>
+                        <p className="font-semibold">
+                          {playerText} {nameText} + {action.points}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className={`text-sm text-white px-2 py-1 italic ${isHome ? "text-left pl-6" : "text-right pr-6"}`}>
+                    <p className="text-white/50">
+                      {displayType === "miss" && <>❌ FG Miss — <span className="font-semibold">{nameText} {playerText}</span></>}
+                      {isBlock && <>🔒 Block — <span className="font-semibold">{nameText} {playerText}</span></>}
+                      {isTO && <>⚠️ Turnover — <span className="font-semibold">{nameText} {playerText}</span></>}
+                      {isSteal && <>🛡️ Steal — <span className="font-semibold">{nameText} {playerText}</span></>}
+                      {isFT && <>🎯 Free Throw — <span className="font-semibold">{nameText} {playerText}</span></>}
+                    </p>
+                  </div>
+                )}
+                <div className="timeline-middle">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4 text-white/50 bg-secondary-bg rounded-full" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                  </svg>
+                </div>
+                <hr className="bg-gray-600" />
+              </li>
+            </React.Fragment>
+          );
+        })}
+      </ul>
+    </div>
+  )}
+</ul>
 
-                        <li className="w-full">
-                          {isScore ? (
-                            <>
-                              {isHome ? (
-                                <div className="timeline-start border-l-2 border-l-primary-danger timeline-box bg-secondary-bg text-white border border-gray-700 w-36">
-                                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                    <span>{timeLabel}</span>
-                                    <span>{clock}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <p className="text-sm font-semibold text-white">
-                                      <span className="text-gray-400">{playerText}</span>{nameText}
-                                    </p>
-                                    <p className="text-md font-bold text-primary-danger">+{action.points}</p>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="timeline-end w-36 border-r-2 border-r-primary-cta timeline-box bg-secondary-bg text-white border border-gray-700">
-                                  <p className="text-xs text-gray-400 mb-1">{timeLabel} </p>
-                                  <p className="font-semibold">
-                                    {playerText} {nameText} + {action.points}
-                                  </p>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            // 👇 Miss, block, TO, etc. inline and styled
-                            <div className={`text-sm text-white px-2 py-1 italic ${isHome ? "text-left pl-6" : "text-right pr-6"}`}>
-                              <p className="text-white/50">
-                                {displayType === "miss" && <>❌ FG Miss — <span className="font-semibold">{nameText} {playerText}</span></>}
-                                {isBlock && <>🔒 Block — <span className="font-semibold">{nameText} {playerText}</span></>}
-                                {isTO && <>⚠️ Turnover — <span className="font-semibold">{nameText} {playerText}</span></>}
-                                {isSteal && <>🛡️ Steal — <span className="font-semibold">{nameText} {playerText}</span></>}
-                                {isFT && <>🎯 Free Throw — <span className="font-semibold">{nameText} {playerText}</span></>}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="timeline-middle">
-                            <svg xmlns="http://www.w3.org/2000/svg"
-                              className="size-4 text-white/50 bg-secondary-bg rounded-full"
-                              fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                            </svg>
-                          </div>
-
-                          <hr className="bg-gray-600" />
-                        </li>
-                      </React.Fragment>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </ul>
         </div>
       )}
     </div>

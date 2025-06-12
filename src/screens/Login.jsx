@@ -33,6 +33,13 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">13/06/2025 - Version 1.88</p>
+<li className="py-2">Dynamically render the player stats section in the livegameview, for games that don't track player stats</li>
+<li className="py-2">Non minutes track edge case for displaying clock.</li>
+<li className="py-2">UX/UI improvements</li>
+<li className="py-2">Fixed FT undefined error in the livegameview</li>
+<li className="py-2">Scoring split table fix for desktop view, height now fixed </li>
+<li className="py-2">Tooltip for upcoming feature for away stats, coming Beta 2.0</li>
 <p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.87</p>
 <li className="py-2">Player scores in livegame view is now sorted by most points</li>
 <li className="py-2">Major UI for game stats in livegameview</li>
