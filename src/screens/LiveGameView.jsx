@@ -78,7 +78,18 @@ export default function LiveGameView() {
   
   // ✅ Remove the problematic DOM manipulation useEffect entirely
   // Replace with React event handlers
-
+  const stats = {
+    fieldGoalPct: 52,
+    fieldGoals: "26/50",
+    threePointPct: 38,
+    threePoints: "8/21",
+    freeThrowPct: 85,
+    freeThrows: "17/20",
+    blocks: 4,
+    steals: 7,
+    turnovers: 12
+  };
+  
   const handleOpenMobileMenu = () => {
     setIsMobileMenuOpen(true);
   };
@@ -131,7 +142,7 @@ console.log('this is the gamedata object', gameData);
   console.log(gameData);
 
   return (
-    <div className="h-screen relative bg-secondary-bg text-white flex flex-col bg-[url('/assets/bg-pattern.svg')] min-h-screen bg-repeat bg-[length:150px_150px]">
+    <div className="h-screen  relative bg-secondary-bg text-white flex flex-col bg-[url('/assets/bg-pattern.svg')] min-h-screen bg-repeat bg-[length:150px_150px]">
 
       <header className="bg-primary-bg shadow w-full px-2 z-50">
         <div className="container mx-auto">
@@ -281,130 +292,163 @@ console.log('this is the gamedata object', gameData);
           showStatsModal ? 'translate-y-0' : '-translate-y-4'
         }`}>
      <div className="w-full flex justify-center">
-     <div className="relative flex bg-secondary-bg rounded-full p-1 w-[200px] mx-auto">
+     <div className="relative flex bg-secondary-bg rounded-full p-1 w-[300px] mx-auto">
   {/* Animated background */}
   <div 
-    className={`absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
+    className={`absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(33.333%-4px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
     style={{
-      transform: gameStatsToggleMode === 'Game' ? 'translateX(0)' : 'translateX(100%)'
+      transform: gameStatsToggleMode === 'Game' 
+        ? 'translateX(0%)' 
+        : gameStatsToggleMode === 'Player' 
+          ? 'translateX(100%)' 
+          : 'translateX(200%)'
     }}
   ></div>
 
   {/* Buttons */}
   <button 
     onClick={() => setGameStatsToggleMode("Game")}
-    className="relative w-1/2 px-4 py-1 rounded-full text-sm font-medium text-white transition-all duration-300 z-10"
+    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
+    }`}
   >
     Game
   </button>
+
   <button 
     onClick={() => setGameStatsToggleMode("Player")}
-    className="relative w-1/2 px-4 py-1 rounded-full text-sm font-medium text-white transition-all duration-300 z-10"
+    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
+    }`}
   >
     Players
   </button>
+
+  <button 
+    onClick={() => setGameStatsToggleMode("Stats")}
+    className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
+    }`}
+  >
+    Stats
+  </button>
 </div>
 
+
 </div>
 
-     
-          <div className="overflow-x-auto   mt-2">
-     {gameStatsToggleMode === 'Game' ?
-  <table className="w-full min-h-[20vh]  text-sm text-center  bg-opacity-60 text-white rounded-lg">
-    <thead>
-      <tr>
-        <th className="py-2 px-4 text-left">Team</th>
-        {quarters.map((q) => (
-          <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
-            Q{q}
-          </th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      <tr className="border-t border-gray-700">
-        <td className="py-2 px-4 text-left font-semibold">{homeTeamName}</td>
-        {quarters.map((q) => {
-          const score = homeScores[q];
-          const value =
-            score !== null
-              ? score
-              : gameData?.quarter === q
-              ? 0
-              : "—";
-          return <td key={q} className="py-2 px-4">{value}</td>;
-        })}
-      </tr>
-      <tr className="border-t border-gray-700">
-        <td className="py-2 px-4 text-left font-semibold">{awayTeamName}</td>
-        {quarters.map((q) => {
-          const score = awayScores[q];
-          const value =
-            score !== null
-              ? score
-              : gameData?.quarter === q
-              ? 0
-              : "—";
-          return <td key={q} className="py-2 px-4">{value}</td>;
-        })}
-      </tr>
-    </tbody>
-  </table>
-     
-     :
-     
-     <div className="w-full h-auto min-h-[20vh]">
-<div className="flex overflow-x-auto space-x-3 px-2 py-1 ">
-  {(() => {
-    // 1️⃣ Aggregate home team player scores
-    const homePlayerScores = {};
+<div className="overflow-x-auto mt-2">
+  {gameStatsToggleMode === 'Game' ? (
+    <table className="w-full min-h-[20vh] text-sm text-center bg-opacity-60 text-white rounded-lg">
+      <thead>
+        <tr>
+          <th className="py-2 px-4 text-left">Team</th>
+          {quarters.map((q) => (
+            <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
+              Q{q}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="border-t border-gray-700">
+          <td className="py-2 px-4 text-left font-semibold">{homeTeamName}</td>
+          {quarters.map((q) => {
+            const score = homeScores[q];
+            const value = score !== null ? score : gameData?.quarter === q ? 0 : "—";
+            return <td key={q} className="py-2 px-4">{value}</td>;
+          })}
+        </tr>
+        <tr className="border-t border-gray-700">
+          <td className="py-2 px-4 text-left font-semibold">{awayTeamName}</td>
+          {quarters.map((q) => {
+            const score = awayScores[q];
+            const value = score !== null ? score : gameData?.quarter === q ? 0 : "—";
+            return <td key={q} className="py-2 px-4">{value}</td>;
+          })}
+        </tr>
+      </tbody>
+    </table>
+  ) : gameStatsToggleMode === 'Player' ? (
+    <div className="w-full h-auto min-h-[20vh]">
+ <div className="flex justify-center items-center w-full  gap-4">
+  <p className=" bg-secondary-bg  w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
+  <p className=" bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">{awayTeamName || "Away"}</p>
+</div>
 
-    gameData?.gameActions?.forEach(action => {
-      if (action.type === 'score' && action.team === 'home') {
-        const playerId = action.playerNumber || 'Unknown';
-        const playerName = action.playerName || playerId;
+      <div className="flex overflow-x-auto space-x-3 px-2 py-1 ">
+        {(() => {
+          const homePlayerScores = {};
 
-        if (!homePlayerScores[playerId]) {
-          homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
-        }
-        homePlayerScores[playerId].points += action.points || 0;
-      }
-    });
+          gameData?.gameActions?.forEach(action => {
+            if (action.type === 'score' && action.team === 'home') {
+              const playerId = action.playerNumber || 'Unknown';
+              const playerName = action.playerName || playerId;
 
-    // 2️⃣ Convert into display array
-    const playersArray = Object.values(homePlayerScores);
+              if (!homePlayerScores[playerId]) {
+                homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
+              }
+              homePlayerScores[playerId].points += action.points || 0;
+            }
+          });
 
-    // 3️⃣ Handle case where no scores exist
-    if (playersArray.length === 0) {
-      return (
-        <div className="text-white text-center w-full py-4">
-          No player scores yet.
-        </div>
-      );
-    }
+          const playersArray = Object.values(homePlayerScores);
 
-    // 4️⃣ Render UI
-    return playersArray.map((player, index) => (
-      <div
-        key={index}
-        className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
-      >
-        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
-          #{player.number}
-        </div>
-        <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
-        <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+          if (playersArray.length === 0) {
+            return (
+              <div className="text-white text-center w-full py-4">
+                No player scores yet.
+              </div>
+            );
+          }
+
+          return playersArray.map((player, index) => (
+            <div
+              key={index}
+              className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+            >
+              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                #{player.number}
+              </div>
+              <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
+              <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+            </div>
+          ));
+        })()}
       </div>
-    ));
-  })()}
+    </div>
+  ) : (
+    <div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
+       <div className="flex justify-center items-center w-full  gap-4">
+  <p className=" bg-secondary-bg  w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
+  <p className=" bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">{awayTeamName || "Away"}</p>
+</div>
+    {[
+      { label: "FG%", value: stats.fieldGoalPct },
+      { label: "3PT%", value: stats.threePointPct },
+      { label: "FT%", value: stats.freeThrowPct }
+    ].map((stat, i) => (
+      <div key={i}>
+        <div className="flex justify-between text-white text-sm mb-1">
+          <span>{stat.label}</span>
+          <span>{stat.value}%</span>
+        </div>
+        <div className="w-full bg-white/10 rounded-full h-3">
+          <div className="bg-primary-danger h-3 rounded-full" style={{ width: `${stat.value}%` }}></div>
+        </div>
+      </div>
+    ))}
+  
+    <div className="grid grid-cols-3 gap-2 text-white text-center text-sm ">
+      <div className="bg-secondary-bg px-2 rounded-lg">Blocks<br/><span className="font-bold">{stats.blocks}</span></div>
+      <div className="bg-secondary-bg px-2 rounded-lg">Steals<br/><span className="font-bold">{stats.steals}</span></div>
+      <div className="bg-secondary-bg px-2 rounded-lg">Turnovers<br/><span className="font-bold">{stats.turnovers}</span></div>
+    </div>
+  </div>
+  
+  )}
 </div>
 
-
-   </div>
-   
-     
-}
-</div>
 
         </div>
       </div>

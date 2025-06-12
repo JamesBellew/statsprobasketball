@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.85 (12/06/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.86 (12/06/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is in Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,7 +33,9 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
-<p className="font-bold text-primary-danger text-sm">10/06/2025 - Version 1.85</p>
+<p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.86</p>
+<li className="py-2">Added in new section in livegame game stats</li>
+<p className="font-bold text-primary-danger text-sm">12/06/2025 - Version 1.85</p>
 <li className="py-2">Added in new section in livegame for PlayerStats</li>
 <li className="py-2">Added in new section in livegame for gamestats</li>
 <li className="py-2">Fixed Homescreen mobile nav not working</li>
