@@ -29,6 +29,7 @@ const closeMenuRef = useRef(null);
   const [showToast, setShowToast] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
   const [error, setError] = useState("");
  const liveGamesNavigationHandler=()=>{
 //I want to navigate to 
@@ -144,10 +145,16 @@ useEffect(() => {
   };
 }, []);
 
+const handleOpenMobileMenu = () => {
+  setIsMobileMenuOpen(true);
+};
 
+const handleCloseMobileMenu = () => {
+  setIsMobileMenuOpen(false);
+};
 
   return (
-    <div className="bg-[url('/assets/bg-pattern.svg')] bg-primary-bg   bg-repeat bg-[length:150px_150px]">
+    <div className="bg-[url('/assets/bg-pattern.svg')]   bg-repeat bg-[length:150px_150px]">
     <Router>
       {/* <MobileBlocker/> */}
       <Routes>
@@ -155,131 +162,78 @@ useEffect(() => {
           path="/"
           element={
             <>
-            <header className="bg-primary-bg bg-opacity-60 shadow w-full px-2  z-50">
-  <div className="container mx-auto">
-  <div className="flex justify-between items-center  py-4 mx-auto">
-    <a onClick={()=>{
-navigate("/")
-    }} className="text-xl font-bold text-white">
-      StatsPro <span className="text-sm text-gray-400">| Basketball</span>
-    </a>
+ <header className="bg-primary-bg bg-opacity-60 shadow w-full px-2 z-50">
+        <div className="container mx-auto">
+          <div className="flex cursor-pointer justify-between items-center py-4 mx-auto">
+            <a 
+            // onClick={() => { navigate("/") }}
+             className="text-xl font-bold text-white">
+              StatsPro <span className="text-sm text-gray-400">| Basketball</span>
+            </a>
 
-    {/* Desktop Nav */}
-    <nav className="hidden md:flex  text-gray-300 text-sm">
-      
-      {/* <a href="/" className="hover:text-white">Home</a>
-      <a href="#" className="hover:text-white">LiveGames</a> */}
- <ul class="menu menu-horizontal text-gray-300 px-1">
-      {/* <li>
-        <a href='https://www.instagram.com/james_bellew97/'>Live Games</a></li> */}
-        <li>
-        <a href='https://www.instagram.com/james_bellew97/'>Request an account</a></li>
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex space-x-6 text-gray-300 text-sm">
+              <a 
+              // onClick={() => { navigate('/') }}
+               className="hover:text-white">Request Account</a>
+              <a onClick={()=>{
+                // navigate('/liveGameHomeDashboard')
+              }} className="hover:text-white pb-1">LiveGames</a>
+            </nav>
 
-      {user ?
-      <li className=' border-l-2 z-50 border-l-primary-cta  rounded-md rounded-l-none'>
-        <details>
-          <summary className=' text-white'>{user.email}</summary>
-          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
-            <li><a>Settings</a></li>
-            <hr className='my-2'></hr>
-            <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
-          </ul>
-        </details>
-      </li>
-          : <>
-              <li className='   w-32 rounded-md '>
-        <details>
-          <summary>Guest</summary>
-          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
-            
-            <li   onClick={()=>{setShowAuthModal(true)}} className='bg-primary-danger rounded-md text-white'><a>Login</a></li>
-          </ul>
-        </details>
-      </li>
-          </>}
-          {showInstallButton && deferredPrompt && (
-  <li>
-    <button
-      onClick={handleInstallClick}
-      className="text-white bg-primary-cta font-medium rounded-md text-sm px-5 py-1 hover:bg-indigo-600"
-    >
-      Download App
-    </button>
-  </li>
-)}
-
-    </ul>
-    </nav>
-
-    {/* Mobile Hamburger */}
-    <button ref={hamburgerRef} id="hamburger" className="text-white md:hidden">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-        strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-      </svg>
-    </button>
-  </div>
-  </div>
-</header>
+            {/* Mobile Hamburger - ✅ Use React onClick instead of DOM manipulation */}
+            <button 
+               onClick={handleOpenMobileMenu}
+              className="text-white md:hidden"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
 
 
-<div ref={mobileMenuRef} id="mobile-menu" className="fixed inset-0 bg-primary-bg bg-opacity-98 md:hidden hidden z-50 transition-transform duration-300 transform -translate-x-full">
-  <div className="flex flex-col justify-between h-full p-6 text-white">
-    <div className="flex items-center justify-between mb-8">
-      <h2 className="text-xl font-bold">StatsPro</h2>
-      <ul class=" items-start  flex menu menu-horizontal text-gray-300 ">
-      {user ?
-      <li className='  z-50 border-l-primary-cta  rounded-md rounded-l-none'>
-        <details>
-          <summary className=' text-white'>{user.email}</summary>
-          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none ">
-            <li><a>Settings</a></li>
-            <hr className='my-2'></hr>
-            <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
-          </ul>
-        </details>
-      </li>
-          : <>
-              <li className='   w-32 rounded-md '>
-        <details>
-          <summary>Guest</summary>
-          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
-            
-            <li   onClick={()=>{setShowAuthModal(true)}} className='bg-primary-danger rounded-md text-white'><a>Login</a></li>
-          </ul>
-        </details>
-      </li>
-          </>}
-          {showInstallButton && deferredPrompt && (
-  <li>
-    <button
-      onClick={handleInstallClick}
-      className="text-white bg-primary-cta font-medium rounded-md text-sm px-5 py-1 hover:bg-indigo-600"
-    >
-      Download App
-    </button>
-  </li>
-)}
-
-    </ul>
-      <button ref={closeMenuRef} id="close-menu" className="text-2xl text-gray-300 hover:text-white">✕</button>
-    </div>
-    <nav className="space-y-6 text-lg">
- 
-      <a  className="block hover:text-blue-400 border-l-2 border-l-primary-cta pl-4">Home</a>
-      {/* <a  onClick={()=>{
-        navigate('/liveGameHomeDashboard')
-      }} className="block hover:text-blue-400 text-white  ">Live Games</a> */}
-  
-    </nav>
-
-    <div>
-    <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
+      {/* ✅ Mobile Menu - Use React state and conditional rendering */}
+      <div 
+        className={`fixed inset-0 bg-primary-bg bg-opacity-98 md:hidden z-50 transition-transform duration-300 transform ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        onClick={(e) => {
+          // Close menu when clicking outside
+          if (e.target === e.currentTarget) {
+            handleCloseMobileMenu();
+          }
+        }}
+      >
+        <div className="flex flex-col justify-between h-full p-6 text-white">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-bold">StatsPro</h2>
+            <button 
+              onClick={handleCloseMobileMenu}
+              className="text-2xl text-gray-300 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+          <nav className="space-y-6 text-lg">
+            <a onClick={() => {
+              navigate('/');
+              handleCloseMobileMenu(); // Close menu after navigation
+            }} className="block hover:text-blue-400 border-l-2 pl-4 border-l-primary-cta">Home</a>
+            <a onClick={()=>{
+              navigate("/../liveGameHomeDashboard")
+            }} className="block hover:text-blue-400 text-white  ">Live Games</a>
+          </nav>
+          <div>
+          <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
      StatsPro | Basketball<br></br> Beta
       </div>
-    </div>
-  </div>
-</div>
+          </div>
+        </div>
+      </div>
               <div className=" min-h-screen  " >
               {/* Passing the state and updater function as props to Login */}
               <Login showLoginModal={showLoginModal} setShowLoginModal={setShowLoginModal} />

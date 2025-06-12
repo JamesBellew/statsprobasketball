@@ -17,6 +17,7 @@ export default function LiveGameView() {
   const [broadcastUpdate, setBroadcastUpdate] = useState(null);
   const [gameFinsihedFlag, setGameFinsihedFlag] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
+  const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
   const navigate = useNavigate();
 
   const quarters=[1,2,3,4];
@@ -276,16 +277,45 @@ console.log('this is the gamedata object', gameData);
       <div className={`overflow-hidden transition-all w-full duration-300 ease-in-out ${
         showStatsModal ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
       }`}>
-        <div className={`h-auto py-4 w-full transform transition-all duration-300 ease-in-out ${
+        <div className={`h-auto pb-4 w-full  transform transition-all duration-300 ease-in-out ${
           showStatsModal ? 'translate-y-0' : '-translate-y-4'
         }`}>
-          <div className="overflow-x-auto mt-6">
-  <table className="w-full text-sm text-center bg-secondary-bg bg-opacity-60 text-white rounded-lg">
+     <div className="w-full flex justify-center">
+     <div className="relative flex bg-secondary-bg rounded-full p-1 w-[200px] mx-auto">
+  {/* Animated background */}
+  <div 
+    className={`absolute top-1 left-1 h-[calc(100%-8px)] w-[calc(50%-4px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
+    style={{
+      transform: gameStatsToggleMode === 'Game' ? 'translateX(0)' : 'translateX(100%)'
+    }}
+  ></div>
+
+  {/* Buttons */}
+  <button 
+    onClick={() => setGameStatsToggleMode("Game")}
+    className="relative w-1/2 px-4 py-1 rounded-full text-sm font-medium text-white transition-all duration-300 z-10"
+  >
+    Game
+  </button>
+  <button 
+    onClick={() => setGameStatsToggleMode("Player")}
+    className="relative w-1/2 px-4 py-1 rounded-full text-sm font-medium text-white transition-all duration-300 z-10"
+  >
+    Players
+  </button>
+</div>
+
+</div>
+
+     
+          <div className="overflow-x-auto   mt-2">
+     {gameStatsToggleMode === 'Game' ?
+  <table className="w-full min-h-[20vh]  text-sm text-center  bg-opacity-60 text-white rounded-lg">
     <thead>
       <tr>
         <th className="py-2 px-4 text-left">Team</th>
         {quarters.map((q) => (
-          <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-cta font-bold" : ""}`}>
+          <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
             Q{q}
           </th>
         ))}
@@ -320,6 +350,60 @@ console.log('this is the gamedata object', gameData);
       </tr>
     </tbody>
   </table>
+     
+     :
+     
+     <div className="w-full h-auto min-h-[20vh]">
+<div className="flex overflow-x-auto space-x-3 px-2 py-1 ">
+  {(() => {
+    // 1️⃣ Aggregate home team player scores
+    const homePlayerScores = {};
+
+    gameData?.gameActions?.forEach(action => {
+      if (action.type === 'score' && action.team === 'home') {
+        const playerId = action.playerNumber || 'Unknown';
+        const playerName = action.playerName || playerId;
+
+        if (!homePlayerScores[playerId]) {
+          homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
+        }
+        homePlayerScores[playerId].points += action.points || 0;
+      }
+    });
+
+    // 2️⃣ Convert into display array
+    const playersArray = Object.values(homePlayerScores);
+
+    // 3️⃣ Handle case where no scores exist
+    if (playersArray.length === 0) {
+      return (
+        <div className="text-white text-center w-full py-4">
+          No player scores yet.
+        </div>
+      );
+    }
+
+    // 4️⃣ Render UI
+    return playersArray.map((player, index) => (
+      <div
+        key={index}
+        className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+      >
+        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
+          #{player.number}
+        </div>
+        <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
+        <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+      </div>
+    ));
+  })()}
+</div>
+
+
+   </div>
+   
+     
+}
 </div>
 
         </div>
