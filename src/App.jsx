@@ -173,12 +173,46 @@ const handleCloseMobileMenu = () => {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex space-x-6 text-gray-300 text-sm">
-              <a 
-              // onClick={() => { navigate('/') }}
-               className="hover:text-white">Request Account</a>
-              <a onClick={()=>{
-                // navigate('/liveGameHomeDashboard')
-              }} className="hover:text-white pb-1">LiveGames</a>
+        <ul class="menu menu-horizontal text-gray-300 px-1">
+      {/* <li>
+        <a href='https://www.instagram.com/james_bellew97/'>Live Games</a></li> */}
+        <li>
+        <a href='https://www.instagram.com/james_bellew97/'>Request an account</a></li>
+
+      {user ?
+      <li className=' border-l-2 z-50 border-l-primary-cta  rounded-md rounded-l-none'>
+        <details>
+          <summary className=' text-white'>{user.email}</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
+            <li><a>Settings</a></li>
+            <hr className='my-2'></hr>
+            <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
+          </ul>
+        </details>
+      </li>
+          : <>
+              <li className='   w-32 rounded-md '>
+        <details>
+          <summary>Guest</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
+            
+            <li   onClick={()=>{setShowAuthModal(true)}} className='bg-primary-danger rounded-md text-white'><a>Login</a></li>
+          </ul>
+        </details>
+      </li>
+          </>}
+          {showInstallButton && deferredPrompt && (
+  <li>
+    <button
+      onClick={handleInstallClick}
+      className="text-white bg-primary-cta font-medium rounded-md text-sm px-5 py-1 hover:bg-indigo-600"
+    >
+      Download App
+    </button>
+  </li>
+)}
+
+    </ul>
             </nav>
 
             {/* Mobile Hamburger - ✅ Use React onClick instead of DOM manipulation */}

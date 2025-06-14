@@ -150,7 +150,9 @@ const broadcastUpdatesText=[
   "Quarter End",
   "Half Time",
   "Stoppage",
-  "Overtime"
+  "🔥 Overtime 🔥",
+  "🔥 2nd Overtime 🔥",
+  "🔥 3rd Overtime 🔥",
 ]
 
 

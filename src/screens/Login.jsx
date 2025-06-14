@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.86 (12/06/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 1.89 (14/06/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is in Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,6 +33,11 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">13/06/2025 - Version 1.89</p>
+<li className="py-2">Livegame view animation for the wining team</li>
+<li className="py-2">Dynamically render the timer/gameclock. Does not show when game is scheduled/finsihed</li>
+<li className="py-2">Fixed 3pt percentage Math error in gamestats - livegameview</li>
+<li className="py-2">LivegameView can now handle OverTimes, for both actions and in gamestats</li>
 <p className="font-bold text-primary-danger text-sm">13/06/2025 - Version 1.88</p>
 <li className="py-2">Dynamically render the player stats section in the livegameview, for games that don't track player stats</li>
 <li className="py-2">Non minutes track edge case for displaying clock.</li>

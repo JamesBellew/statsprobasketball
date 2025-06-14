@@ -19,8 +19,9 @@ export default function LiveGameView() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
   const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
   const navigate = useNavigate();
-
-  const quarters=[1,2,3,4];
+  const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
+  const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
+  
   // for game slugs
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, "liveGames", slug), (docSnap) => {
@@ -136,6 +137,10 @@ const homeTeamName = gameData?.teamNames?.home;
 const awayTeamName = gameData?.teamNames?.away;
 const homeScores = getQuarterScores(gameData?.gameActions, "home");
 const awayScores = getQuarterScores(gameData?.gameActions, "away");
+// Compute winner boolean flags beforehand:
+const homeWon = gameData?.gameState && (gameData?.score?.home > gameData?.score?.away);
+const awayWon = gameData?.gameState && (gameData?.score?.away > gameData?.score?.home);
+
 console.log('this is the gamedata object', gameData);
 
 
@@ -154,6 +159,7 @@ console.log('this is the gamedata object', gameData);
   console.log(gameData);
 
   return (
+    
     <div className="h-screen  relative bg-secondary-bg text-white flex flex-col bg-[url('/assets/bg-pattern.svg')] min-h-screen bg-repeat bg-[length:150px_150px]">
 
       <header className="bg-primary-bg shadow w-full px-2 z-50">
@@ -224,76 +230,144 @@ console.log('this is the gamedata object', gameData);
         </div>
       </div>
 
-      <div className="w-full relative max-w-sm mx-auto text-white  text-center">
-        <div className="relative rounded-t-lg  bg-secondary-bg bg-opacity-60 h-auto pt-8 pb-4 w-full  grid grid-cols-8 items-center text-center">
-        <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
-  {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
-    // ✅ LIVE badge
-    <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-      <span className="bg-secondary-danger text-white text-xs uppercase px-3 py-1 rounded font-bold tracking-wide">
-        LIVE <span className="pl-1 animate-pulse text-xs font-extralight">⚪️</span>
-      </span>
+      <div className="w-full relative max-w-sm  mx-auto text-white  text-center">
+      <div className="relative rounded-t-lg bg-secondary-bg bg-opacity-60 h-auto pt-8 pb-4 w-full grid grid-cols-8 items-center text-center">
+  {/* LIVE or Scheduled */}
+  <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
+    {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
+      <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+        <span className="bg-secondary-danger text-white text-xs uppercase px-3 py-1 rounded font-bold tracking-wide">
+          LIVE <span className="pl-1 animate-pulse text-xs font-extralight">⚪️</span>
+        </span>
+      </div>
+    ) : (
+      <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+        <span className="bg-primary-bg text-white text-xs px-4 py-2 rounded font-medium">
+          {gameData?.scheduledStart?.date || "Scheduled"}
+        </span>
+      </div>
+    )}
+  </div>
+
+  {/* HOME SECTION */}
+  <div className="relative col-span-2 overflow-visible">
+    <style>{`
+      @keyframes confettiPulse {
+        0%, 100% { box-shadow: 0 0 10px #8B5CF6, 0 0 20px rgba(139, 92, 246, 0.4); }
+        50% { box-shadow: 0 0 20px #8B5CF6, 0 0 40px rgba(139, 92, 246, 0.2); }
+      }
+      @keyframes confettiBurst {
+        0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+        100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(720deg); }
+      }
+    `}</style>
+
+    <div
+      className={`w-16 h-16 border-2 border-white rounded-full bg-white mx-auto mt-2 ${homeWon ? "" : ""}`}
+      style={homeWon ? { animation: "confettiPulse 5s forwards" } : {}}
+    >
+      <img
+        src={gameData?.logos?.home || homeLogo}
+        className="w-full h-full rounded-full p-1"
+        alt="home logo"
+      />
     </div>
-  ) : (
-    // 🕒 Scheduled date fallback
-    <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-      <span className="bg-primary-bg text-white text-xs px-4 py-2 rounded font-medium">
-        {gameData?.scheduledStart?.date || "Scheduled"}
+    <div className="text-xl font-medium text-white">{gameData?.teamNames.home || "home"}</div>
+
+    {homeWon && (
+      [...Array(25)].map((_, i) => {
+        const angle = Math.random() * 360;
+        const distance = 150 + Math.random() * 100;
+        const x = `${Math.cos(angle) * distance}px`;
+        const y = `${Math.sin(angle) * distance}px`;
+        const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
+        return (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-full"
+            style={{
+              top: "50%",
+              left: "50%",
+              backgroundColor: colors[i % colors.length],
+              transform: "translate(-50%, -50%)",
+              "--x": x,
+              "--y": y,
+              animation: `confettiBurst 2s ${i * 0.1}s forwards`,
+            }}
+          />
+        );
+      })
+    )}
+  </div>
+
+  {/* SCORE SECTION */}
+  <div className="text-4xl col-span-4 flex-1 font-extrabold text-white ">
+    {gameData.quarter && !gameData.gameState && (
+      <span className="text-md text-gray-200 font-semibold text-base text-gray-400">
+        {gameData?.quarter > 4 ? `OT ${gameData.quarter - 4}` : `Q${gameData?.quarter ?? 1}`}
       </span>
+    )}
+    <br />
+    {gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}
+    
+    <p className="text-base text-gray-400">
+      {!gameData?.gameState ? (
+        gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
+          ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}`
+          : "--:--"
+      ) : (
+        // (gameClock?.minutesLeft === 10 || gameClock?.minutesLeft > 10) 
+        //   ? "" 
+        //   : (gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
+        //       ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}`
+              // :
+               "--:--"
+            // )
+      )}
+    </p>
+  </div>
+
+  {/* AWAY SECTION */}
+  <div className="relative col-span-2 overflow-visible">
+    <div
+      className={`w-16 h-16 border-2 border-primary-cta rounded-full bg-white mx-auto`}
+      style={awayWon ? { animation: "confettiPulse 5s forwards" } : {}}
+    >
+      <img
+        src={gameData?.logos?.away || opponentJersey}
+        className="w-full h-full rounded-full p-1"
+        alt="away logo"
+      />
     </div>
-  )}
+    <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.away || "Away"}</div>
+
+    {awayWon && (
+      [...Array(25)].map((_, i) => {
+        const angle = Math.random() * 360;
+        const distance = 150 + Math.random() * 100;
+        const x = `${Math.cos(angle) * distance}px`;
+        const y = `${Math.sin(angle) * distance}px`;
+        const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
+        return (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-full"
+            style={{
+              top: "50%",
+              left: "50%",
+              backgroundColor: colors[i % colors.length],
+              transform: "translate(-50%, -50%)",
+              "--x": x,
+              "--y": y,
+              animation: `confettiBurst 2s ${i * 0.1}s forwards`,
+            }}
+          />
+        );
+      })
+    )}
+  </div>
 </div>
 
-
-
-          <div className="relative col-span-2">
-            <div className="w-16 h-16 border-2 border-primary-danger rounded-full bg-white mx-auto">
-              <img
-                src={gameData?.logos?.home || homeLogo}
-                className="w-full h-full rounded-full p-1"
-                alt="home logo"
-              />
-            </div>
-            <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.home || "home"}</div>
-          </div>
-
-          <div className="text-4xl col-span-4 flex-1 font-extrabold text-white ">
-            {gameData.quarter && !gameData.gameState &&
-              <span className="text-md text-gray-200 font-semibold text-base text-gray-400">Q{gameData.quarter ?? "1"}</span>
-            }
-            <br />
-            {gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}
-            <p className="text-base text-gray-400">
-  {gameData?.gameState ? (
-    "FT" // ✅ Finished game
-  ) : gameData?.gameActions?.length > 0 ? (
-    gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
-      ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}` // ✅ Live clock
-      : "--:--" // Edge fallback
-  ) : (
-    "" // 🕒 Scheduled, no actions yet
-  )}
-</p>
-
-
-            {broadcastUpdate && (
-              <div className="text-xs mt-2 mx-5 bg-white/5 rounded-md p-3">
-                {broadcastUpdate}
-              </div>
-            )}
-          </div>
-
-          <div className="col-span-2">
-            <div className="w-16 h-16 rounded-full border-2 border-primary-cta bg-white mx-auto">
-              <img
-                src={gameData?.logos?.away || opponentJersey}
-                className="w-full h-full rounded-full p-1"
-                alt="away logo"
-              />
-            </div>
-            <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.away || "Away"}</div>
-          </div>
-        </div>
 
       {/*this is the game stats toggle section */}
       <div className="w-full h-auto bg-secondary-bg bg-opacity-65 text-sm rounded-b-lg flex flex-col items-center justify-center">
@@ -363,10 +437,11 @@ console.log('this is the gamedata object', gameData);
         <tr>
           <th className="py-2 px-4 text-left">Team</th>
           {quarters.map((q) => (
-            <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
-              Q{q}
-            </th>
-          ))}
+  <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
+    {q > 4 ? `OT ${q - 4}` : `Q${q}`}
+  </th>
+))}
+
         </tr>
       </thead>
       <tbody>
@@ -502,7 +577,9 @@ console.log('this is the gamedata object', gameData);
 },
 { 
   label: "3PT%", 
-  value: gameData?.stats?.threePointPct.current ?? 0, 
+  value: (gameData?.stats?.threePointMade + gameData?.stats?.threePointMissed) > 0 
+  ? Math.round((gameData?.stats?.threePointMade / (gameData?.stats?.threePointMade + gameData?.stats?.threePointMissed)) * 100)
+  : 0,
   made: gameData?.stats?.threePointMade ?? 0, 
   missed: gameData?.stats?.threePointMissed ?? 0 
 },
@@ -604,9 +681,12 @@ console.log('this is the gamedata object', gameData);
               {isNewQuarter && (
                 <div className="w-auto py-2 items-center mx-auto justify-center text-center">
                   <div className="w-full px-4 py-1 rounded-md shadow-sm">
-                    <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
-                      ── Q {action.quarter} ──
-                    </p>
+                  <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
+  {action?.quarter > 4 
+    ? `── OT ${action.quarter - 4} ──`
+    : `── Q ${action.quarter} ──`}
+</p>
+
                   </div>
                 </div>
               )}
