@@ -261,7 +261,7 @@ navigate("/")
 
 
   {/* Live Games */}
-  <h2 className="text-white text-xl font-semibold mb-6">Live Games</h2>
+  <h2 className="text-white text-xl font-semibold mb-6 border-l-2 pl-2 border-l-[#8B5CF6]">Live Games</h2>
 
   {loading ? (
     <div className="flex items-center justify-center py-20 col-span-full">
@@ -288,8 +288,20 @@ navigate("/")
       className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer rounded-lg overflow-hidden"
     >
       <div className="relative h-40 group transition-all w-full bg-black rounded-lg overflow-hidden">
-        <div className="absolute inset-0 clip-right  bg-slate-900  z-10" />
-        <div className="absolute inset-0 clip-left bg-secondary-cta z-20" />
+      {/* <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
+<div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> */}
+
+{/* <div className="absolute inset-0 clip-right bg-[#0F172A] z-10" />
+<div className="absolute inset-0 clip-left bg-[#F59E0B] z-20" /> */}
+
+{/* <div className="absolute inset-0 clip-right bg-[#1E293B] z-10" />
+<div className="absolute inset-0 clip-left bg-[#EF4444] z-20" /> */}
+{/* <div className="absolute inset-0 clip-right bg-[#0F172A] z-10" />
+<div className="absolute inset-0 clip-left bg-[#EC4899] z-20" /> */}
+<div className="absolute inset-0 clip-right bg-[#0A0A0A] z-10" />
+<div className="absolute inset-0 clip-left bg-[#8B5CF6] z-20" />
+
+
         <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
           <div className="w-14 h-14 rounded-full bg-white">
           <img
@@ -314,18 +326,6 @@ navigate("/")
     <p className="text-sm text-gray-200 text-center">Q{currentQ} </p>
   </div>
 </div>
-
-
-        {/* <div className="absolute inset-0 flex flex-col justify-center items-center z-40 group-hover:bg-opacity-0">
-        <p className="text-2xl font-bold text-white" style={{ textShadow: '0 0 4px rgba(0,0,0,0.7)' }}>
-  12 - 15
-</p>
-
-                <p className="text-sm   bottom-0 absolute mb-4 font-semibold my-autofont-extrabold px-4   text-center text-gray-100" style={{ textShadow: '0 0 4px rgba(0,0,0,0.7)' }}>
-                Q1<br></br> 4:15
-                </p>
-       
-              </div> */}
               
         <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-40">
           LIVE <span className="animate-pulse">⚪️</span>
@@ -334,6 +334,7 @@ navigate("/")
       <div className="text-center py-3 text-white font-medium">
         {game.teamNames?.home} @ {game.teamNames?.away}
       </div>
+      
     </a>
   )})
 )}
@@ -370,7 +371,7 @@ navigate("/")
 {/* Scheduled Games */}
 {scheduledGames.length > 0 && (
   <>
-    <h2 className="text-white text-xl font-semibold mb-6 mt-12">Scheduled Games</h2>
+    <h2 className="text-white text-xl font-semibold mb-6 mt-12 border-l-2 pl-2 border-l-[#4F46E5]">Scheduled Games</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {scheduledGames.map((game) => {
         const dateStr = game.scheduledStart?.date || "";
@@ -403,8 +404,8 @@ navigate("/")
             className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
             <div className="relative h-24 group w-full bg-black rounded-lg overflow-hidden">
-              <div className="absolute inset-0 clip-right bg-slate-900 z-10" />
-              <div className="absolute inset-0 clip-left bg-secondary-cta z-20" />
+            <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
+            <div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> 
 
               {/* Away logo */}
               <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
@@ -472,8 +473,8 @@ navigate("/")
             className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
             <div className="relative h-24 group transition-all w-full bg-black rounded-lg overflow-hidden">
-              <div className="absolute inset-0 clip-right bg-slate-900 z-10" />
-              <div className="absolute inset-0 clip-left bg-secondary-cta z-20" />
+            <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
+            <div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> 
 
               {/* Left logo */}
               <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
