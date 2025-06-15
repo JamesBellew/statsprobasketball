@@ -21,7 +21,7 @@ export default function LiveGameView() {
   const navigate = useNavigate();
   const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
   const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
-  
+  const [lineoutPlayers, setLineoutPlayers] = useState([]);
   // for game slugs
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, "liveGames", slug), (docSnap) => {
@@ -76,6 +76,11 @@ export default function LiveGameView() {
   
     return () => unsubscribeClock();
   }, [slug]);
+  useEffect(() => {
+    if (gameData?.lineout?.players) {
+      setLineoutPlayers(gameData.lineout.players);
+    }
+  }, [gameData]);
   
   // ✅ Remove the problematic DOM manipulation useEffect entirely
   // Replace with React event handlers
@@ -157,10 +162,20 @@ console.log('this is the gamedata object', gameData);
   
   if (!gameData) return <div className="text-center">Game not found or has ended.</div>;
   console.log(gameData);
+// Get full players array
+// const lineoutPlayers = gameData?.lineout?.players ?? [];
+
+// Get on-court jersey numbers (as strings)
+const onCourtPlayers = gameData?.onCourtPlayers ?? [];
+
+// Split into on-court and bench dynamically
+const onCourt = lineoutPlayers.filter(p => onCourtPlayers.includes(String(p.number)));
+const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
 
   return (
     
-    <div className="h-screen  relative bg-secondary-bg text-white flex flex-col bg-[url('/assets/bg-pattern.svg')] min-h-screen bg-repeat bg-[length:150px_150px]">
+    <div className={`${showStatsModal ? "h-auto" : "h-screen"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
+     min-h-screen bg-repeat bg-[length:150px_150px]`}>
 
       <header className="bg-primary-bg shadow w-full px-2 z-50">
         <div className="container mx-auto">
@@ -231,142 +246,121 @@ console.log('this is the gamedata object', gameData);
       </div>
 
       <div className="w-full relative max-w-sm  mx-auto text-white  text-center">
-      <div className="relative rounded-t-lg bg-secondary-bg bg-opacity-60 h-auto pt-8 pb-4 w-full grid grid-cols-8 items-center text-center">
-  {/* LIVE or Scheduled */}
-  <div className="absolute top-1 flex items-center justify-center mx-auto text-center w-full">
-    {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
-      <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-        <span className="bg-secondary-danger text-white text-xs uppercase px-3 py-1 rounded font-bold tracking-wide">
-          LIVE <span className="pl-1 animate-pulse text-xs font-extralight">⚪️</span>
-        </span>
-      </div>
-    ) : (
-      <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-        <span className="bg-primary-bg text-white text-xs px-4 py-2 rounded font-medium">
-          {gameData?.scheduledStart?.date || "Scheduled"}
-        </span>
-      </div>
-    )}
-  </div>
+      <div className="relative rounded-lg bg-secondary-bg bg-opacity-60 w-full py-3 px-4 flex flex-col items-center gap-1">
 
-  {/* HOME SECTION */}
-  <div className="relative col-span-2 overflow-visible">
-    <style>{`
-      @keyframes confettiPulse {
-        0%, 100% { box-shadow: 0 0 10px #8B5CF6, 0 0 20px rgba(139, 92, 246, 0.4); }
-        50% { box-shadow: 0 0 20px #8B5CF6, 0 0 40px rgba(139, 92, 246, 0.2); }
-      }
-      @keyframes confettiBurst {
-        0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-        100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(720deg); }
-      }
-    `}</style>
+{/* Inline keyframes */}
+<style>{`
+  @keyframes confettiPulse {
+    0%, 100% { box-shadow: 0 0 10px #8B5CF6, 0 0 20px rgba(139, 92, 246, 0.4); }
+    50% { box-shadow: 0 0 20px #8B5CF6, 0 0 40px rgba(139, 92, 246, 0.2); }
+  }
+  @keyframes confettiBurst {
+    0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(720deg); }
+  }
+`}</style>
 
+{/* LIVE or Scheduled */}
+<div className="absolute top-1 left-1/2 transform -translate-x-1/2">
+  {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
+    <span className="bg-secondary-danger text-white text-xs px-3 py-0.5 rounded font-bold">LIVE <span className="animate-pulse">⚪️</span></span>
+  ) : (
+    <span className="bg-primary-bg text-white text-xs px-3 py-0.5 rounded font-medium">{gameData?.scheduledStart?.date || "Scheduled"}</span>
+  )}
+</div>
+
+{/* Teams & Score Row */}
+<div className="flex justify-between items-center w-full">
+
+  {/* HOME */}
+  <div className="relative flex flex-col items-center w-1/3">
     <div
-      className={`w-16 h-16 border-2 border-white rounded-full bg-white mx-auto mt-2 ${homeWon ? "" : ""}`}
+      className={`w-12 h-12 border-2 border-primary-danger rounded-full bg-white mb-1 ${homeWon ? 'z-20' : ''}`}
       style={homeWon ? { animation: "confettiPulse 5s forwards" } : {}}
     >
-      <img
-        src={gameData?.logos?.home || homeLogo}
-        className="w-full h-full rounded-full p-1"
-        alt="home logo"
-      />
+      <img src={gameData?.logos?.home || homeLogo} className="w-full h-full rounded-full p-1" />
     </div>
-    <div className="text-xl font-medium text-white">{gameData?.teamNames.home || "home"}</div>
+    <p className="text-sm text-white">{gameData?.teamNames.home || "Home"}</p>
 
-    {homeWon && (
-      [...Array(25)].map((_, i) => {
-        const angle = Math.random() * 360;
-        const distance = 150 + Math.random() * 100;
-        const x = `${Math.cos(angle) * distance}px`;
-        const y = `${Math.sin(angle) * distance}px`;
-        const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
-        return (
-          <div
-            key={i}
-            className="absolute w-2 h-2 rounded-full"
-            style={{
-              top: "50%",
-              left: "50%",
-              backgroundColor: colors[i % colors.length],
-              transform: "translate(-50%, -50%)",
-              "--x": x,
-              "--y": y,
-              animation: `confettiBurst 2s ${i * 0.1}s forwards`,
-            }}
-          />
-        );
-      })
-    )}
+    {/* Confetti for Home */}
+    {homeWon && [...Array(20)].map((_, i) => {
+      const angle = Math.random() * 360;
+      const distance = 80 + Math.random() * 50;
+      const x = `${Math.cos(angle) * distance}px`;
+      const y = `${Math.sin(angle) * distance}px`;
+      const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
+      return (
+        <div
+          key={i}
+          className="absolute w-1.5 h-1.5 rounded-full"
+          style={{
+            top: "50%",
+            left: "50%",
+            backgroundColor: colors[i % colors.length],
+            transform: "translate(-50%, -50%)",
+            "--x": x,
+            "--y": y,
+            animation: `confettiBurst 2s ${i * 0.1}s forwards`,
+          }}
+        />
+      );
+    })}
   </div>
 
-  {/* SCORE SECTION */}
-  <div className="text-4xl col-span-4 flex-1 font-extrabold text-white ">
-    {gameData.quarter && !gameData.gameState && (
-      <span className="text-md text-gray-200 font-semibold text-base text-gray-400">
-        {gameData?.quarter > 4 ? `OT ${gameData.quarter - 4}` : `Q${gameData?.quarter ?? 1}`}
-      </span>
-    )}
-    <br />
-    {gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}
-    
-    <p className="text-base text-gray-400">
-      {!gameData?.gameState ? (
-        gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
-          ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}`
-          : "--:--"
-      ) : (
-        // (gameClock?.minutesLeft === 10 || gameClock?.minutesLeft > 10) 
-        //   ? "" 
-        //   : (gameClock?.minutesLeft !== undefined && gameClock?.secondsLeft !== undefined
-        //       ? `${gameClock.minutesLeft}:${String(gameClock.secondsLeft).padStart(2, "0")}`
-              // :
-               "--:--"
-            // )
-      )}
+  {/* SCORE */}
+  <div className="flex flex-col items-center mt-5 w-1/3">
+    <p className="text-2xl font-bold text-white">{gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}</p>
+    <p className="text-xs text-gray-300">
+      {gameData?.quarter > 4 ? `OT ${gameData.quarter - 4}` : `Q${gameData?.quarter ?? 1}`} 
+      &nbsp;|&nbsp;
+      {gameClock?.minutesLeft ?? "--"}:{String(gameClock?.secondsLeft ?? "00").padStart(2, "0")}
     </p>
+    {broadcastUpdate && (
+              <div className="text-xs mt-2 mx-5 bg-white/5 rounded-md p-3">
+                {broadcastUpdate}
+              </div>
+            )}
   </div>
 
-  {/* AWAY SECTION */}
-  <div className="relative col-span-2 overflow-visible">
+  {/* AWAY */}
+  <div className="relative flex flex-col items-center w-1/3">
     <div
-      className={`w-16 h-16 border-2 border-primary-cta rounded-full bg-white mx-auto`}
+      className={`w-12 h-12 border-2 border-primary-cta rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''}`}
       style={awayWon ? { animation: "confettiPulse 5s forwards" } : {}}
     >
-      <img
-        src={gameData?.logos?.away || opponentJersey}
-        className="w-full h-full rounded-full p-1"
-        alt="away logo"
-      />
+      <img src={gameData?.logos?.away || opponentJersey} className="w-full h-full rounded-full p-1" />
     </div>
-    <div className="text-xl font-medium text-gray-300">{gameData?.teamNames.away || "Away"}</div>
+    <p className="text-sm text-white">{gameData?.teamNames.away || "Away"}</p>
 
-    {awayWon && (
-      [...Array(25)].map((_, i) => {
-        const angle = Math.random() * 360;
-        const distance = 150 + Math.random() * 100;
-        const x = `${Math.cos(angle) * distance}px`;
-        const y = `${Math.sin(angle) * distance}px`;
-        const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
-        return (
-          <div
-            key={i}
-            className="absolute w-2 h-2 rounded-full"
-            style={{
-              top: "50%",
-              left: "50%",
-              backgroundColor: colors[i % colors.length],
-              transform: "translate(-50%, -50%)",
-              "--x": x,
-              "--y": y,
-              animation: `confettiBurst 2s ${i * 0.1}s forwards`,
-            }}
-          />
-        );
-      })
-    )}
+    {/* Confetti for Away */}
+    {awayWon && [...Array(20)].map((_, i) => {
+      const angle = Math.random() * 360;
+      const distance = 80 + Math.random() * 50;
+      const x = `${Math.cos(angle) * distance}px`;
+      const y = `${Math.sin(angle) * distance}px`;
+      const colors = ["#F43F5E", "#FACC15", "#22C55E", "#3B82F6", "#8B5CF6"];
+      return (
+        <div
+          key={i}
+          className="absolute w-1.5 h-1.5 rounded-full"
+          style={{
+            top: "50%",
+            left: "50%",
+            backgroundColor: colors[i % colors.length],
+            transform: "translate(-50%, -50%)",
+            "--x": x,
+            "--y": y,
+            animation: `confettiBurst 2s ${i * 0.1}s forwards`,
+          }}
+        />
+      );
+    })}
   </div>
+
 </div>
+</div>
+
 
 
       {/*this is the game stats toggle section */}
@@ -378,54 +372,72 @@ console.log('this is the gamedata object', gameData);
           showStatsModal ? 'translate-y-0' : '-translate-y-4'
         }`}>
 <div className="w-full flex justify-center">
-  <div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[300px]' : 'w-[220px]'} mx-auto`}>
-    
-    {/* Animated background */}
-    <div 
-      className={`absolute top-1 left-1 h-[calc(100%-8px)] ${trackingPlayers ? 'w-[calc(33.333%-4px)]' : 'w-[calc(50%-4px)]'} bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
-      style={{
-        transform: trackingPlayers 
-          ? (gameStatsToggleMode === 'Game' 
-              ? 'translateX(0%)' 
-              : gameStatsToggleMode === 'Player' 
-                ? 'translateX(100%)' 
-                : 'translateX(200%)')
-          : (gameStatsToggleMode === 'Game' 
-              ? 'translateX(0%)' 
-              : 'translateX(100%)') // <-- here was the issue for 2 buttons mode
-      }}
-    ></div>
+<div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[360px]' : 'w-[270px]'} mx-auto`}>
+  {/* Animated background */}
+  <div 
+    className={`absolute top-1 left-1 h-[calc(100%-8px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
+    style={{
+      width: trackingPlayers ? 'calc(25% - 4px)' : 'calc(33.333% - 4px)',
+      transform: trackingPlayers 
+        ? (gameStatsToggleMode === 'Game' 
+            ? 'translateX(0%)' 
+            : gameStatsToggleMode === 'Player' 
+              ? 'translateX(100%)' 
+              : gameStatsToggleMode === 'Stats' 
+                ? 'translateX(200%)' 
+                : 'translateX(300%)')
+        : (gameStatsToggleMode === 'Game' 
+            ? 'translateX(0%)' 
+            : gameStatsToggleMode === 'Stats' 
+              ? 'translateX(100%)' 
+              : 'translateX(200%)')
+    }}
+  ></div>
 
-    {/* Buttons */}
+  {/* Game */}
+  <button 
+    onClick={() => setGameStatsToggleMode("Game")}
+    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
+    }`}
+  >
+    Game
+  </button>
+
+  {/* Players */}
+  {trackingPlayers && (
     <button 
-      onClick={() => setGameStatsToggleMode("Game")}
-      className={`relative ${trackingPlayers ? 'w-1/3' : 'w-1/2'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-        gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
+      onClick={() => setGameStatsToggleMode("Player")}
+      className={`relative w-1/4 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+        gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
       }`}
     >
-      Game
+      Players
     </button>
+  )}
 
-    {trackingPlayers && (
-      <button 
-        onClick={() => setGameStatsToggleMode("Player")}
-        className={`relative w-1/3 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-          gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
-        }`}
-      >
-        Players
-      </button>
-    )}
+  {/* Stats */}
+  <button 
+    onClick={() => setGameStatsToggleMode("Stats")}
+    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
+    }`}
+  >
+    Stats
+  </button>
 
-    <button 
-      onClick={() => setGameStatsToggleMode("Stats")}
-      className={`relative ${trackingPlayers ? 'w-1/3' : 'w-1/2'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
-        gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
-      }`}
-    >
-      Stats
-    </button>
-  </div>
+  {/* Lineouts */}
+  <button 
+    onClick={() => setGameStatsToggleMode("Lineouts")}
+    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Lineouts" ? "text-white" : "text-gray-400"
+    }`}
+  >
+    Lineouts
+  </button>
+</div>
+
+
 </div>
 
 
@@ -542,7 +554,106 @@ console.log('this is the gamedata object', gameData);
         })()}
       </div>
     </div>
-  ) : (
+  ) 
+  : gameStatsToggleMode === 'Lineouts' ? (
+
+    // ✅ New Lineouts section
+<div className="relative w-full h-full aspect-square rounded-lg overflow-hidden">
+  <div className="h-[10%] relative w-full" data-section="team-nav-div">
+    <div className="flex h-full justify-center items-center w-full gap-4">
+      <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
+      <div className="relative group">
+        <button type="button" className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">
+          {awayTeamName || "Away"}
+        </button>
+        <div className="absolute top-2/2 w-auto h-auto overflow-y-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+          Release 3.0
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* On Court Section */}
+  <div className="h-[60%]  relative" data-section="on-court-5">
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="border-[1px] border-gray-400 w-[80%] h-[80%] rounded-b-full border-t-0 absolute top-0"></div>
+    </div>
+
+    {/* Filter the players */}
+    {(() => {
+      const onCourt = lineoutPlayers.filter(p => onCourtPlayers.includes(String(p.number)));
+      const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
+
+      return (
+        <>
+          {onCourt.length === 5 && (
+            <>
+              {/* Center */}
+              <div className="absolute top-[10%] left-[52%] transform -translate-x-1/2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                  #{onCourt[0].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1">{onCourt[0].name}</div>
+              </div>
+
+              {/* Left Wing */}
+              <div className="absolute top-[25%] left-[15%] transform -translate-x-1/2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                  #{onCourt[1].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1">{onCourt[1].name}</div>
+              </div>
+
+              {/* Right Wing */}
+              <div className="absolute top-[25%] right-[15%] transform translate-x-1/2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                  #{onCourt[2].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1">{onCourt[2].name}</div>
+              </div>
+
+              {/* Left Corner */}
+              <div className="absolute top-[60%] left-[35%] transform -translate-x-1/2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                  #{onCourt[3].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1">{onCourt[3].name}</div>
+              </div>
+
+              {/* Right Corner */}
+              <div className="absolute top-[60%] right-[35%] transform translate-x-1/2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                  #{onCourt[4].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1">{onCourt[4].name}</div>
+              </div>
+            </>
+          )}
+        </>
+      );
+    })()}
+  </div>
+
+  {/* Bench Section */}
+  <div className="h-[20%] relative border-t-[1px] border-t-gray-400 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
+    {lineoutPlayers
+      .filter(p => !onCourtPlayers.includes(String(p.number)))
+      .map((player, index) => (
+        <div key={index} className="flex flex-col items-center">
+          <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold">
+            #{player.number}
+          </div>
+          <div className="text-xs text-white mt-1 text-center">{player.name}</div>
+        </div>
+      ))}
+  </div>
+</div>
+
+
+
+
+  ) 
+  : (
 <div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
 
 <div className="flex justify-center items-center w-full gap-4">

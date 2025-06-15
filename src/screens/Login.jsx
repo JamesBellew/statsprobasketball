@@ -33,6 +33,11 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">13/06/2025 - Version 1.90 🔥</p>
+<li className="py-2">Live game ho dashboard handles OT's now</li>
+<li className="py-2">Scoreboard re-style UXUI</li>
+<li className="py-2">Fixed broadcast update not showing </li>
+<li className="py-2">Lineout section now added to in game live view</li>
 <p className="font-bold text-primary-danger text-sm">13/06/2025 - Version 1.89</p>
 <li className="py-2">Livegame view animation for the wining team</li>
 <li className="py-2">Dynamically render the timer/gameclock. Does not show when game is scheduled/finsihed</li>

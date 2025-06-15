@@ -628,6 +628,8 @@ away:opponentName
           date: selectedDate,
           time:selectedTime
         },
+        lineout:passedLineout,
+        onCourtPlayers:onCourtPlayers,
         stats:{
           
             fieldGoalPct: fgPercentage,

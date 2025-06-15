@@ -323,7 +323,10 @@ navigate("/")
         <div className="absolute inset-0 flex flex-col justify-center items-center z-40">
   <div className="bg-secondary-bg bg-opacity-50 px-6 py-2 rounded-md">
     <p className="text-2xl font-bold text-white">{homeScore} - {awayScore}</p>
-    <p className="text-sm text-gray-200 text-center">Q{currentQ} </p>
+    <p className="text-sm text-gray-200 text-center">
+  {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+</p>
+
   </div>
 </div>
               
@@ -437,13 +440,17 @@ navigate("/")
                   {game.teamNames?.home} vs {game.teamNames?.away} 
                 </p>
 </div>
+<div className="absolute top-0 left-2 group-hover:text-primary-bg  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
+              {/* {game.lastUpdated?.toDate().toLocaleDateString()} */}
+              {game.scheduledStart?.date}
+              </div>
               </div>
             </div>
 
-            <div className="text-center py-3 text-base bg-secondary-bg bg-opacity-10 text-white font-medium">
+            {/* <div className="text-center py-3 text-base bg-secondary-bg bg-opacity-10 text-white font-medium">
             <p className="text-sm mt-1 text-white">{displayDateTime}</p>
 
-            </div>
+            </div> */}
           </a>
         );
       })}
