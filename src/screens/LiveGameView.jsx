@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "../firebase"; // ✅ make sure it's 'firestore', not 'db'
 import homeLogo from '../assets/logo.jpg'
+import { useLocation } from 'react-router-dom';
 import opponentJersey from '../assets/jersey.webp'
 import { useNavigate } from "react-router-dom";
 
@@ -22,6 +23,10 @@ export default function LiveGameView() {
   const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
   const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
   const [lineoutPlayers, setLineoutPlayers] = useState([]);
+  const location = useLocation();
+  const isScheduled = Boolean(location?.state?.isScheduled);
+
+
   // for game slugs
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, "liveGames", slug), (docSnap) => {
@@ -107,7 +112,8 @@ export default function LiveGameView() {
       (action.playerNumber || action.playerName)
   );
 
-  
+  const trackingLineout = gameData?.lineout?.players?.length > 0;
+
   const handleOpenMobileMenu = () => {
     setIsMobileMenuOpen(true);
   };
@@ -147,7 +153,29 @@ const homeWon = gameData?.gameState && (gameData?.score?.home > gameData?.score?
 const awayWon = gameData?.gameState && (gameData?.score?.away > gameData?.score?.home);
 
 console.log('this is the gamedata object', gameData);
+//lets check to see if the game that is opened is a scheduled game or what and if so lets open the lineoutmenue on start
+// useEffect(()=>{
+//   // isScheduled ? console.log('jeje') : ""
+//   if(isScheduled){
+//     // lets check if there is a lineout passed
+//     // console.log('this is a scheduled game');
+//     if(lineoutPlayers.length >=1){
+//       console.log('we have a lineout to shows them in the scheduled game');
+//       setShowStatsModal(true)
+//       setGameStatsToggleMode("Lineouts")
+//     }else{
+    
+//       console.log('no lineout int he scheudled game');
+      
+//     }
 
+    
+//   }else{
+//     console.log('not a schefu;ed game');
+    
+//   }
+  
+//   },[])
 
   if (loading) {
     return (
@@ -157,7 +185,7 @@ console.log('this is the gamedata object', gameData);
           <p>Loading game...</p>
         </div>
       </div>
-    );
+    ); 
   }
   
   if (!gameData) return <div className="text-center">Game not found or has ended.</div>;
@@ -171,6 +199,8 @@ const onCourtPlayers = gameData?.onCourtPlayers ?? [];
 // Split into on-court and bench dynamically
 const onCourt = lineoutPlayers.filter(p => onCourtPlayers.includes(String(p.number)));
 const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
+
+
 
   return (
     
@@ -245,7 +275,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
         </div>
       </div>
 
-      <div className="w-full relative max-w-sm  mx-auto text-white  text-center">
+      <div className="w-full relative md:max-w-sm  mx-auto text-white  text-center">
       <div className="relative rounded-lg bg-secondary-bg bg-opacity-60 w-full py-3 px-4 flex flex-col items-center gap-1">
 
 {/* Inline keyframes */}
@@ -317,7 +347,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
       {gameClock?.minutesLeft ?? "--"}:{String(gameClock?.secondsLeft ?? "00").padStart(2, "0")}
     </p>
     {broadcastUpdate && (
-              <div className="text-xs mt-2 mx-5 bg-white/5 rounded-md p-3">
+              <div className=" mt-2 w-full text-xs bg-white/5 rounded-md p-3">
                 {broadcastUpdate}
               </div>
             )}
@@ -441,7 +471,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 </div>
 
 
-<div className="overflow-x-auto mt-2  min-h-[20vh]">
+<div className="overflow-x-auto mt-2 px-2  min-h-[20vh]">
   {gameStatsToggleMode === 'Game' ? (
     
     <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-lg">
@@ -523,7 +553,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
               key={index}
               className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
             >
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
+              <div className="w-12 h-12 bg-primary-danger/50 rounded-full flex items-center justify-center text-white text-md font-semibold">
                 {player.number}
               </div>
               <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
@@ -556,11 +586,12 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
     </div>
   ) 
   : gameStatsToggleMode === 'Lineouts' ? (
-
-    // ✅ New Lineouts section
+    trackingLineout ? (
+    
 <div className="relative w-full h-full aspect-square rounded-lg overflow-hidden">
+
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
-    <div className="flex h-full justify-center items-center w-full gap-4">
+    <div className="flex h-full justify-center items-center  w-full gap-4">
       <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
       <div className="relative group">
         <button type="button" className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">
@@ -573,10 +604,13 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
     </div>
   </div>
 
-  {/* On Court Section */}
-  <div className="h-[60%]  relative" data-section="on-court-5">
+
+
+  <div className="h-[60%]  border-t-2 border-t-white/5  relative" data-section="on-court-5">
     <div className="absolute inset-0 flex items-center justify-center">
-      <div className="border-[1px] border-gray-400 w-[80%] h-[80%] rounded-b-full border-t-0 absolute top-0"></div>
+      <div className="absolute w-1/5 h-[55%] border-[1px] border-white/10 top-0" data-section="key"></div>
+      <div className="absolute top-[55%] w-1/5 h-[20%] border-[1px] border-white/10 rounded-b-full" data-section="key-semi-circle" ></div>
+      <div className="border-[1px] border-white/10 w-[80%] h-[80%] rounded-b-full   absolute top-0"></div>
     </div>
 
     {/* Filter the players */}
@@ -589,8 +623,8 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
           {onCourt.length === 5 && (
             <>
               {/* Center */}
-              <div className="absolute top-[10%] left-[52%] transform -translate-x-1/2">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+              <div className="absolute top-[10%] left-[50%] transform -translate-x-1/2">
+                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[0].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[0].name}</div>
@@ -598,7 +632,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 
               {/* Left Wing */}
               <div className="absolute top-[25%] left-[15%] transform -translate-x-1/2">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[1].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[1].name}</div>
@@ -606,7 +640,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 
               {/* Right Wing */}
               <div className="absolute top-[25%] right-[15%] transform translate-x-1/2">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[2].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[2].name}</div>
@@ -614,15 +648,16 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 
               {/* Left Corner */}
               <div className="absolute top-[60%] left-[35%] transform -translate-x-1/2">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
-                  #{onCourt[3].number}
-                </div>
-                <div className="text-white text-sm text-center mt-1">{onCourt[3].name}</div>
-              </div>
+        <div className="w-10 h-10 bg-primary-danger rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10">
+          #{onCourt[3].number}
+        </div>
+        <div className="text-white text-sm text-center mt-1 opacity-80">{onCourt[3].name}</div>
+      </div>
+
 
               {/* Right Corner */}
               <div className="absolute top-[60%] right-[35%] transform translate-x-1/2">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black font-bold">
+                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[4].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[4].name}</div>
@@ -634,8 +669,9 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
     })()}
   </div>
 
-  {/* Bench Section */}
-  <div className="h-[20%] relative border-t-[1px] border-t-gray-400 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
+
+  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg
+ border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
     {lineoutPlayers
       .filter(p => !onCourtPlayers.includes(String(p.number)))
       .map((player, index) => (
@@ -648,11 +684,12 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
       ))}
   </div>
 </div>
-
-
-
-
-  ) 
+    )
+    :(
+      <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
+    )
+    )
+ 
   : (
 <div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
 

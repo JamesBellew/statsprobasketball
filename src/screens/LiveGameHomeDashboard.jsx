@@ -160,11 +160,11 @@ setTeamOptions([...allTeams]);
 //*USE EFFECTS END
 
 //*FUNCTION HANDLERS START
-const handleLiveGameClick = (link) => {
-  // Strip full URL to just the path
-  const relativePath = link.replace(/^.*\/\/[^/]+/, ''); // removes http://localhost:5174
-  navigate(relativePath);
+const handleLiveGameClick = (link, isScheduled) => {
+  const relativePath = link.replace(/^.*\/\/[^/]+/, '');
+  navigate(relativePath, { state: { isScheduled } });
 };
+
 
 
 //*FUNCTION HANDLERS END
@@ -284,7 +284,7 @@ navigate("/")
     return(
     <a
       key={game.id}
-      onClick={() => handleLiveGameClick(game.link)}
+      onClick={() => handleLiveGameClick(game.link, false)}
       className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer rounded-lg overflow-hidden"
     >
       <div className="relative h-40 group transition-all w-full bg-black rounded-lg overflow-hidden">
@@ -402,7 +402,7 @@ navigate("/")
 
         return (
           <a
-          onClick={() => handleLiveGameClick(game.link)}
+          onClick={() => handleLiveGameClick(game.link, true)}
             key={game.id}
             className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
@@ -475,7 +475,8 @@ navigate("/")
             : "Draw";
 
         return (
-          <a onClick={() => handleLiveGameClick(game.link)}
+          <a 
+          onClick={() => handleLiveGameClick(game.link, false)}
             key={game.id} 
             className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
           >
