@@ -27,6 +27,7 @@ export default function StartGame() {
   const [broadcastToggle,setBroadcastToggle] = useState(false)
   const [minutesTracked, setMinutesTracked] = useState(false);
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
+  const [awayTeamColor, setAwayTeamColor] = useState("#0b63fb");
   
   const handleGoBack = (e) => {
     e.preventDefault(); // Prevent form submission reload
@@ -105,6 +106,7 @@ const venueSelectedHandler=(venue)=>{
         createdAt: new Date(),
         isLive: true,
         slug, // Optional: makes it easier to reference later
+        awayTeamColor,
       });
     }else{
       console.log('no broadcast toggle');
@@ -123,6 +125,7 @@ const venueSelectedHandler=(venue)=>{
       passedTeamName,
       broadcast: broadcastToggle, // Pass this if needed later
       slug, // You may want to keep this around too
+      awayTeamColor,
     };
   
     navigate("/ingame", { state: gameState });
@@ -179,6 +182,35 @@ Back</button>
             id="small-input"
             className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           />
+
+          {/* Away Team Color Picker */}
+          <div className="mt-4">
+            <label className="block mb-2 text-sm font-medium text-gray-200">Away Team Color</label>
+            <div className="flex space-x-2">
+              {[
+                "#0b63fb", // blue (default)
+                "#F43F5E", // pink/red
+                "#FACC15", // yellow
+                "#22C55E", // green
+                "#8B5CF6"  // purple
+              ].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${
+                    awayTeamColor === color ? 'border-white scale-110' : 'border-gray-400'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setAwayTeamColor(color)}
+                  aria-label={`Select color ${color}`}
+                >
+                  {awayTeamColor === color && (
+                    <svg className="w-4 h-4 mx-auto my-auto text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Toggle Section for Player Stats */}
           <div className="grid   grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">

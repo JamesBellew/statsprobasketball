@@ -49,6 +49,7 @@ const ActionButtons = ({
                     x: null,
                     y: null,
                     timestamp: Date.now(),
+                    team: "home",
                   },
                 ]);
                 setAlertMessage(`${action.name} recorded!`);

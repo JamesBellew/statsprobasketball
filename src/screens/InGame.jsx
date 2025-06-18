@@ -158,6 +158,8 @@ const broadcastUpdatesText=[
 
 const locationGameState = location.state || {};
 const [homeTeamName, setHomeTeamName] = useState("Home");
+// Add state for awayTeamColor
+const [awayTeamColor, setAwayTeamColor] = useState(savedGame?.awayTeamColor || "#0b63fb");
 
 
 
@@ -1072,6 +1074,7 @@ const handleSaveGame = async () => {
     synced: !!user,
     broadcast,
     slug,
+    awayTeamColor, // <-- Save the away team color
   };
 
   try {

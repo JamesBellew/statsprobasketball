@@ -299,7 +299,7 @@ navigate("/")
 {/* <div className="absolute inset-0 clip-right bg-[#0F172A] z-10" />
 <div className="absolute inset-0 clip-left bg-[#EC4899] z-20" /> */}
 <div className="absolute inset-0 clip-right bg-[#0A0A0A] z-10" />
-<div className="absolute inset-0 clip-left bg-[#8B5CF6] z-20" />
+<div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#8B5CF6' }} />
 
 
         <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
@@ -408,7 +408,7 @@ navigate("/")
           >
             <div className="relative h-24 group w-full bg-black rounded-lg overflow-hidden">
             <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
-            <div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> 
+            <div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#4F46E5' }} /> 
 
               {/* Away logo */}
               <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
@@ -482,7 +482,7 @@ navigate("/")
           >
             <div className="relative h-24 group transition-all w-full bg-black rounded-lg overflow-hidden">
             <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
-            <div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> 
+            <div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#4F46E5' }} /> 
 
               {/* Left logo */}
               <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">

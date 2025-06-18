@@ -200,7 +200,8 @@ const onCourtPlayers = gameData?.onCourtPlayers ?? [];
 const onCourt = lineoutPlayers.filter(p => onCourtPlayers.includes(String(p.number)));
 const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
 
-
+// Get the away team color from gameData, fallback to #0b63fb
+const awayTeamColor = gameData?.awayTeamColor || '#0b63fb';
 
   return (
     
@@ -356,8 +357,8 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
   {/* AWAY */}
   <div className="relative flex flex-col items-center w-1/3">
     <div
-      className={`w-12 h-12 border-2 border-primary-cta rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''}`}
-      style={awayWon ? { animation: "confettiPulse 5s forwards" } : {}}
+      className={`w-12 h-12 border-2 border-[${awayTeamColor}]  rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''}`}
+      style={ awayWon ? { animation: "confettiPulse 5s forwards", borderColor: awayTeamColor }  : {borderColor: awayTeamColor}}
     >
       <img src={gameData?.logos?.away || opponentJersey} className="w-full h-full rounded-full p-1" />
     </div>
@@ -695,15 +696,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
   <div className="w-full h-auto flex flex-col gap-3 px-4 ">
   
   {/* Team Headers */}
-  <div className="flex justify-between items-center w-full px-2">
-    <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger px-2">
-      {homeTeamName || "Home"}
-    </p>
-    <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-cta px-2">
-      {awayTeamName || "Away"}
-    </p>
-  </div>
-  
+
   {/* Calculate stats for both teams */}
   {(() => {
     // Initialize stats objects
@@ -732,70 +725,48 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
     };
   
     // Process game actions to calculate stats
-// In the gameActions forEach loop, replace the action processing with:
-// In the gameActions forEach loop, replace the action processing with:
-gameData?.gameActions?.forEach(action => {
-  const statsObj = action.team === 'home' ? homeStats : awayStats;
-  
-  if (action.type === 'score') {
-    if (action.points > 0) {
-      // Handle actual scoring
-      if (action.points === 1) {
-        statsObj.freeThrowMade++;
-      } else if (action.points === 2) {
-        statsObj.fieldGoalMade++;
-      } else if (action.points === 3) {
-        statsObj.threePointMade++;
+    gameData?.gameActions?.forEach(action => {
+      if (!action.team) return; // Only process actions with a team property
+      const statsObj = action.team === 'home' ? homeStats : awayStats;
+
+      // Defensive stats (Block, Steal, Turnover)
+      const actionLabel = (action.actionType || action.actionName || '').toLowerCase();
+      if (["block", "steal", "t/o", "turnover"].some(s => actionLabel.includes(s))) {
+        if (actionLabel.includes("block")) statsObj.blocks++;
+        if (actionLabel.includes("steal")) statsObj.steals++;
+        if (actionLabel.includes("t/o") || actionLabel.includes("turnover")) statsObj.turnovers++;
       }
-    } else if (action.points === 0 && action.actionName) {
-      // Handle defensive stats with 0 points
-      const actionType = action.actionName.toLowerCase();
-      if (actionType.includes('steal')) {
-        statsObj.steals++;
-      } else if (actionType.includes('block')) {
-        statsObj.blocks++;
-      } else if (actionType.includes('turnover')) {
-        statsObj.turnovers++;
+
+      // Scoring
+      if (action.type === 'score') {
+        if (action.points > 0) {
+          if (action.points === 1) statsObj.freeThrowMade++;
+          else if (action.points === 2) statsObj.fieldGoalMade++;
+          else if (action.points === 3) statsObj.threePointMade++;
+        }
+        // Misses for 'score' type with points === 0
+        if (action.points === 0 && action.actionName) {
+          const missLabel = action.actionName.toLowerCase();
+          if (missLabel.includes('ft miss')) statsObj.freeThrowMissed++;
+          else if (missLabel.includes('2pt miss')) statsObj.fieldGoalMissed++;
+          else if (missLabel.includes('3pt miss')) statsObj.threePointMissed++;
+        }
       }
-    }
-  }
-  
-  // Handle miss actions and other action types
-  if (action.type === 'action' || action.actionType) {
-    const actionType = (action.actionType || action.actionName || '').toLowerCase();
-    
-    if (actionType.includes('ft miss')) {
-      statsObj.freeThrowMissed++;
-    } else if (actionType.includes('2pt miss')) {
-      statsObj.fieldGoalMissed++;
-    } else if (actionType.includes('3pt miss')) {
-      statsObj.threePointMissed++;
-    } else if (actionType.includes('turnover')) {
-      statsObj.turnovers++;
-    } else if (actionType.includes('steal')) {
-      statsObj.steals++;
-    } else if (actionType.includes('block')) {
-      statsObj.blocks++;
-    }
-  } else if (action.points === 0 && action.actionName) {
-    // Handle defensive stats and misses with 0 points
-    const actionType = action.actionName.toLowerCase();
-    if (actionType.includes('steal')) {
-      statsObj.steals++;
-    } else if (actionType.includes('block')) {
-      statsObj.blocks++;
-    } else if (actionType.includes('turnover')) {
-      statsObj.turnovers++;
-    } else if (actionType.includes('2pt miss')) {
-      statsObj.fieldGoalMissed++;
-    } else if (actionType.includes('3pt miss')) {
-      statsObj.threePointMissed++;
-    } else if (actionType.includes('ft miss')) {
-      statsObj.freeThrowMissed++;
-    }
-  }
-  
-});
+
+      // Misses
+      if (action.type === 'action' || action.actionType) {
+        const missLabel = (action.actionType || action.actionName || '').toLowerCase();
+        if (missLabel.includes('ft miss')) statsObj.freeThrowMissed++;
+        else if (missLabel.includes('2pt miss')) statsObj.fieldGoalMissed++;
+        else if (missLabel.includes('3pt miss')) statsObj.threePointMissed++;
+      }
+
+      // Always count FT Score and FT Miss for home team by action name/type
+      if (action.team === 'home') {
+        if (actionLabel.includes('ft score')) statsObj.freeThrowMade++;
+        if (actionLabel.includes('ft miss')) statsObj.freeThrowMissed++;
+      }
+    });
   
     // Calculate percentages
     const calculatePercentage = (made, missed) => {
@@ -835,53 +806,50 @@ gameData?.gameActions?.forEach(action => {
       
         {/* Shooting Stats with Simple Horizontal Bar Charts */}
         {statCategories.map((stat, i) => (
-          <>
-                     {/* Center label */}
+          <div className="">
+                     {/* Stat label row with percentages */}
               
-          <div key={i} className="">
-          <div className="mx-4 text-white text-xs  ">
-                {stat.label.replace(/Field Goals|3-Pointers|Free Throws/, (match) => {
-                  if (match === "Field Goals") return "Field Goals";
-                  if (match === "3-Pointers") return "3-Pointers";
-                  if (match === "Free Throws") return "Free Throws";
-                  return match;
-                })}
-              </div>
-            <div className="flex  items-center justify-between h-auto w-full">
-              {/* Home team value */}
-              <div className="text-white font-bold text-base w-8 text-left">
-                {stat.home.made}/{stat.home.total}
-              </div>
-              
-              {/* Home team bar (extends right from center) */}
-              <div className="flex-1 mx-1 flex justify-end">
-                <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
-                  <div 
-                    className="bg-primary-danger rounded-s-lg h-3 transition-all duration-700 absolute right-0" 
-                    style={{ width: `${Math.max(stat.home.pct, 5)}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-   
-              
-              {/* Away team bar (extends left from center) */}
-              <div className="flex-1 mx-1 flex justify-start">
-                <div className="w-full bg-gray-700 rounded-e-lg h-3 relative">
-                  <div 
-                    className="bg-primary-cta rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
-                    style={{ width: `${Math.max(stat.away.pct, 5)}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              {/* Away team value */}
-              <div className="text-white font-bold text-base w-8 text-right">
-                {stat.away.made}/{stat.away.total}
+          <div key={i} className="flex items-center  justify-between  text-xs mb-0.5">
+            <span className="text-primary-danger font-semibold min-w-[32px] text-left">{stat.home.pct}%</span>
+            <span className="text-white text-xs font-medium flex-1 text-center">{stat.label.replace(/Field Goals|3-Pointers|Free Throws/, (match) => {
+              if (match === "Field Goals") return "Field Goals";
+              if (match === "3-Pointers") return "3-Pointers";
+              if (match === "Free Throws") return "Free Throws";
+              return match;
+            })}</span>
+            <span style={{ color: awayTeamColor }} className="font-semibold min-w-[32px] text-right">{stat.away.pct}%</span>
+          </div>
+          {/* Numbers and bar row */}
+          <div className="flex items-center justify-between h-auto w-full">
+            {/* Home team value */}
+            <div className="text-white font-bold text-base w-12 text-left flex items-center">
+              <span>{stat.home.made}/{stat.home.total}</span>
+            </div>
+            {/* Home team bar (extends right from center) */}
+            <div className="flex-1 mx-1 flex justify-end">
+              <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
+                <div 
+                  className="bg-primary-danger rounded-s-lg h-3 transition-all duration-700 absolute right-0" 
+                  style={{ width: `${Math.max(stat.home.pct, 5)}%` }}
+                ></div>
               </div>
             </div>
+            {/* Away team bar (extends left from center) */}
+            <div className="flex-1 mx-1 flex justify-start">
+              <div className="w-full bg-gray-700 rounded-e-lg h-3 relative">
+                <div 
+                  style={{ backgroundColor: awayTeamColor, width: `${Math.max(stat.away.pct, 5)}%` }} className="rounded-e-lg h-3 transition-all
+                   duration-700 absolute left-0"
+        
+                ></div>
+              </div>
+            </div>
+            {/* Away team value */}
+            <div  className="text-white font-bold text-base w-12 text-right flex items-center justify-end">
+              <span>{stat.away.made}/{stat.away.total}</span>
+            </div>
           </div>
-          </>
+          </div>
         ))}
   
         {/* Other Stats with Simple Horizontal Bars */}
@@ -927,8 +895,8 @@ gameData?.gameActions?.forEach(action => {
                   <div className="flex-1 mx-1 flex justify-start">
                     <div className="w-full rounded-e-lg bg-gray-700 h-3 relative">
                       <div 
-                        className="bg-primary-cta rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
-                        style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.awayValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
+                        className=" rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
+                        style={{ backgroundColor: awayTeamColor,width: `${stat.homeValue + stat.awayValue > 0 ? (stat.awayValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
                       ></div>
                     </div>
                   </div>
@@ -1044,7 +1012,9 @@ gameData?.gameActions?.forEach(action => {
                         </div>
                       </div>
                     ) : (
-                      <div className="timeline-end w-36 border-r-2 border-r-primary-cta timeline-box bg-secondary-bg text-white border border-gray-700">
+                      <div 
+                      
+                      style={{borderRightColor: awayTeamColor}} className="timeline-end w-36 border-r-2  timeline-box bg-secondary-bg text-white border border-gray-700">
                         <p className="text-xs text-gray-400 mb-1">{timeLabel}</p>
                         <p className="font-semibold">
                           {playerText} {nameText} + {action.points}
