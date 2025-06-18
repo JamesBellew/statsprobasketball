@@ -14,7 +14,7 @@ const Scoreboard = ({
   ravensLogo
 }) => {
   return (
-    <motion.div className="w-[45%] px-7 h-full text-center flex items-center rounded-lg bg-secondary-bg">
+    <motion.div className="w-[50%] px-7 h-full text-center flex items-center rounded-lg bg-secondary-bg">
       <p className="text-center text-nd capitalize mx-auto flex items-center">
         
         {/* Opponent Team */}

@@ -268,7 +268,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
             }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Live Games</a>
           </nav>
           <div>
-          <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
+          <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">
      StatsPro | Basketball<br></br> Beta
       </div>
           </div>
@@ -276,7 +276,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
       </div>
 
       <div className="w-full relative md:max-w-sm  mx-auto text-white  text-center">
-      <div className="relative rounded-lg bg-secondary-bg bg-opacity-60 w-full py-3 px-4 flex flex-col items-center gap-1">
+      <div className="relative rounded-s-lg bg-secondary-bg bg-opacity-60 w-full py-3 px-4 flex flex-col items-center gap-1">
 
 {/* Inline keyframes */}
 <style>{`
@@ -474,7 +474,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 <div className="overflow-x-auto mt-2 px-2  min-h-[20vh]">
   {gameStatsToggleMode === 'Game' ? (
     
-    <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-lg">
+    <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-s-lg">
       <thead>
         <tr>
           <th className="py-2 px-4 text-left">Team</th>
@@ -514,13 +514,13 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 <div className="relative group">
     <button 
       type="button" 
-      className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center px-2 py-2"
+      className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center px-2 py-2"
     >
  {awayTeamName || "Away"}
     </button>
     <div 
       className="absolute  top-2/2 w-auto h-auto  overflow-y-auto -translate-y-1/2 ml-2 
-                 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 
+                 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 
                  whitespace-nowrap opacity-0 group-hover:opacity-100 
                  transition-opacity duration-300 z-50"
     >
@@ -551,7 +551,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
           return sortedPlayersArray.map((player, index) => (
             <div
               key={index}
-              className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+              className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
             >
               <div className="w-12 h-12 bg-primary-danger/50 rounded-full flex items-center justify-center text-white text-md font-semibold">
                 {player.number}
@@ -572,7 +572,7 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
           return playersArray.map((player, index) => (
             <div
               key={index}
-              className="min-w-[100px] bg-secondary-bg rounded-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+              className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
             >
               <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
                 #{player.number}
@@ -588,16 +588,16 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
   : gameStatsToggleMode === 'Lineouts' ? (
     trackingLineout ? (
     
-<div className="relative w-full h-full aspect-square rounded-lg overflow-hidden">
+<div className="relative w-full h-full aspect-square rounded-s-lg overflow-hidden">
 
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
     <div className="flex h-full justify-center items-center  w-full gap-4">
       <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
       <div className="relative group">
-        <button type="button" className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center">
+        <button type="button" className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center">
           {awayTeamName || "Away"}
         </button>
-        <div className="absolute top-2/2 w-auto h-auto overflow-y-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+        <div className="absolute top-2/2 w-auto h-auto overflow-y-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
           Release 3.0
         </div>
       </div>
@@ -689,82 +689,268 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
       <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
     )
     )
- 
-  : (
-<div className="w-full min-h-[20vh] flex flex-col gap-3 px-4 py-1">
 
-<div className="flex justify-center items-center w-full gap-4">
-  <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">
-    {homeTeamName || "Home"}
-  </p>
-  <div className="relative group">
-    <button 
-      type="button" 
-      className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center px-2 py-2"
-    >
- {awayTeamName || "Away"}
-    </button>
-    <div 
-      className="absolute  top-2/2 w-auto h-auto  overflow-y-auto -translate-y-1/2 ml-2 
-                 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 
-                 whitespace-nowrap opacity-0 group-hover:opacity-100 
-                 transition-opacity duration-300 z-50"
-    >
-      Coming<br></br>
-      Release 2.0
-    </div>
-  </div>
-</div>
 
-{[
- { 
-  label: "FG%", 
-  value: gameData?.stats?.fieldGoalPct ?? 0, 
-  made: gameData?.stats?.fieldGoalMade ?? 0, 
-  missed: gameData?.stats?.fieldGoalMissed ?? 0 
-},
-{ 
-  label: "3PT%", 
-  value: (gameData?.stats?.threePointMade + gameData?.stats?.threePointMissed) > 0 
-  ? Math.round((gameData?.stats?.threePointMade / (gameData?.stats?.threePointMade + gameData?.stats?.threePointMissed)) * 100)
-  : 0,
-  made: gameData?.stats?.threePointMade ?? 0, 
-  missed: gameData?.stats?.threePointMissed ?? 0 
-},
-{ 
-  label: "FT%", 
-  value: gameData?.stats?.freeThrowPct ?? 0, 
-  made: gameData?.stats?.freeThrowMade ?? 0, 
-  missed: gameData?.stats?.freeThrowMissed ?? 0 
-}
-].map((stat, i) => (
-  <div key={i}>
-    <div className="flex w-full justify-between text-white text-sm mb-1">
-      <span>{stat.label} <span className="mx-1">-</span><span className="mx-2 text-gray-300 justify-end">{stat.made}/{stat.made + stat.missed}</span></span>
-      <span>{stat.value}%</span>
-    </div>
-    <div className="w-full bg-white/10 rounded-full h-2">
-      <div className="bg-primary-danger transition-all duration-700  h-2 rounded-full" style={{ width: `${stat.value}%` }}></div>
-    </div>
-  </div>
-))}
-
-<div className="grid grid-cols-3 gap-2 text-white text-center text-sm ">
-  <div className="bg-secondary-bg px-2 rounded-lg">
-    Blocks<br/><span className="font-bold">{gameData?.stats?.blocks ?? 0}</span>
-  </div>
-  <div className="bg-secondary-bg px-2 rounded-lg">
-    Steals<br/><span className="font-bold">{gameData?.stats?.steals ?? 0}</span>
-  </div>
-  <div className="bg-secondary-bg px-2 rounded-lg">
-    Turnovers<br/><span className="font-bold">{gameData?.stats?.turnovers ?? 0}</span>
-  </div>
-</div>
-
-</div>
-
+: (
+  <div className="w-full h-auto flex flex-col gap-3 px-4 ">
   
-  )}
+  {/* Team Headers */}
+  <div className="flex justify-between items-center w-full px-2">
+    <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger px-2">
+      {homeTeamName || "Home"}
+    </p>
+    <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-cta px-2">
+      {awayTeamName || "Away"}
+    </p>
+  </div>
+  
+  {/* Calculate stats for both teams */}
+  {(() => {
+    // Initialize stats objects
+    const homeStats = {
+      fieldGoalMade: 0,
+      fieldGoalMissed: 0,
+      threePointMade: 0,
+      threePointMissed: 0,
+      freeThrowMade: 0,
+      freeThrowMissed: 0,
+      blocks: 0,
+      steals: 0,
+      turnovers: 0
+    };
+  
+    const awayStats = {
+      fieldGoalMade: 0,
+      fieldGoalMissed: 0,
+      threePointMade: 0,
+      threePointMissed: 0,
+      freeThrowMade: 0,
+      freeThrowMissed: 0,
+      blocks: 0,
+      steals: 0,
+      turnovers: 0
+    };
+  
+    // Process game actions to calculate stats
+// In the gameActions forEach loop, replace the action processing with:
+// In the gameActions forEach loop, replace the action processing with:
+gameData?.gameActions?.forEach(action => {
+  const statsObj = action.team === 'home' ? homeStats : awayStats;
+  
+  if (action.type === 'score') {
+    if (action.points > 0) {
+      // Handle actual scoring
+      if (action.points === 1) {
+        statsObj.freeThrowMade++;
+      } else if (action.points === 2) {
+        statsObj.fieldGoalMade++;
+      } else if (action.points === 3) {
+        statsObj.threePointMade++;
+      }
+    } else if (action.points === 0 && action.actionName) {
+      // Handle defensive stats with 0 points
+      const actionType = action.actionName.toLowerCase();
+      if (actionType.includes('steal')) {
+        statsObj.steals++;
+      } else if (actionType.includes('block')) {
+        statsObj.blocks++;
+      } else if (actionType.includes('turnover')) {
+        statsObj.turnovers++;
+      }
+    }
+  }
+  
+  // Handle miss actions and other action types
+  if (action.type === 'action' || action.actionType) {
+    const actionType = (action.actionType || action.actionName || '').toLowerCase();
+    
+    if (actionType.includes('ft miss')) {
+      statsObj.freeThrowMissed++;
+    } else if (actionType.includes('2pt miss')) {
+      statsObj.fieldGoalMissed++;
+    } else if (actionType.includes('3pt miss')) {
+      statsObj.threePointMissed++;
+    } else if (actionType.includes('turnover')) {
+      statsObj.turnovers++;
+    } else if (actionType.includes('steal')) {
+      statsObj.steals++;
+    } else if (actionType.includes('block')) {
+      statsObj.blocks++;
+    }
+  } else if (action.points === 0 && action.actionName) {
+    // Handle defensive stats and misses with 0 points
+    const actionType = action.actionName.toLowerCase();
+    if (actionType.includes('steal')) {
+      statsObj.steals++;
+    } else if (actionType.includes('block')) {
+      statsObj.blocks++;
+    } else if (actionType.includes('turnover')) {
+      statsObj.turnovers++;
+    } else if (actionType.includes('2pt miss')) {
+      statsObj.fieldGoalMissed++;
+    } else if (actionType.includes('3pt miss')) {
+      statsObj.threePointMissed++;
+    } else if (actionType.includes('ft miss')) {
+      statsObj.freeThrowMissed++;
+    }
+  }
+  
+});
+  
+    // Calculate percentages
+    const calculatePercentage = (made, missed) => {
+      const total = made + missed;
+      return total > 0 ? Math.round((made / total) * 100) : 0;
+    };
+  
+    const homeFieldGoalPct = calculatePercentage(homeStats.fieldGoalMade, homeStats.fieldGoalMissed);
+    const awayFieldGoalPct = calculatePercentage(awayStats.fieldGoalMade, awayStats.fieldGoalMissed);
+    
+    const homeThreePointPct = calculatePercentage(homeStats.threePointMade, homeStats.threePointMissed);
+    const awayThreePointPct = calculatePercentage(awayStats.threePointMade, awayStats.threePointMissed);
+    
+    const homeFreeThrowPct = calculatePercentage(homeStats.freeThrowMade, homeStats.freeThrowMissed);
+    const awayFreeThrowPct = calculatePercentage(awayStats.freeThrowMade, awayStats.freeThrowMissed);
+  
+    const statCategories = [
+      {
+        label: "Field Goals",
+        home: { pct: homeFieldGoalPct, made: homeStats.fieldGoalMade, total: homeStats.fieldGoalMade + homeStats.fieldGoalMissed },
+        away: { pct: awayFieldGoalPct, made: awayStats.fieldGoalMade, total: awayStats.fieldGoalMade + awayStats.fieldGoalMissed }
+      },
+      {
+        label: "3-Pointers",
+        home: { pct: homeThreePointPct, made: homeStats.threePointMade, total: homeStats.threePointMade + homeStats.threePointMissed },
+        away: { pct: awayThreePointPct, made: awayStats.threePointMade, total: awayStats.threePointMade + awayStats.threePointMissed }
+      },
+      {
+        label: "Free Throws",
+        home: { pct: homeFreeThrowPct, made: homeStats.freeThrowMade, total: homeStats.freeThrowMade + homeStats.freeThrowMissed },
+        away: { pct: awayFreeThrowPct, made: awayStats.freeThrowMade, total: awayStats.freeThrowMade + awayStats.freeThrowMissed }
+      }
+    ];
+  
+    return (
+      <>
+      
+        {/* Shooting Stats with Simple Horizontal Bar Charts */}
+        {statCategories.map((stat, i) => (
+          <>
+                     {/* Center label */}
+              
+          <div key={i} className="">
+          <div className="mx-4 text-white text-xs  ">
+                {stat.label.replace(/Field Goals|3-Pointers|Free Throws/, (match) => {
+                  if (match === "Field Goals") return "Field Goals";
+                  if (match === "3-Pointers") return "3-Pointers";
+                  if (match === "Free Throws") return "Free Throws";
+                  return match;
+                })}
+              </div>
+            <div className="flex  items-center justify-between h-auto w-full">
+              {/* Home team value */}
+              <div className="text-white font-bold text-base w-8 text-left">
+                {stat.home.made}/{stat.home.total}
+              </div>
+              
+              {/* Home team bar (extends right from center) */}
+              <div className="flex-1 mx-1 flex justify-end">
+                <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
+                  <div 
+                    className="bg-primary-danger rounded-s-lg h-3 transition-all duration-700 absolute right-0" 
+                    style={{ width: `${Math.max(stat.home.pct, 5)}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+   
+              
+              {/* Away team bar (extends left from center) */}
+              <div className="flex-1 mx-1 flex justify-start">
+                <div className="w-full bg-gray-700 rounded-e-lg h-3 relative">
+                  <div 
+                    className="bg-primary-cta rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
+                    style={{ width: `${Math.max(stat.away.pct, 5)}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              {/* Away team value */}
+              <div className="text-white font-bold text-base w-8 text-right">
+                {stat.away.made}/{stat.away.total}
+              </div>
+            </div>
+          </div>
+          </>
+        ))}
+  
+        {/* Other Stats with Simple Horizontal Bars */}
+        <div className="">
+          {/* <div className="text-center text-white text-sm font-medium">Other Stats</div> */}
+          
+          {[
+            { label: "Blocks", homeValue: homeStats.blocks, awayValue: awayStats.blocks },
+            { label: "Steals", homeValue: homeStats.steals, awayValue: awayStats.steals },
+            { label: "Turnovers", homeValue: homeStats.turnovers, awayValue: awayStats.turnovers }
+          ].map((stat, i) => {
+            const maxValue = Math.max(stat.homeValue, stat.awayValue, 1);
+            const homePercentage = (stat.homeValue / maxValue) * 100;
+            const awayPercentage = (stat.awayValue / maxValue) * 100;
+            
+            return (
+              <>
+                     <div className=" text-white text-xs font-medium min-w-fit">
+                    {stat.label}
+                  </div>
+              <div key={i} className="">
+                <div className="flex items-center justify-between w-full">
+                  {/* Home team value */}
+                  <div className="text-white font-bold text-base w-6 text-left">
+                    {stat.homeValue}
+                  </div>
+                  
+                  {/* Home team bar (extends right from center) */}
+                  <div className="flex-1 mx-1 flex justify-end">
+                    <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
+                      <div 
+             className="bg-primary-danger rounded-s-lg h-3 transition-all duration-700 absolute right-0 z-50 "
+             style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.homeValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
+                       
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Center label */}
+           
+                  
+                  {/* Away team bar (extends left from center) */}
+                  <div className="flex-1 mx-1 flex justify-start">
+                    <div className="w-full rounded-e-lg bg-gray-700 h-3 relative">
+                      <div 
+                        className="bg-primary-cta rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
+                        style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.awayValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Away team value */}
+                  <div className="text-white font-bold text-base w-6 text-right">
+                    {stat.awayValue}
+                  </div>
+                </div>
+              </div>
+              </>
+            );
+          })}
+        </div>
+      </>
+    );
+  })()}
+  
+  </div>
+  )
+  
+  }
 </div>
 
 

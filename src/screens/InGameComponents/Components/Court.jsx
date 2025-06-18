@@ -19,7 +19,7 @@ const Court = ({
     <div
       onClick={!savedGame.isComplete ? handleCourtClick : undefined}
       className={`
-        relative z-50 mx-auto h-[55vh] w-full 
+        relative z-40 mx-auto h-[55vh] w-full 
         max-w-[600px] sm:max-w-[640px] md:max-w-[768px] 
         ${actionSelected && ["3 Points", "3Pt Miss"].includes(actionSelected)
           ? "bg-white/10"
