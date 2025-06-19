@@ -13,7 +13,7 @@ export default {
         "primary-bg": "#12131A",
         "card-bg": "#1a1f2d",
         "secondary-bg": "#161a1f",
-        "primary-cta": "#0b63fb",
+        "primary-cta": "#6366F1 ",
         "secondary-cta": "#10B981",
         "primary-danger": "#9333EA",
         "primary-danger-light": "#A78BFA",

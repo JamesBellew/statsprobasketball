@@ -212,7 +212,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
         <div className="container mx-auto">
           <div className="flex cursor-pointer justify-between items-center py-4 mx-auto">
             <a onClick={() => { navigate("/") }} className="text-xl font-bold text-white">
-              StatsPro <span className="text-sm text-gray-400">| Basketball</span>
+              StatsPro <span className=" text-primary-cta">|</span> <span className="text-sm text-gray-400">Basketball</span>
             </a>
 
             {/* Desktop Nav */}
@@ -406,7 +406,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 <div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[360px]' : 'w-[270px]'} mx-auto`}>
   {/* Animated background */}
   <div 
-    className={`absolute top-1 left-1 h-[calc(100%-8px)] bg-primary-danger bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
+    className={`absolute top-1 left-1 h-[calc(100%-8px)] bg-primary-cta bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
     style={{
       width: trackingPlayers ? 'calc(25% - 4px)' : 'calc(33.333% - 4px)',
       transform: trackingPlayers 
@@ -480,7 +480,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
         <tr>
           <th className="py-2 px-4 text-left">Team</th>
           {quarters.map((q) => (
-  <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-danger font-bold" : ""}`}>
+  <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-cta font-bold" : ""}`}>
     {q > 4 ? `OT ${q - 4}` : `Q${q}`}
   </th>
 ))}
@@ -554,7 +554,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
               key={index}
               className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
             >
-              <div style={{backgroundColor: gameData?.homeTeamColor || '#8B5CF6'}} className="w-12 h-12  bg-opacity-50 rounded-full flex items-center justify-center text-white text-md font-semibold">
+              <div className="w-12 h-12  bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold">
                 {player.number}
               </div>
               <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
@@ -593,7 +593,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
     <div className="flex h-full justify-center items-center  w-full gap-4">
-      <p className="bg-secondary-bg w-auto text-center border-b-2 border-b-primary-danger">{homeTeamName || "Home"}</p>
+      <p style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="bg-secondary-bg w-auto text-center border-b-2 ">{homeTeamName || "Home"}</p>
       <div className="relative group">
         <button type="button" className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center">
           {awayTeamName || "Away"}
@@ -625,7 +625,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
             <>
               {/* Center */}
               <div className="absolute top-[10%] left-[50%] transform -translate-x-1/2">
-                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[0].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[0].name}</div>
@@ -633,7 +633,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Left Wing */}
               <div className="absolute top-[25%] left-[15%] transform -translate-x-1/2">
-                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[1].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[1].name}</div>
@@ -641,7 +641,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Right Wing */}
               <div className="absolute top-[25%] right-[15%] transform translate-x-1/2">
-                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[2].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[2].name}</div>
@@ -649,7 +649,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Left Corner */}
               <div className="absolute top-[60%] left-[35%] transform -translate-x-1/2">
-        <div className="w-10 h-10 bg-primary-danger rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10">
+        <div className="w-10 h-10 bg-white/10 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10">
           #{onCourt[3].number}
         </div>
         <div className="text-white text-sm text-center mt-1 opacity-80">{onCourt[3].name}</div>
@@ -658,7 +658,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Right Corner */}
               <div className="absolute top-[60%] right-[35%] transform translate-x-1/2">
-                <div className="w-10 h-10 bg-primary-danger rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
                   #{onCourt[4].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[4].name}</div>
@@ -810,14 +810,14 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
                      {/* Stat label row with percentages */}
               
           <div key={i} className="flex items-center  justify-between  text-xs mb-0.5">
-            <span style={{ color: gameData?.homeTeamColor || '#8B5CF6' }} className="font-semibold min-w-[32px] text-left">{stat.home.pct}%</span>
+            <span  className="font-semibold min-w-[32px] text-left text-gray-400">{stat.home.pct}%</span>
             <span className="text-white text-xs font-medium flex-1 text-center">{stat.label.replace(/Field Goals|3-Pointers|Free Throws/, (match) => {
               if (match === "Field Goals") return "Field Goals";
               if (match === "3-Pointers") return "3-Pointers";
               if (match === "Free Throws") return "Free Throws";
               return match;
             })}</span>
-            <span style={{ color: gameData?.awayTeamColor || '#0b63fb' }} className="font-semibold min-w-[32px] text-right">{stat.away.pct}%</span>
+            <span  className="font-semibold min-w-[32px] text-gray-400 text-right">{stat.away.pct}%</span>
           </div>
           {/* Numbers and bar row */}
           <div className="flex items-center bg justify-between h-auto w-full">
@@ -881,8 +881,8 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
                   <div className="flex-1 mx-1 flex justify-end">
                     <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
                       <div 
-             className="bg-primary-danger rounded-s-lg h-3 transition-all duration-700 absolute right-0 z-50 "
-             style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.homeValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
+             className=" rounded-s-lg h-3 transition-all duration-700 absolute right-0 z-50 "
+             style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.homeValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%`, backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
                        
                       ></div>
                     </div>
@@ -927,7 +927,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       
       <button 
         onClick={() => setShowStatsModal(!showStatsModal)} 
-        className="flex items-center px-2 w-full justify-center hover:text-primary-danger px-4 flex-col transition-colors duration-200"
+        className="flex items-center px-2 w-full justify-center hover:text-primary-cta px-4 flex-col transition-colors duration-200"
       >
         {!showStatsModal &&
         <p>Game Stats</p>
