@@ -288,26 +288,26 @@ navigate("/")
       className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
     >
       <div className="relative h-40 group transition-all w-full bg-black  overflow-hidden">
-<div className="absolute inset-0 clip-right bg-primary-danger-light z-10" />
+<div className="absolute inset-0 clip-right z-10" style={{ backgroundColor: game.homeTeamColor || '#8B5CF6' }} />
 <div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#0b63fb' }} />
 
 
         <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="w-14 h-14 rounded-full bg-white">
-          <img
-  src={game?.logos?.away || opponentLogo}
-  className="w-full h-full rounded-full p-1"
-  alt="away logo"
-/>
+          <div className="w-16 h-16 rounded-full" style={{border: `3px solid ${game.awayTeamColor || '#0b63fb'}`}}>
+            <img
+              src={game?.logos?.away || opponentLogo}
+              className="w-full h-full rounded-full p-1"
+              alt="away logo"
+            />
           </div>
         </div>
         <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="w-14 h-14 rounded-full bg-white">
-          <img
-  src={game?.logos?.home || homeLogo}
-  className="w-full h-full rounded-full p-1"
-  alt="away logo"
-/>
+          <div className="w-16 h-16 rounded-full" style={{border: `3px solid ${game.homeTeamColor || '#8B5CF6'}`}}>
+            <img
+              src={game?.logos?.home || homeLogo}
+              className="w-full h-full rounded-full p-1"
+              alt="home logo"
+            />
           </div>
         </div>
         <div className="absolute inset-0 flex flex-col justify-center items-center z-40">
@@ -405,7 +405,7 @@ navigate("/")
               {/* Away Team */}
               <div className="flex items-center space-x-3 flex-1">
                 <div 
-                  className="w-10 h-10 rounded-full p-0.5"
+                  className="w-12 h-12 rounded-full p-0.5"
                   style={{backgroundColor: game.awayTeamColor || '#0b63fb'}}
                 >
                   <img
@@ -429,7 +429,7 @@ navigate("/")
                 <span className="text-gray-200 text-sm font-medium">
                   {game.teamNames?.home}
                 </span>
-                <div className="w-10 h-10 rounded-full p-0.5 bg-primary-danger">
+                <div className="w-14 h-14 rounded-full p-0.5" style={{backgroundColor: game.homeTeamColor || '#8B5CF6'}}>
                   <img
                     src={game?.logos?.home || homeLogo}
                     className="w-full h-full rounded-full bg-white p-0.5"
@@ -496,11 +496,13 @@ navigate("/")
                 <span className="text-gray-200 text-sm font-medium">
                   {game.teamNames?.home}
                 </span>
-                <img
-                  src={game?.logos?.home || homeLogo}
-                  className="w-8 h-8 rounded-full bg-white p-0.5"
-                  alt="home logo"
-                />
+                <div className="w-10 h-10 rounded-full p-0.5" style={{backgroundColor: game.homeTeamColor || '#8B5CF6'}}>
+                  <img
+                    src={game?.logos?.home || homeLogo}
+                    className="w-full h-full rounded-full bg-white p-0.5"
+                    alt="home logo"
+                  />
+                </div>
               </div>
             </div>
           </div>

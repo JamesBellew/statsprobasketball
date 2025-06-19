@@ -7,7 +7,7 @@ import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass u
 import { useLocation } from "react-router-dom";
 import { collection, getDocs } from "firebase/firestore";
 import { firestore } from "../firebase"; // Adjust path based on your project structure
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { firestore as firestoreDb } from "../firebase"; // 👈 Rename it on import
 
 
@@ -28,6 +28,7 @@ export default function StartGame() {
   const [minutesTracked, setMinutesTracked] = useState(false);
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
   const [awayTeamColor, setAwayTeamColor] = useState("#0b63fb");
+  const [teamColor, setTeamColor] = useState("#8B5CF6"); // Home team color from settings
   
   const handleGoBack = (e) => {
     e.preventDefault(); // Prevent form submission reload
@@ -107,6 +108,7 @@ const venueSelectedHandler=(venue)=>{
         isLive: true,
         slug, // Optional: makes it easier to reference later
         awayTeamColor,
+        homeTeamColor: teamColor || "#8B5CF6", // <-- Save home team color
       });
     }else{
       console.log('no broadcast toggle');
@@ -159,6 +161,26 @@ const venueSelectedHandler=(venue)=>{
   //!Broadcasting logic below 
   // const slug = `${homeTeamName}-vs-${opponentName}-${new Date().toISOString().split("T")[0]}`.toLowerCase().replace(/\s+/g, "-");
 
+  useEffect(() => {
+    // Fetch home team color from Settings
+    async function fetchTeamColor() {
+      if (user) {
+        // Firestore settings
+        const ref = doc(firestore, "users", user.uid, "settings", "preferences");
+        const snap = await getDoc(ref);
+        if (snap.exists() && snap.data().teamColor) {
+          setTeamColor(snap.data().teamColor);
+        }
+      } else {
+        // Local DB settings
+        const localSettings = await db.settings.get("preferences");
+        if (localSettings && localSettings.teamColor) {
+          setTeamColor(localSettings.teamColor);
+        }
+      }
+    }
+    fetchTeamColor();
+  }, [user]);
 
   return (
     <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">

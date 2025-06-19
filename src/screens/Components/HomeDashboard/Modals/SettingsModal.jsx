@@ -221,19 +221,32 @@ setTimeout(() => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Team Color</label>
-            <select
-              value={teamColor}
-              onChange={(e) => setTeamColor(e.target.value)}
-              className="w-full px-4 py-2 bg-card-bg text-white rounded border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary-cta"
-            >
-              <option value="">Select a color</option>
-              <option value="#0b63fb" className="bg-[#0b63fb] text-white">Blue</option>
-              {/* <option value="#10B981" className="bg-[#10B981] text-white">Green</option>
-              <option value="#8B5CF6" className="bg-[#8B5CF6] text-white">Purple</option>
-              <option value="#DC143C" className="bg-[#DC143C] text-white">Crimson</option>
-              <option value="#F59E0B" className="bg-[#F59E0B] text-white">Amber</option> */}
-            </select>
+            <label className="block text-sm font-medium mb-1">Home Team Color</label>
+            <div className="flex space-x-2 mb-2">
+              {[
+                "#8B5CF6", // purple
+                "#06B6D4", // cyan/teal
+                "#F59E0B", // amber/orange
+                "#EF4444", // red
+                "#10B981", // emerald green
+                "#6366F1", // indigo
+                "#EC4899", // hot pink
+                "#64748B"  // slate gray
+              ].map((color, idx) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${teamColor === color ? 'border-white scale-110' : 'border-gray-400'}`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setTeamColor(color)}
+                  aria-label={`Select color ${color}`}
+                >
+                  {teamColor === color && (
+                    <svg className="w-4 h-4 mx-auto my-auto text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
