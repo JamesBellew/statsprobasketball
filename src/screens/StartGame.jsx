@@ -188,11 +188,14 @@ Back</button>
             <label className="block mb-2 text-sm font-medium text-gray-200">Away Team Color</label>
             <div className="flex space-x-2">
               {[
-                "#0b63fb", // blue (default)
-                "#F43F5E", // pink/red
-                "#FACC15", // yellow
-                "#22C55E", // green
-                "#8B5CF6"  // purple
+          "#8B5CF6", // purple (your primary home color)
+          "#06B6D4", // cyan/teal - cool complement
+          "#F59E0B", // amber/orange - warm contrast
+          "#EF4444", // red - energetic accent
+          "#10B981", // emerald green - fresh contrast
+          "#6366F1", // indigo - harmonious neighbor
+          "#EC4899", // hot pink - vibrant complement
+          "#64748B"  // slate gray - neutral balance
               ].map((color) => (
                 <button
                   key={color}

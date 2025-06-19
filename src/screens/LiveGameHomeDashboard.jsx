@@ -272,7 +272,7 @@ navigate("/")
     </div>
   ) : (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
       {liveGamesOnly.length === 0 ? (
   <div className="text-gray-400 py-10 text-sm italic">No Live Games </div>
 ) : (
@@ -285,21 +285,11 @@ navigate("/")
     <a
       key={game.id}
       onClick={() => handleLiveGameClick(game.link, false)}
-      className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer rounded-lg overflow-hidden"
+      className=" hover:scale-95 transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
     >
-      <div className="relative h-40 group transition-all w-full bg-black rounded-lg overflow-hidden">
-      {/* <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
-<div className="absolute inset-0 clip-left bg-[#4F46E5] z-20" /> */}
-
-{/* <div className="absolute inset-0 clip-right bg-[#0F172A] z-10" />
-<div className="absolute inset-0 clip-left bg-[#F59E0B] z-20" /> */}
-
-{/* <div className="absolute inset-0 clip-right bg-[#1E293B] z-10" />
-<div className="absolute inset-0 clip-left bg-[#EF4444] z-20" /> */}
-{/* <div className="absolute inset-0 clip-right bg-[#0F172A] z-10" />
-<div className="absolute inset-0 clip-left bg-[#EC4899] z-20" /> */}
-<div className="absolute inset-0 clip-right bg-[#0A0A0A] z-10" />
-<div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#8B5CF6' }} />
+      <div className="relative h-40 group transition-all w-full bg-black  overflow-hidden">
+<div className="absolute inset-0 clip-right bg-primary-danger-light z-10" />
+<div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#0b63fb' }} />
 
 
         <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
@@ -398,60 +388,57 @@ navigate("/")
             displayDateTime = `Tomorrow @ ${timeStr}`;
           }
         }
-        
 
         return (
-          <a
-          onClick={() => handleLiveGameClick(game.link, true)}
+          <div
+            onClick={() => handleLiveGameClick(game.link, true)}
             key={game.id}
-            className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
+            className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
           >
-            <div className="relative h-24 group w-full bg-black rounded-lg overflow-hidden">
-            <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
-            <div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#4F46E5' }} /> 
-
-              {/* Away logo */}
-              <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                <div className="w-14 h-14 rounded-full bg-white">
+            {/* Date and Time */}
+            <div className="text-xs text-gray-400 mb-2">
+              {displayDateTime}
+            </div>
+                        
+            {/* Game Info */}
+            <div className="flex items-center justify-between">
+              {/* Away Team */}
+              <div className="flex items-center space-x-3 flex-1">
+                <div 
+                  className="w-10 h-10 rounded-full p-0.5"
+                  style={{backgroundColor: game.awayTeamColor || '#0b63fb'}}
+                >
                   <img
                     src={game?.logos?.away || opponentLogo}
-                    className="w-full h-full rounded-full p-1"
+                    className="w-full h-full rounded-full bg-white p-0.5"
                     alt="away logo"
                   />
                 </div>
+                <span className="text-gray-200 text-sm font-medium">
+                  {game.teamNames?.away}
+                </span>
               </div>
-
-              {/* Home logo */}
-              <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                <div className="w-14 h-14 rounded-full bg-white">
+                            
+              {/* VS */}
+              <div className="flex items-center space-x-2 mx-4">
+                <span className="text-gray-400 text-sm font-medium">vs</span>
+              </div>
+                            
+              {/* Home Team */}
+              <div className="flex items-center space-x-3 flex-1 justify-end">
+                <span className="text-gray-200 text-sm font-medium">
+                  {game.teamNames?.home}
+                </span>
+                <div className="w-10 h-10 rounded-full p-0.5 bg-primary-danger">
                   <img
                     src={game?.logos?.home || homeLogo}
-                    className="w-full h-full rounded-full p-1"
+                    className="w-full h-full rounded-full bg-white p-0.5"
                     alt="home logo"
                   />
                 </div>
               </div>
-
-              {/* Overlay text */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-50 group-hover:bg-opacity-0">
-                <div className="bg-black  bg-opacity-0  group-hover:bg-opacity-50  px-4 py-2 rounded-lg ">
-                <p className="text-md  font-semibold text-white">
-   
-                  {game.teamNames?.home} vs {game.teamNames?.away} 
-                </p>
-</div>
-<div className="absolute top-0 left-2 group-hover:text-primary-bg  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
-              {/* {game.lastUpdated?.toDate().toLocaleDateString()} */}
-              {game.scheduledStart?.date}
-              </div>
-              </div>
             </div>
-
-            {/* <div className="text-center py-3 text-base bg-secondary-bg bg-opacity-10 text-white font-medium">
-            <p className="text-sm mt-1 text-white">{displayDateTime}</p>
-
-            </div> */}
-          </a>
+          </div>
         );
       })}
     </div>
@@ -460,80 +447,63 @@ navigate("/")
 
 
      {/* Recent Games */}
-{recentGamesOnly.length > 0 && (
+     {recentGamesOnly.length > 0 && (
   <>
     <h2 className="text-white text-xl font-semibold my-6">Recent Games</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {recentGamesOnly.map((game) => {
         const homeScore = game.score?.home ?? 0;
         const awayScore = game.score?.away ?? 0;
-        const winner =
-          homeScore > awayScore
-            ? game.teamNames?.home
-            : awayScore > homeScore
-            ? game.teamNames?.away
-            : "Draw";
-
+        
         return (
-          <a 
-          onClick={() => handleLiveGameClick(game.link, false)}
-            key={game.id} 
-            className="bg-primary-bg group hover:scale-95 group transition-all rounded-lg transition-all hover:bg-slate-900 duration-500 cursor-pointer overflow-hidden"
+          <div
+            onClick={() => handleLiveGameClick(game.link, false)}
+            key={game.id}
+            className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
           >
-            <div className="relative h-24 group transition-all w-full bg-black rounded-lg overflow-hidden">
-            <div className="absolute inset-0 clip-right bg-[#111827] z-10" />
-            <div className="absolute inset-0 clip-left z-20" style={{ backgroundColor: game.awayTeamColor || '#4F46E5' }} /> 
-
-              {/* Left logo */}
-              <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                <div className="w-14 h-14 rounded-full bg-white">
+            {/* Date and Status */}
+            <div className="text-xs text-gray-400 mb-2">
+              {game.scheduledStart?.date} • Final
+            </div>
+            
+            {/* Game Info */}
+            <div className="flex items-center justify-between">
+              {/* Away Team */}
+              <div className="flex items-center space-x-3 flex-1">
                 <img
-  src={game?.logos?.away || opponentLogo}
-  className="w-full h-full rounded-full p-1"
-  alt="away logo"
-/>
+                  src={game?.logos?.away || opponentLogo}
+                  className="w-8 h-8 rounded-full bg-white p-0.5"
+                  alt="away logo"
+                />
+                <span className="text-gray-200 text-sm font-medium">
+                  {game.teamNames?.away}
+                </span>
+              </div>
+              
+              {/* Score */}
+              <div className="flex items-center space-x-2 mx-4">
+                <div className="text-right">
+                  <span className="text-white text-lg font-bold">{awayScore}</span>
+                </div>
+                <span className="text-gray-500">-</span>
+                <div className="text-left">
+                  <span className="text-white text-lg font-bold">{homeScore}</span>
                 </div>
               </div>
-
-              {/* Right logo */}
-              <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                <div className="w-14 h-14 rounded-full bg-white">
+              
+              {/* Home Team */}
+              <div className="flex items-center space-x-3 flex-1 justify-end">
+                <span className="text-gray-200 text-sm font-medium">
+                  {game.teamNames?.home}
+                </span>
                 <img
-  src={game?.logos?.home || homeLogo}
-  className="w-full h-full rounded-full p-1"
-  alt="home logo"
-/>
-                </div>
-              </div>
-
-              {/* Overlay text */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center z-40 bg-black bg-opacity-80 group-hover:bg-opacity-0">
-                <div className="w-auto px-4 bg-opacity-0 group-hover:bg-opacity-50 rounded-lg  py-1 items-center justify-center flex flex-col bg-black">
-                <p className="text-sm  font-medium text-gray-100">
-                  {game.teamNames?.home} vs {game.teamNames?.away}
-                </p>
-                <p className="text-2xl font-bold text-white">
-                  {homeScore} - {awayScore}
-                </p>
-                </div>
-                {/* <p className="text-xs mt-1 text-gray-300">Final Score</p> */}
-              </div>
-              <div className="absolute top-0 right-2 group-hover:text-gray-200  text-gray-500 text-xs font-bold px-2 py-1 rounded z-40">
-FT
-              </div>
-              <div className="absolute top-0 left-2 group-hover:text-primary-bg  text-gray-300 text-xs font-bold px-2 py-1 rounded z-40">
-              {/* {game.lastUpdated?.toDate().toLocaleDateString()} */}
-              {game.scheduledStart?.date}
+                  src={game?.logos?.home || homeLogo}
+                  className="w-8 h-8 rounded-full bg-white p-0.5"
+                  alt="home logo"
+                />
               </div>
             </div>
-
-            {/* Winner display */}
-                {/* {winner} Won */}
-            {/* <div className="text-center py-3  bg-primary-bg text-gray-400 text-sm ">
-         
-             {game.lastUpdated?.toDate().toLocaleDateString()}
-            </div> */}
-          </a>
+          </div>
         );
       })}
     </div>
