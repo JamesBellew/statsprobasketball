@@ -191,7 +191,25 @@ const scheduledGames = liveGames
     return dateA - dateB; // Ascending order: earliest first
   });
 
+// Helper to group games by leagueName (or 'Other')
+function groupByLeague(games) {
+  const grouped = {};
+  games.forEach(game => {
+    const league = game.leagueName || 'Other';
+    if (!grouped[league]) grouped[league] = [];
+    grouped[league].push(game);
+  });
+  return grouped;
+}
 
+// Only group liveGamesOnly by league
+const liveGamesGrouped = groupByLeague(liveGamesOnly);
+// Sort league entries so 'Other' is last
+const liveGamesLeagueEntries = Object.entries(liveGamesGrouped).sort(([a], [b]) => {
+  if (a === 'Other') return 1;
+  if (b === 'Other') return -1;
+  return a.localeCompare(b);
+});
 
   return (
 
@@ -272,90 +290,138 @@ navigate("/")
     </div>
   ) : (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-      {liveGamesOnly.length === 0 ? (
-  <div className="text-gray-400 py-10 text-sm italic">No Live Games </div>
-) : (
-  liveGamesOnly.map((game) => {
-    const homeScore = game.score?.home ?? 0;
-    const awayScore = game.score?.away ?? 0;
-    const currentQ = game.quarter ?? 2;
-  
-    return (
-      <a
-        key={game.id}
-        onClick={() => handleLiveGameClick(game.link, false)}
-        className="hover:scale-95 transition-all hover:bg-gray-800/50 duration-500 cursor-pointer overflow-hidden"
-      >
-        <div className="relative h-40 group transition-all w-full bg-gray-800/30 rounded-lg overflow-hidden border border-gray-700">
-          
-          {/* Subtle top accent bar */}
-          <div 
-            className="absolute bottom-0 left-0 w-full h-[1px] z-10"
-            style={{ 
-              background: `linear-gradient(to right, ${game.awayTeamColor || '#0b63fb'} 0%, ${game.awayTeamColor || '#0b63fb'} 50%, ${game.homeTeamColor || '#8B5CF6'} 50%, ${game.homeTeamColor || '#8B5CF6'} 100%)` 
-            }}
-          />
-  
-          {/* Away Team Logo */}
-          <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-30">
-            <div className="w-20 h-20 rounded-full bg-white p-1.5 shadow-lg">
-              <img
-                src={game?.logos?.away || opponentLogo}
-                className="w-full h-full rounded-full"
-                alt="away logo"
-              />
-            </div>
-            {/* Away team color indicator */}
-            <div 
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
-              style={{ backgroundColor: game.awayTeamColor || '#0b63fb' }}
-            />
-          </div>
-  
-          {/* Home Team Logo */}
-          <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/3 transform -translate-x-1/2 -translate-y-1/2 z-30">
-            <div className="w-20 h-20 rounded-full bg-white p-1.5 shadow-lg">
-              <img
-                src={game?.logos?.home || homeLogo}
-                className="w-full h-full rounded-full"
-                alt="home logo"
-              />
-            </div>
-            {/* Home team color indicator */}
-            <div 
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
-              style={{ backgroundColor: game.homeTeamColor || '#8B5CF6' }}
-            />
-          </div>
-  
-          {/* Score Display - Subtle glass effect */}
-          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 z-40">
-            <div className="bg-gray-800/50  backdrop-blur-md px-4 py-2 rounded-xl border border-white/5 shadow-lg">
-              <p className="text-xl font-semibold text-white/90 text-center">{awayScore} - {homeScore}</p>
-              <p className="text-xs text-white/70 text-center">
-                {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
-              </p>
-            </div>
-          </div>
-  
-          {/* Live Indicator */}
-          <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full z-40 flex items-center space-x-1.5">
-            <span>LIVE</span>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+      {/* Live Games (grouped by league) */}
+      {liveGamesLeagueEntries.map(([league, games]) => (
+        <div key={league} className="mb-8">
+          <h3 className="text-sm font-semibold text-gray-300 mb-4 border-l-4 border-l-gray-800/40 py-2 pl-2">{league}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {games.map((game) => {
+              const homeScore = game.score?.home ?? 0;
+              const awayScore = game.score?.away ?? 0;
+              const currentQ = game.quarter ?? 2;
+            
+              // Robust home/away logic
+              let homeTeam, homeLogo, homeColor, awayTeam, awayLogo, awayColor;
+              if (game.venue === 'home') {
+                homeTeam = game.teamNames?.home;
+                homeLogo = game?.logos?.home;
+                homeColor = game.homeTeamColor;
+                awayTeam = game.teamNames?.away;
+                awayLogo = game?.logos?.away;
+                awayColor = game.awayTeamColor;
+              } else if (game.venue === 'away') {
+                homeTeam = game.teamNames?.away;
+                homeLogo = game?.logos?.away;
+                homeColor = game.awayTeamColor;
+                awayTeam = game.teamNames?.home;
+                awayLogo = game?.logos?.home;
+                awayColor = game.homeTeamColor;
+              } else if (game.venue === game.teamNames?.home) {
+                homeTeam = game.teamNames?.home;
+                homeLogo = game?.logos?.home;
+                homeColor = game.homeTeamColor;
+                awayTeam = game.teamNames?.away;
+                awayLogo = game?.logos?.away;
+                awayColor = game.awayTeamColor;
+              } else if (game.venue === game.teamNames?.away) {
+                homeTeam = game.teamNames?.away;
+                homeLogo = game?.logos?.away;
+                homeColor = game.awayTeamColor;
+                awayTeam = game.teamNames?.home;
+                awayLogo = game?.logos?.home;
+                awayColor = game.homeTeamColor;
+              } else {
+                homeTeam = game.teamNames?.home;
+                homeLogo = game?.logos?.home;
+                homeColor = game.homeTeamColor;
+                awayTeam = game.teamNames?.away;
+                awayLogo = game?.logos?.away;
+                awayColor = game.awayTeamColor;
+              }
+            
+              return (
+                <a
+                  key={game.id}
+                  onClick={() => handleLiveGameClick(game.link, false)}
+                  className="hover:scale-95 transition-all hover:bg-gray-800/50 duration-500 cursor-pointer overflow-hidden"
+                >
+                  <div className="relative h-32 group transition-all w-full bg-gray-800/30 rounded-lg overflow-hidden border border-gray-700">
+                    
+                    {/* Subtle top accent bar */}
+                    <div 
+                      className="absolute bottom-0 left-0 w-full h-[1px] z-10"
+                      style={{ 
+                        background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)` 
+                      }}
+                    />
+            
+                    {/* Away Team Logo (always left) */}
+                    <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
+                      <div className="w-12 h-12 rounded-full bg-white p-0.5 shadow-lg">
+                        <img
+                          src={awayLogo || opponentLogo}
+                          className="w-full h-full rounded-full"
+                          alt="away logo"
+                        />
+                      </div>
+                      {/* Away team color indicator */}
+                      <div 
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
+                        style={{ backgroundColor: awayColor || '#0b63fb' }}
+                      />
+                    </div>
+            
+                    {/* Home Team Logo (always right) */}
+                    <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/2  transform -translate-x-1/2 -translate-y-1/2 z-30">
+                      <div className="w-14 h-14 rounded-full bg-white p-0.5 shadow-lg">
+                        <img
+                          src={homeLogo || homeLogo}
+                          className="w-full h-full rounded-full"
+                          alt="home logo"
+                        />
+                      </div>
+                      {/* Home team color indicator */}
+                      <div 
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
+                        style={{ backgroundColor: homeColor || '#8B5CF6' }}
+                      />
+                    </div>
+            
+                    {/* Score Display - Subtle glass effect */}
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40">
+                      <div className="bg-gray-800/30  backdrop-blur-md px-4 py-2 rounded-xl border border-white/5 shadow-lg">
+                        <p className="text-xl font-semibold text-white/90 text-center">{awayScore} - {homeScore}</p>
+                        <p className="text-xs text-white/70 text-center">
+                          {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+                        </p>
+                      </div>
+                    </div>
+            
+                    {/* Venue label (if exists) - now at the top center of the card */}
+                    {game.venue && (
+                      <div className="absolute top-0 left-1/2 transform mx-auto justify-end items-end flex w-full -translate-x-1/2 z-50">
+                        <span className="bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow">Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}</span>
+                      </div>
+                    )}
+            
+                    {/* Live Indicator */}
+                    <div className="absolute top-1 left-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-lg z-40 flex items-center space-x-1">
+                      <span className="text-[8px]">LIVE</span>
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    </div>
+                  </div>
+            
+                  {/* Team Names (always Away @ Home) */}
+                  <div className="text-center py-3 text-white font-medium">
+                    {awayTeam} @ {homeTeam}
+                  </div>
+                </a>
+              );
+            })}
           </div>
         </div>
-  
-        {/* Team Names */}
-        <div className="text-center py-3 text-white font-medium">
-          {game.teamNames?.away} @ {game.teamNames?.home}
-        </div>
-      </a>
-    );
-  })
-)}
+      ))}
 
-      </div>
       <div className="mb-12">
         <div className="flex flex-row">
 
@@ -384,156 +450,179 @@ navigate("/")
   )}
 </div>
 
-{/* Scheduled Games */}
-{scheduledGames.length > 0 && (
-  <>
-    <h2 className="text-white text-xl font-semibold mb-6 mt-12 border-l-2 pl-2 border-l-[#4F46E5]">Scheduled Games</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {scheduledGames.map((game) => {
-        const dateStr = game.scheduledStart?.date || "";
-        const timeStr = game.scheduledStart?.time || "";
-        let displayDateTime = `${dateStr} @ ${timeStr}`;
-        
-        if (dateStr) {
-          const today = new Date();
-          const tomorrow = new Date();
-          tomorrow.setDate(today.getDate() + 1);
-        
-          const scheduledDate = new Date(`${dateStr}T${timeStr}`);
-          const isToday =
-            scheduledDate.toDateString() === today.toDateString();
-          const isTomorrow =
-            scheduledDate.toDateString() === tomorrow.toDateString();
-        
-          if (isToday) {
-            displayDateTime = `Today @ ${timeStr}`;
-          } else if (isTomorrow) {
-            displayDateTime = `Tomorrow @ ${timeStr}`;
-          }
+{/* Scheduled Games (flat) */}
+<div className="mb-8">
+  <h3 className="text-lg font-bold text-white mb-2 pl-2">Scheduled Games</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {scheduledGames.map((game) => {
+      const dateStr = game.scheduledStart?.date || "";
+      const timeStr = game.scheduledStart?.time || "";
+      let displayDateTime = `${dateStr} @ ${timeStr}`;
+      
+      if (dateStr) {
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+      
+        const scheduledDate = new Date(`${dateStr}T${timeStr}`);
+        const isToday =
+          scheduledDate.toDateString() === today.toDateString();
+        const isTomorrow =
+          scheduledDate.toDateString() === tomorrow.toDateString();
+      
+        if (isToday) {
+          displayDateTime = `Today @ ${timeStr}`;
+        } else if (isTomorrow) {
+          displayDateTime = `Tomorrow @ ${timeStr}`;
         }
+      }
 
-        return (
-          <div
-            onClick={() => handleLiveGameClick(game.link, true)}
-            key={game.id}
-            className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
-          >
-            {/* Date and Time */}
-            <div className="text-xs text-gray-400 mb-2">
-              {displayDateTime}
-            </div>
-                        
-            {/* Game Info */}
-            <div className="flex items-center justify-between">
-              {/* Away Team */}
-              <div className="flex items-center space-x-3 flex-1">
-                <div 
-                  className="w-12 h-12 rounded-full p-0.5"
-                  style={{backgroundColor: game.awayTeamColor || '#0b63fb'}}
-                >
-                  <img
-                    src={game?.logos?.away || opponentLogo}
-                    className="w-full h-full rounded-full bg-white p-0.5"
-                    alt="away logo"
-                  />
-                </div>
-                <span className="text-gray-200 text-sm font-medium">
-                  {game.teamNames?.away}
-                </span>
-              </div>
-                            
-              {/* VS */}
-              <div className="flex items-center space-x-2 mx-4">
-                <span className="text-gray-400 text-sm font-medium">vs</span>
-              </div>
-                            
-              {/* Home Team */}
-              <div className="flex items-center space-x-3 flex-1 justify-end">
-                <span className="text-gray-200 text-sm font-medium">
-                  {game.teamNames?.home}
-                </span>
-                <div className="w-14 h-14 rounded-full p-0.5" style={{backgroundColor: game.homeTeamColor || '#8B5CF6'}}>
-                  <img
-                    src={game?.logos?.home || homeLogo}
-                    className="w-full h-full rounded-full bg-white p-0.5"
-                    alt="home logo"
-                  />
-                </div>
-              </div>
-            </div>
+      // Determine home/away based on venue
+      const isVenueHome = game.venue === 'home';
+      const homeTeam = isVenueHome ? game.teamNames?.home : game.teamNames?.away;
+      const homeLogo = isVenueHome ? game?.logos?.home : game?.logos?.away;
+      const homeColor = isVenueHome ? game.homeTeamColor : game.awayTeamColor;
+      const awayTeam = isVenueHome ? game.teamNames?.away : game.teamNames?.home;
+      const awayLogo = isVenueHome ? game?.logos?.away : game?.logos?.home;
+      const awayColor = isVenueHome ? game.awayTeamColor : game.homeTeamColor;
+
+      return (
+        <div
+          onClick={() => handleLiveGameClick(game.link, true)}
+          key={game.id}
+          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer relative transition-all duration-200"
+        >
+          {/* Date and Time */}
+          <div className="text-xs text-gray-400 mb-2">
+            {displayDateTime}
           </div>
-        );
-      })}
-    </div>
-  </>
-)}
-
-
-     {/* Recent Games */}
-     {recentGamesOnly.length > 0 && (
-  <>
-    <h2 className="text-white text-xl font-semibold my-6">Recent Games</h2>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {recentGamesOnly.map((game) => {
-        const homeScore = game.score?.home ?? 0;
-        const awayScore = game.score?.away ?? 0;
-        
-        return (
-          <div
-            onClick={() => handleLiveGameClick(game.link, false)}
-            key={game.id}
-            className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
-          >
-            {/* Date and Status */}
-            <div className="text-xs text-gray-400 mb-2">
-              {game.scheduledStart?.date} • Final
-            </div>
-            
-            {/* Game Info */}
-            <div className="flex items-center justify-between">
-              {/* Away Team */}
-              <div className="flex items-center space-x-3 flex-1">
+                      
+          {/* Game Info */}
+          <div className="flex items-center justify-between">
+            {/* Away Team */}
+            <div className="flex items-center space-x-3 flex-1">
+              <div 
+                className="w-12 h-12 rounded-full p-0.5"
+                style={{backgroundColor: awayColor || '#0b63fb'}}
+              >
                 <img
-                  src={game?.logos?.away || opponentLogo}
-                  className="w-8 h-8 rounded-full bg-white p-0.5"
+                  src={awayLogo || opponentLogo}
+                  className="w-full h-full rounded-full bg-white p-0.5"
                   alt="away logo"
                 />
-                <span className="text-gray-200 text-sm font-medium">
-                  {game.teamNames?.away}
-                </span>
               </div>
-              
-              {/* Score */}
-              <div className="flex items-center space-x-2 mx-4">
-                <div className="text-right">
-                  <span className="text-white text-lg font-bold">{awayScore}</span>
-                </div>
-                <span className="text-gray-500">-</span>
-                <div className="text-left">
-                  <span className="text-white text-lg font-bold">{homeScore}</span>
-                </div>
-              </div>
-              
-              {/* Home Team */}
-              <div className="flex items-center space-x-3 flex-1 justify-end">
-                <span className="text-gray-200 text-sm font-medium">
-                  {game.teamNames?.home}
-                </span>
-                <div className="w-10 h-10 rounded-full p-0.5" style={{backgroundColor: game.homeTeamColor || '#8B5CF6'}}>
-                  <img
-                    src={game?.logos?.home || homeLogo}
-                    className="w-full h-full rounded-full bg-white p-0.5"
-                    alt="home logo"
-                  />
-                </div>
+              <span className="text-gray-200 text-sm font-medium">
+                {awayTeam}
+              </span>
+            </div>
+                                
+            {/* VS */}
+            <div className="flex items-center space-x-2 mx-4">
+              <span className="text-gray-400 text-sm font-medium">vs</span>
+            </div>
+                                
+            {/* Home Team */}
+            <div className="flex items-center space-x-3 flex-1 justify-end">
+              <span className="text-gray-200 text-sm font-medium">
+                {homeTeam}
+              </span>
+              <div className="w-14 h-14 rounded-full p-0.5" style={{backgroundColor: homeColor || '#8B5CF6'}}>
+                <img
+                  src={homeLogo || homeLogo}
+                  className="w-full h-full rounded-full bg-white p-0.5"
+                  alt="home logo"
+                />
               </div>
             </div>
           </div>
-        );
-      })}
-    </div>
-  </>
-)}
+          {game.venue && (
+            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-40">
+              Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+{/* Recent Games (flat) */}
+<div className="mb-8">
+  <h3 className="text-lg font-bold text-white mb-2 pl-2">Recent Games</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {recentGamesOnly.map((game) => {
+      const homeScore = game.score?.home ?? 0;
+      const awayScore = game.score?.away ?? 0;
+      
+      // Determine home/away based on venue
+      const isVenueHome = game.venue === 'home';
+      const homeTeam = isVenueHome ? game.teamNames?.home : game.teamNames?.away;
+      const homeLogo = isVenueHome ? game?.logos?.home : game?.logos?.away;
+      const homeColor = isVenueHome ? game.homeTeamColor : game.awayTeamColor;
+      const awayTeam = isVenueHome ? game.teamNames?.away : game.teamNames?.home;
+      const awayLogo = isVenueHome ? game?.logos?.away : game?.logos?.home;
+      const awayColor = isVenueHome ? game.awayTeamColor : game.homeTeamColor;
+
+      return (
+        <div
+          onClick={() => handleLiveGameClick(game.link, false)}
+          key={game.id}
+          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
+        >
+          {/* Date and Status */}
+          <div className="text-xs text-gray-400 mb-2">
+            {game.scheduledStart?.date} • Final
+          </div>
+          
+          {/* Game Info */}
+          <div className="flex items-center justify-between">
+            {/* Away Team */}
+            <div className="flex items-center space-x-3 flex-1">
+              <img
+                src={awayLogo || opponentLogo}
+                className="w-8 h-8 rounded-full bg-white p-0.5"
+                alt="away logo"
+              />
+              <span className="text-gray-200 text-sm font-medium">
+                {awayTeam}
+              </span>
+            </div>
+            
+            {/* Score */}
+            <div className="flex items-center space-x-2 mx-4">
+              <div className="text-right">
+                <span className="text-white text-lg font-bold">{awayScore}</span>
+              </div>
+              <span className="text-gray-500">-</span>
+              <div className="text-left">
+                <span className="text-white text-lg font-bold">{homeScore}</span>
+              </div>
+            </div>
+            
+            {/* Home Team */}
+            <div className="flex items-center space-x-3 flex-1 justify-end">
+              <span className="text-gray-200 text-sm font-medium">
+                {homeTeam}
+              </span>
+              <div className="w-10 h-10 rounded-full p-0.5" style={{backgroundColor: homeColor || '#8B5CF6'}}>
+                <img
+                  src={homeLogo || homeLogo}
+                  className="w-full h-full rounded-full bg-white p-0.5"
+                  alt="home logo"
+                />
+              </div>
+            </div>
+          </div>
+          {game.venue && (
+            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-40">
+              Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</div>
 
     </>
   )}

@@ -29,6 +29,10 @@ export default function StartGame() {
   const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
   const [awayTeamColor, setAwayTeamColor] = useState("#0b63fb");
   const [teamColor, setTeamColor] = useState("#8B5CF6"); // Home team color from settings
+  const [leagues, setLeagues] = useState([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState("");
+  const [customLeague, setCustomLeague] = useState("");
+  const [selectedLeagueName, setSelectedLeagueName] = useState("");
   
   const handleGoBack = (e) => {
     e.preventDefault(); // Prevent form submission reload
@@ -85,6 +89,38 @@ const venueSelectedHandler=(venue)=>{
   const handleOpponentInputChange = (event) => {
     setOpponentName(event.target.value);
   };
+
+  useEffect(() => {
+    // Fetch leagues from Firestore (new structure: each doc has a Names array)
+    async function fetchLeagues() {
+      const snapshot = await getDocs(collection(firestore, "Leagues"));
+      // Extract all Names arrays and flatten them with region
+      const leagueList = [];
+      snapshot.docs.forEach(doc => {
+        const region = doc.id;
+        const names = doc.data().Names || [];
+        names.forEach(name => {
+          leagueList.push({ id: region, name });
+        });
+      });
+      setLeagues(leagueList); // leagues is now an array of {id, name}
+    }
+    fetchLeagues();
+  }, []);
+
+  const handleLeagueChange = (e) => {
+    const [id, name] = e.target.value.split("|");
+    setSelectedLeagueId(id);
+    setSelectedLeagueName(name);
+    setCustomLeague("");
+  };
+
+  const handleCustomLeagueChange = (e) => {
+    setCustomLeague(e.target.value);
+    setSelectedLeagueId("");
+    setSelectedLeagueName("");
+  };
+
   const handleGameStart = async () => {
     const selectedLineoutData =
       playerStatsEnabled && selectedLineout
@@ -96,6 +132,14 @@ const venueSelectedHandler=(venue)=>{
     const slug = `${passedTeamName}-vs-${opponentName}-${dateStr}`
       .toLowerCase()
       .replace(/\s+/g, "-");
+  
+    // Determine league info
+    let leagueId = selectedLeagueId;
+    let leagueName = selectedLeagueName;
+    if (customLeague.trim()) {
+      leagueId = "custom";
+      leagueName = customLeague.trim();
+    }
   
     // ✅ Save public document if broadcasting
     if (broadcastToggle) {
@@ -109,6 +153,9 @@ const venueSelectedHandler=(venue)=>{
         slug, // Optional: makes it easier to reference later
         awayTeamColor,
         homeTeamColor: teamColor || "#8B5CF6", // <-- Save home team color
+        leagueId,
+        leagueName,
+        venue: selectedVenue, // Save venue
       });
     }else{
       console.log('no broadcast toggle');
@@ -128,6 +175,9 @@ const venueSelectedHandler=(venue)=>{
       broadcast: broadcastToggle, // Pass this if needed later
       slug, // You may want to keep this around too
       awayTeamColor,
+      leagueId,
+      leagueName,
+      selectedVenue, // Pass venue
     };
   
     navigate("/ingame", { state: gameState });
@@ -183,216 +233,214 @@ const venueSelectedHandler=(venue)=>{
   }, [user]);
 
   return (
-    <div className="h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center">
+    <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center py-8 px-2">
+      <div className="relative w-full max-w-xl mx-auto bg-gray-900/90 rounded-2xl shadow-lg p-8 flex flex-col gap-6 border border-gray-800">
+        {/* Back Button (better design, inside card, left-aligned) */}
+        <button
+          onClick={() => navigate("/homedashboard")}
+          className="flex items-center gap-2 w-fit rounded-lg bg-gray-800 hover:bg-gray-700 text-white shadow-md px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          <span className="font-medium text-sm">Back</span>
+        </button>
 
-      <div className="container mx-auto">
-      <button onClick={()=>{
-   navigate("/homedashboard"); 
-      }} className="bg-primary-cta  py-2 px-10 rounded-md cursor-pointer absolute top-5 mx-10 w-auto flex items-center justify-center  ">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mr-5">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-</svg>
-Back</button>
-        <div className="w-full px-10 my-auto flex-row justify-center items-center">
-          <label htmlFor="small-input" className="block mb-2 text-sm font-medium text-gray-200">
-            Opponent
-          </label>
-          <input
-            required
-            onChange={handleOpponentInputChange}
-            type="text"
-            id="small-input"
-            className="block w-full p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-          />
+        {/* Form Fields */}
+        <div className="flex flex-col gap-4">
+          {/* League Selection */}
+          <div>
+            <label className="block mb-1 text-xs font-semibold text-gray-300">League</label>
+            <select
+              value={selectedLeagueId && selectedLeagueName ? `${selectedLeagueId}|${selectedLeagueName}` : ""}
+              onChange={handleLeagueChange}
+              className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            >
+              <option value="">Select a league</option>
+              {leagues.map((league, idx) => (
+                <option key={idx} value={`${league.id}|${league.name}`}>{league.name}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={customLeague}
+              onChange={handleCustomLeagueChange}
+              placeholder="Or enter a custom league/tournament"
+              className="mt-2 block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            />
+          </div>
+
+          {/* Opponent */}
+          <div>
+            <label htmlFor="opponent-input" className="block mb-1 text-xs font-semibold text-gray-300">Opponent</label>
+            <input
+              required
+              onChange={handleOpponentInputChange}
+              type="text"
+              id="opponent-input"
+              className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            />
+          </div>
 
           {/* Away Team Color Picker */}
-          <div className="mt-4">
-            <label className="block mb-2 text-sm font-medium text-gray-200">Away Team Color</label>
-            <div className="flex space-x-2">
+          <div>
+            <label className="block mb-1 text-xs font-semibold text-gray-300">Away Team Color</label>
+            <div className="flex flex-wrap gap-2 mt-1">
               {[
-          "#8B5CF6", // purple (your primary home color)
-          "#06B6D4", // cyan/teal - cool complement
-          "#F59E0B", // amber/orange - warm contrast
-          "#EF4444", // red - energetic accent
-          "#10B981", // emerald green - fresh contrast
-          "#6366F1", // indigo - harmonious neighbor
-          "#EC4899", // hot pink - vibrant complement
-          "#64748B"  // slate gray - neutral balance
+                "#8B5CF6", "#06B6D4", "#F59E0B", "#EF4444", "#10B981", "#6366F1", "#EC4899", "#64748B"
               ].map((color) => (
                 <button
                   key={color}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${
-                    awayTeamColor === color ? 'border-white scale-110' : 'border-gray-400'
+                  className={`w-8 h-8 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${
+                    awayTeamColor === color ? 'border-white scale-110 shadow-lg' : 'border-gray-500'
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => setAwayTeamColor(color)}
                   aria-label={`Select color ${color}`}
                 >
                   {awayTeamColor === color && (
-                    <svg className="w-4 h-4 mx-auto my-auto text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Toggle Section for Player Stats */}
-          <div className="grid   grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
-            <div className="bg-secondary-bg  h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
+          {/* Toggles and Logo Upload */}
+          <div className="flex flex-col md:flex-row gap-4 mt-2">
+            {/* Player Stats Toggle */}
+            <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-gray-200 font-medium">Player Stats</span>
               <label className="inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={playerStatsEnabled}
                   onChange={(e) => setPlayerStatsEnabled(e.target.checked)}
-                  className="sr-only peer mx-auto"
+                  className="sr-only peer"
                 />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                <span className="ms-3 text-sm font-medium text-gray-300">Player Stats</span>
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
               </label>
             </div>
-            <div className=" mx-auto w-full space-x-2  h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center">
+
+            {/* Logo Upload */}
             <div
-              className={`bg-secondary-bg   h-24 col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center cursor-pointer relative
-                
-                ${user ? 'w-1/2' : "w-full"}
-                `}
+              className="flex-1 bg-gray-800 rounded-lg flex items-center justify-center px-4 py-3 cursor-pointer relative min-h-[56px]"
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
             >
               {opponentLogo ? (
-                <div className="relative  w-full h-full flex items-center justify-center">
+                <div className="relative w-14 h-14 flex items-center justify-center">
                   <img
                     src={opponentLogo}
                     alt="Opponent Logo"
-                    className="h-full object-contain rounded-full"
+                    className="h-full w-full object-contain rounded-full border border-gray-700"
                   />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setOpponentLogo(null);
                     }}
-                    className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full"
+                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1 rounded-full shadow"
                   >
-                    <FontAwesomeIcon className="w-6" icon={faTrash} />
+                    <FontAwesomeIcon className="w-4" icon={faTrash} />
                   </button>
                 </div>
               ) : (
-                <label className="w-full h-full flex flex-col items-center justify-center text-gray-300">
-                  <FontAwesomeIcon icon={faUpload} className="text-xl mb-2" />
-                  <span className="text-xs">Drag & Drop or Click to Upload</span>
+                <label className="w-full h-full flex flex-col items-center justify-center text-gray-300 cursor-pointer">
+                  <FontAwesomeIcon icon={faUpload} className="text-lg mb-1" />
+                  <span className="text-xs">Logo</span>
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 </label>
               )}
             </div>
-            {user &&
-            <div className={`bg-secondary-bg justify-center items-center mx-auto flex h-24 rounded-md
-            
-            w-1/2
-             `}>
-            <label className="inline-flex items-center cursor-pointer">
-                <input
-                checked={broadcastToggle}
-                onClick={(e)=>{
-                  setBroadcastToggle(e.target.checked)
-                }}
-                  type="checkbox"
-                  className="sr-only peer mx-auto"
-                />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                <span className="ms-3 text-sm font-medium text-gray-300">Broadcast</span>
-              </label>
 
-</div>
-}
-            </div>
-
-           
+            {/* Broadcast Toggle (if user) */}
+            {user && (
+              <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-gray-200 font-medium">Broadcast</span>
+                <label className="inline-flex items-center cursor-pointer">
+                  <input
+                    checked={broadcastToggle}
+                    onClick={(e) => setBroadcastToggle(e.target.checked)}
+                    type="checkbox"
+                    className="sr-only peer"
+                  />
+                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
+                </label>
+              </div>
+            )}
           </div>
 
-          {/* Lineout Selector */}
+          {/* Lineout Selector (if Player Stats enabled) */}
           {playerStatsEnabled && (
-            <div className="mt-5">
-              <label className="block text-sm font-medium text-white mb-5">Select Lineout</label>
-              <div className=" flex flex-row my-auto items-center justify-center space-x-5 px-5 mb-10">
-                <div className="w-1/2 h-full">
-              {lineouts.length > 0 ? (
-                <select
-                  value={selectedLineout || ""}
-                  onChange={(e) => setSelectedLineout(e.target.value)}
-                  className=" block w-full p-2 text-black bg-gray-50 border border-gray-300 rounded-lg text-xs"
-                >
-                  {lineouts.map((lineout) => (
-                    <option key={lineout.id} value={lineout.id}>
-                      {lineout.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-gray-400">None</p>
-              )}
+            <div className="bg-gray-800 rounded-lg p-4 mt-2">
+              <label className="block text-xs font-semibold text-gray-300 mb-2">Select Lineout</label>
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1 w-full">
+                  {lineouts.length > 0 ? (
+                    <select
+                      value={selectedLineout || ""}
+                      onChange={(e) => setSelectedLineout(e.target.value)}
+                      className="block w-full p-2 text-black bg-gray-50 border border-gray-300 rounded-lg text-xs"
+                    >
+                      {lineouts.map((lineout) => (
+                        <option key={lineout.id} value={lineout.id}>
+                          {lineout.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-gray-400">None</p>
+                  )}
+                </div>
+                <div className="flex-1 w-full flex items-center justify-center">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      checked={minutesTracked}
+                      onChange={(e) => setMinutesTracked(e.target.checked)}
+                      type="checkbox"
+                      className="sr-only peer"
+                    />
+                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
+                    <span className="ml-3 text-xs font-medium text-gray-200">Timer</span>
+                  </label>
+                </div>
               </div>
-              <div className="w-1/2 h-full items-center justify-center my-auto">
-
-<label class="inline-flex items-center cursor-pointer">
-  <input  
-  checked={minutesTracked}
-  onChange={(e) => setMinutesTracked(e.target.checked)}
-                   type="checkbox" value="" class="sr-only peer"/>
-  <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-600"></div>
-  <span class="ms-3 text-sm font-medium text-gray-200">Timer</span>
-</label>
-
-              </div>
-
-</div>
-
-
             </div>
           )}
+        </div>
 
-          {/* Venue Toggle and Start Game Button */}
-          <div className="grid grid-cols-4 mt-5 w-full lg:grid-cols-4 gap-4">
-          <div className="bg-secondary-bg col-span-4 lg:col-span-2 flex h-24 rounded-lg relative overflow-hidden">
-  {/* Sliding background */}
-  <div
-    className={`
-      absolute top-0 left-0 h-full w-1/2 bg-white rounded-lg transition-transform duration-300 ease-in-out
-      ${selectedVenue === "away" ? "translate-x-full" : "translate-x-0"}
-    `}
-  />
-
-  {/* Home Button */}
-  <div
-    className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
-    onClick={() => venueSelectedHandler('home')}
-  >
-    <button className={`px-4 py-2 rounded ${selectedVenue === "home" ? "text-gray-800 font-bold" : "text-white"}`}>
-      Home
-    </button>
-  </div>
-
-  {/* Away Button */}
-  <div
-    className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
-    onClick={() => venueSelectedHandler('away')}
-  >
-    <button className={`px-4 py-2 rounded ${selectedVenue === "away" ? "text-gray-800 font-bold" : "text-white"}`}>
-      Away
-    </button>
-  </div>
-</div>
-
-
-            <button
-              onClick={handleGameStart}
-              className="bg-indigo-500 h-24 col-span-4 lg:col-span-2 p-2 lg:p-4 rounded-lg flex items-center justify-center text-white"
-              disabled={!opponentName}
+        {/* Venue Toggle and Start Game Button */}
+        <div className="flex flex-col md:flex-row gap-4 mt-6 items-center">
+          <div className="flex-1 bg-gray-800 rounded-lg flex overflow-hidden relative h-16">
+            {/* Sliding background */}
+            <div
+              className={`absolute top-0 left-0 h-full w-1/2 bg-white rounded-lg transition-transform duration-300 ease-in-out ${selectedVenue === "away" ? "translate-x-full" : "translate-x-0"}`}
+            />
+            {/* Home Button */}
+            <div
+              className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
+              onClick={() => venueSelectedHandler('home')}
             >
-              <FontAwesomeIcon icon={faPlay} />
-              <span className="ms-3 text-sm font-medium">Start Game</span>
-            </button>
+              <button className={`px-4 py-2 rounded ${selectedVenue === "home" ? "text-gray-800 font-bold" : "text-white"}`}>Home</button>
+            </div>
+            {/* Away Button */}
+            <div
+              className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
+              onClick={() => venueSelectedHandler('away')}
+            >
+              <button className={`px-4 py-2 rounded ${selectedVenue === "away" ? "text-gray-800 font-bold" : "text-white"}`}>Away</button>
+            </div>
           </div>
+          <button
+            onClick={handleGameStart}
+            className="md:w-full w-auto px-8 md:w-auto py-4 flex-1 bg-indigo-500 hover:bg-indigo-600 h-16 rounded-lg flex items-center justify-center text-white text-lg font-semibold shadow-lg transition-all duration-200 disabled:opacity-50 mt-4 md:mt-0"
+            disabled={!opponentName}
+          >
+            <FontAwesomeIcon icon={faPlay} />
+            <span className="ml-3">Start Game</span>
+          </button>
         </div>
       </div>
     </div>

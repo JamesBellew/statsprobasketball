@@ -160,9 +160,27 @@ const locationGameState = location.state || {};
 const [homeTeamName, setHomeTeamName] = useState("Home");
 // Add state for awayTeamColor
 const [awayTeamColor, setAwayTeamColor] = useState(savedGame?.awayTeamColor || "#0b63fb");
+const [leagueId, setLeagueId] = useState(savedGame?.leagueId || "");
+const [leagueName, setLeagueName] = useState(savedGame?.leagueName || "");
 
-
-
+// Ensure leagueId and leagueName are always set from navigation state or savedGame
+useEffect(() => {
+  let id = "";
+  let name = "";
+  if (location.state) {
+    id = location.state.leagueId || "";
+    name = location.state.leagueName || "";
+  } else if (savedGame) {
+    id = savedGame.leagueId || "";
+    name = savedGame.leagueName || "";
+  }
+  // If only one is set, use it for both
+  if (id && !name) name = id;
+  if (name && !id) id = name;
+  setLeagueId(id);
+  setLeagueName(name);
+  console.log('Setting leagueId:', id, 'leagueName:', name);
+}, [location.state, savedGame]);
 
 useEffect(() => {
   const loadTeamSettings = async () => {
@@ -607,62 +625,91 @@ const updateLiveBroadcast = async () => {
   console.log('haliiiii  bruhh');
   
   if (!broadcast || !slug) return;
+  
   const resolvedVenue = selectedVenue === "away"
-  ? opponentName || "Home"
-  : homeTeamName || "Home";
-console.log(selectedVenue,' is he him');
+    ? opponentName || "Home"
+    : homeTeamName || "Home";
+  console.log(selectedVenue,' is he him');
+
+  // Debug the league values
+  console.log('🏀 League Debug - leagueId:', leagueId, 'leagueName:', leagueName);
+  
+  // Ensure we have proper league values
+  const finalLeagueId = leagueId && leagueId.trim() !== "" ? leagueId : "Ireland";
+  const finalLeagueName = leagueName && leagueName.trim() !== "" ? leagueName : "Basketball Ireland Development League (BIDL) - Men's";
+  
+  console.log('🏀 Final League Values - id:', finalLeagueId, 'name:', finalLeagueName);
 
   try {
+    // Structure the data to match your Firestore schema
+    const liveGameData = {
+      gameState: liveBroadcastGameFinished,
+      teamNames: {
+        home: homeTeamName,
+        away: opponentName
+      },
+      logos: {
+        home: teamImage,       // Your local variable or image URL
+        away: opponentLogo     // Your local variable or image URL
+      },
+      scheduledStart: {
+        date: selectedDate,
+        time: selectedTime
+      },
+      lineout: passedLineout,
+      onCourtPlayers: onCourtPlayers,
+      stats: {
+        fieldGoalPct: fgPercentage,
+        fieldGoalMade: fgMade,
+        fieldGoalMissed: (fgAttempts - fgMade),
+        
+        threePointPct: threePtPercentage,
+        threePointMade: threePtMade,
+        threePointMissed: (threePtAttempts - threePtMade),
+        
+        freeThrowPct: ftPercentage,
+        freeThrowMade: ftMade,
+        freeThrowMissed: (ftAttempts - ftMade),
+        
+        blocks: blocks,
+        steals: steals,
+        turnovers: turnovers,
+      },
+      venue: selectedVenue,
+      link: broadcastLink,
+      score: {
+        home: teamScore,
+        away: opponentScore,
+      },
+      quarter: currentQuater,
+      gameActions,
+      lastUpdated: new Date(),
+      
+      // Structure league data to match your Firestore schema
+      league: {
+        id: finalLeagueId,
+        name: finalLeagueName
+      },
+      
+      // You might also want to include these for backward compatibility
+      leagueId: finalLeagueId,
+      leagueName: finalLeagueName,
+      
+      // Additional fields that might be useful
+      homeTeamColor: "#6366F1", // Your team color
+      awayTeamColor: awayTeamColor,
+      createdAt: new Date(),
+      isLive: true
+    };
+
     await setDoc(
       firestoreDoc(firestore, "liveGames", slug),
-      {
-      
-        gameState: liveBroadcastGameFinished,
-        teamNames:{
-home:homeTeamName,
-away:opponentName
-        },
-        logos: {
-          home: teamImage ,       // <-- Your local variable or image URL
-          away: opponentLogo    // <-- Your local variable or image URL
-        },
-        scheduledStart:{
-          date: selectedDate,
-          time:selectedTime
-        },
-        lineout:passedLineout,
-        onCourtPlayers:onCourtPlayers,
-        stats:{
-          
-            fieldGoalPct: fgPercentage,
-            fieldGoalMade: fgMade,
-            fieldGoalMissed: (fgAttempts-fgMade),
-          
-            threePointPct: threePointPercentage,
-            threePointMade: threePtMade,
-            threePointMissed: (threePtAttempts-threePtMade),
-          
-            freeThrowPct: ftPercentage,
-            freeThrowMade: ftMade,
-            freeThrowMissed: (ftAttempts-ftMade),
-          
-            blocks: blocks,
-            steals: steals,
-            turnovers: turnovers,
-        },
-        venue: selectedVenue,
-        link:broadcastLink,
-        score: {
-          home: teamScore,
-          away: opponentScore,
-        },
-        quarter: currentQuater,
-        gameActions,
-        lastUpdated: new Date(),
-      },
+      liveGameData,
       { merge: true }
     );
+    
     console.log("📡 Live broadcast updated:", slug);
+    console.log("📡 League data saved:", { id: finalLeagueId, name: finalLeagueName });
   } catch (err) {
     console.error("❌ Error updating live game broadcast:", err);
   }
@@ -1075,6 +1122,8 @@ const handleSaveGame = async () => {
     broadcast,
     slug,
     awayTeamColor, // <-- Save the away team color
+    leagueId,
+    leagueName,
   };
 
   try {
