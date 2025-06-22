@@ -293,7 +293,7 @@ navigate("/")
       {/* Live Games (grouped by league) */}
       {liveGamesLeagueEntries.map(([league, games]) => (
         <div key={league} className="mb-8">
-          <h3 className="text-sm font-semibold text-gray-300 mb-4 border-l-4 border-l-gray-800/40 py-2 pl-2">{league}</h3>
+          <h3 className="text-sm font-semibold text-gray-300 mb-4 border-l-gray-800/40 py-2 pl-2">{league}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
             {games.map((game) => {
               const homeScore = game.score?.home ?? 0;

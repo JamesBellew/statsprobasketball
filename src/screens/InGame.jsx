@@ -136,6 +136,7 @@ const defaultTime = new Date().toTimeString().slice(0, 5);  // "HH:MM"
 const [selectedDate, setSelectedDate] = useState(defaultDate);
 const [selectedTime, setSelectedTime] = useState(defaultTime);
 
+const [awayLineout, setAwayLineout] = useState(savedGame?.awayLineout || null);
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
   2: { minutes: 10, seconds: 0 },
@@ -240,7 +241,16 @@ useEffect(() => {
 useEffect(() => {
   secondsRef.current = seconds;
 }, [seconds]);
-
+const handleSaveAwayLineout = (lineoutData) => {
+  console.log("🔍 Saving away lineout data:", lineoutData); // ADD THIS
+  setAwayLineout(lineoutData);
+  setAlertMessage("Opponent lineout saved!");
+  setTimeout(() => setAlertMessage(""), 3000);
+  
+  setTimeout(() => {
+    handleSaveGame();
+  }, 500);
+};
 // Filter lead changes based on selected quarter
 const filteredLeadChanges =
   selectedQuarter === "All"
@@ -656,6 +666,7 @@ const updateLiveBroadcast = async () => {
         date: selectedDate,
         time: selectedTime
       },
+      awayLineout: awayLineout,
       lineout: passedLineout,
       onCourtPlayers: onCourtPlayers,
       stats: {
@@ -1067,7 +1078,7 @@ const handleSaveGame = async () => {
   const trackingMinutes = minutesTracked !== null;
   const trackingPlayers = gameActions.some(action => action.playerName);
 
-  
+  console.log("🔍 awayLineout state when saving:", awayLineout); 
   setLastVisitedQuarter(currentQuater)
   setQuarterTimes(prev => ({
     ...prev,
@@ -1101,6 +1112,7 @@ const handleSaveGame = async () => {
     opponentName,
     venue: selectedVenue,
     actions: gameActions,
+    awayLineout: awayLineout,  
     opponentActions,
     leadChanges,
     lineout: savedGame?.lineout || passedLineout,
@@ -1111,6 +1123,7 @@ const handleSaveGame = async () => {
     playerMinutes,
     quarterTimes,
     timestamp: new Date().toISOString(),
+  
     opponentLogo,
     score: {
       home: teamScore,
@@ -1128,10 +1141,14 @@ const handleSaveGame = async () => {
 
   try {
     if (user) {
-      const cleaned = cleanForFirestore(gameData);
-      const docRef = firestoreDoc(firestore, "users", user.uid, "games", gameId);
-      await setDoc(docRef, cleaned);
-      console.log("✅ Game synced to Firestore!");
+  console.log("🔍 Original gameData.awayLineout:", gameData.awayLineout);
+    const cleaned = cleanForFirestore(gameData);
+    console.log("🔍 Cleaned data.awayLineout:", cleaned.awayLineout);
+    console.log("🔍 Cleaned data keys:", Object.keys(cleaned));
+    
+    const docRef = firestoreDoc(firestore, "users", user.uid, "games", gameId);
+    await setDoc(docRef, cleaned);
+    console.log("✅ Game synced to Firestore!");
     } else {
       const existingGame = await db.games.get(gameId);
       if (existingGame) {
@@ -2680,12 +2697,14 @@ passedLineout={passedLineout}
 
         </div>
       </div>
-      <LineoutModal
+      <LineoutModal 
   showLineoutModal={showLineoutModal}
   setShowLineoutModal={setShowLineoutModal}
   passedLineout={passedLineout}
   onCourtPlayers={onCourtPlayers}
   handleTogglePlayer={handleTogglePlayer}
+  awayLineout={awayLineout}           // ADD THIS LINE
+  onSaveAwayLineout={handleSaveAwayLineout}  // ADD THIS LINE
 />
 
 

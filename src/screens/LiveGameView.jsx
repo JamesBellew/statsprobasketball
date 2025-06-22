@@ -25,8 +25,21 @@ export default function LiveGameView() {
   const [lineoutPlayers, setLineoutPlayers] = useState([]);
   const location = useLocation();
   const isScheduled = Boolean(location?.state?.isScheduled);
-
-
+  const [selectedTeamLineout, setSelectedTeamLineout] = useState('home'); // 'home' or 'away'
+  const [awayLineoutPlayers, setAwayLineoutPlayers] = useState([]);
+  useEffect(() => {
+    if (gameData?.awayLineout?.players) {
+      setAwayLineoutPlayers(gameData.awayLineout.players);
+    } else if (gameData?.opponentLineout?.players) {
+      // Handle both field names for backward compatibility
+      setAwayLineoutPlayers(gameData.opponentLineout.players);
+    }
+  }, [gameData]);
+  useEffect(() => {
+    if (gameData?.lineout?.players) {
+      setLineoutPlayers(gameData.lineout.players);
+    }
+  }, [gameData]);
   // for game slugs
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, "liveGames", slug), (docSnap) => {
@@ -586,38 +599,83 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       </div>
     </div>
   ) 
-  : gameStatsToggleMode === 'Lineouts' ? (
-    trackingLineout ? (
+:gameStatsToggleMode === 'Lineouts' ? (
+  trackingLineout || awayLineoutPlayers.length > 0 ? (
     
 <div className="relative w-full h-full aspect-square rounded-s-lg overflow-hidden">
 
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
-    <div className="flex h-full justify-center items-center  w-full gap-4">
-      <p style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="bg-secondary-bg w-auto text-center border-b-2 ">{homeTeamName || "Home"}</p>
-      <div className="relative group">
-        <button type="button" className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center">
+    <div className="flex h-full justify-center items-center w-full gap-4">
+      {/* Home Team Button */}
+      <button
+        onClick={() => setSelectedTeamLineout('home')}
+        style={{
+          borderBottomColor: selectedTeamLineout === 'home' ? (gameData?.homeTeamColor || '#8B5CF6') : 'transparent'
+        }}
+        className={`bg-secondary-bg w-auto text-center border-b-2 px-3 py-1 rounded-t-lg transition-all duration-200 ${
+          selectedTeamLineout === 'home' ? 'text-white' : 'text-gray-400 hover:text-white'
+        }`}
+      >
+        {homeTeamName || "Home"}
+      </button>
+
+      {/* Away Team Button - Only clickable if away lineout exists */}
+      {(awayLineoutPlayers.length > 0) ? (
+        <button
+          onClick={() => setSelectedTeamLineout('away')}
+          style={{
+            borderBottomColor: selectedTeamLineout === 'away' ? (gameData?.awayTeamColor || '#0b63fb') : 'transparent'
+          }}
+          className={`bg-secondary-bg w-auto text-center border-b-2 px-3 py-1 rounded-t-lg transition-all duration-200 ${
+            selectedTeamLineout === 'away' ? 'text-white' : 'text-gray-400 hover:text-white'
+          }`}
+        >
           {awayTeamName || "Away"}
         </button>
-        <div className="absolute top-2/2 w-auto h-auto overflow-y-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
-          Release 3.0
+      ) : (
+        <div className="relative group">
+          <button
+            type="button"
+            className="bg-secondary-bg rounded-lg w-auto line-through text-gray-400 text-center px-3 py-1"
+            disabled
+          >
+            {awayTeamName || "Away"}
+          </button>
+          <div className="absolute top-1/2 w-auto h-auto overflow-y-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+            No Away Lineout
+          </div>
         </div>
-      </div>
+      )}
     </div>
   </div>
 
-
-
-  <div className="h-[60%]  border-t-2 border-t-white/5  relative" data-section="on-court-5">
+  <div className="h-[60%] border-t-2 border-t-white/5 relative" data-section="on-court-5">
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="absolute w-1/5 h-[55%] border-[1px] border-white/10 top-0" data-section="key"></div>
-      <div className="absolute top-[55%] w-1/5 h-[20%] border-[1px] border-white/10 rounded-b-full" data-section="key-semi-circle" ></div>
-      <div className="border-[1px] border-white/10 w-[80%] h-[80%] rounded-b-full   absolute top-0"></div>
+      <div className="absolute top-[55%] w-1/5 h-[20%] border-[1px] border-white/10 rounded-b-full" data-section="key-semi-circle"></div>
+      <div className="border-[1px] border-white/10 w-[80%] h-[80%] rounded-b-full absolute top-0"></div>
     </div>
 
-    {/* Filter the players */}
+    {/* Filter the players based on selected team */}
     {(() => {
-      const onCourt = lineoutPlayers.filter(p => onCourtPlayers.includes(String(p.number)));
-      const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
+      // Choose which lineout data to use
+      const currentLineoutPlayers = selectedTeamLineout === 'home' ? lineoutPlayers : awayLineoutPlayers;
+      
+      // For home team: use the existing onCourtPlayers logic
+      // For away team: first 5 players are on court, rest are bench
+      let currentOnCourtPlayers, onCourt, bench;
+      
+      if (selectedTeamLineout === 'home') {
+        currentOnCourtPlayers = onCourtPlayers;
+        onCourt = currentLineoutPlayers.filter(p => currentOnCourtPlayers.includes(String(p.number)));
+        bench = currentLineoutPlayers.filter(p => !currentOnCourtPlayers.includes(String(p.number)));
+      } else {
+        // Away team: first 5 are on court, rest are bench
+        onCourt = currentLineoutPlayers.slice(0, 5);
+        bench = currentLineoutPlayers.slice(5);
+      }
+      
+      const currentTeamColor = selectedTeamLineout === 'home' ? (gameData?.homeTeamColor || '#8B5CF6') : (gameData?.awayTeamColor || '#0b63fb');
 
       return (
         <>
@@ -625,7 +683,10 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
             <>
               {/* Center */}
               <div className="absolute top-[10%] left-[50%] transform -translate-x-1/2">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
+                  style={{ borderColor: currentTeamColor }}
+                >
                   #{onCourt[0].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[0].name}</div>
@@ -633,7 +694,10 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Left Wing */}
               <div className="absolute top-[25%] left-[15%] transform -translate-x-1/2">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
+                  style={{ borderColor: currentTeamColor }}
+                >
                   #{onCourt[1].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[1].name}</div>
@@ -641,7 +705,10 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Right Wing */}
               <div className="absolute top-[25%] right-[15%] transform translate-x-1/2">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
+                  style={{ borderColor: currentTeamColor }}
+                >
                   #{onCourt[2].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[2].name}</div>
@@ -649,16 +716,21 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
               {/* Left Corner */}
               <div className="absolute top-[60%] left-[35%] transform -translate-x-1/2">
-        <div className="w-10 h-10 bg-white/10 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10">
-          #{onCourt[3].number}
-        </div>
-        <div className="text-white text-sm text-center mt-1 opacity-80">{onCourt[3].name}</div>
-      </div>
-
+                <div 
+                  className="w-10 h-10 bg-white/10 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-[1px]"
+                  style={{ borderColor: currentTeamColor }}
+                >
+                  #{onCourt[3].number}
+                </div>
+                <div className="text-white text-sm text-center mt-1 opacity-80">{onCourt[3].name}</div>
+              </div>
 
               {/* Right Corner */}
               <div className="absolute top-[60%] right-[35%] transform translate-x-1/2">
-                <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] border-white/10 text-xs">
+                <div 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
+                  style={{ borderColor: currentTeamColor }}
+                >
                   #{onCourt[4].number}
                 </div>
                 <div className="text-white text-sm text-center mt-1">{onCourt[4].name}</div>
@@ -670,26 +742,34 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
     })()}
   </div>
 
-
-  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg
- border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
-    {lineoutPlayers
-      .filter(p => !onCourtPlayers.includes(String(p.number)))
-      .map((player, index) => (
+  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
+    {(() => {
+      const currentLineoutPlayers = selectedTeamLineout === 'home' ? lineoutPlayers : awayLineoutPlayers;
+      
+      let benchPlayers;
+      if (selectedTeamLineout === 'home') {
+        // Home team: use existing onCourtPlayers logic
+        benchPlayers = currentLineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.number)));
+      } else {
+        // Away team: players from index 5 onwards are bench
+        benchPlayers = currentLineoutPlayers.slice(5);
+      }
+      
+      return benchPlayers.map((player, index) => (
         <div key={index} className="flex flex-col items-center">
           <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-white font-semibold">
             #{player.number}
           </div>
           <div className="text-xs text-white mt-1 text-center">{player.name}</div>
         </div>
-      ))}
+      ));
+    })()}
   </div>
 </div>
-    )
-    :(
-      <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
-    )
-    )
+  ) : (
+    <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
+  )
+)
 
 
 : (
@@ -701,8 +781,8 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
   {(() => {
     // Initialize stats objects
     const homeStats = {
-      fieldGoalMade: 0,
-      fieldGoalMissed: 0,
+      twoPointMade: 0,
+      twoPointMissed: 0,
       threePointMade: 0,
       threePointMissed: 0,
       freeThrowMade: 0,
@@ -713,8 +793,8 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
     };
   
     const awayStats = {
-      fieldGoalMade: 0,
-      fieldGoalMissed: 0,
+      twoPointMade: 0,
+      twoPointMissed: 0,
       threePointMade: 0,
       threePointMissed: 0,
       freeThrowMade: 0,
@@ -741,14 +821,14 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       if (action.type === 'score') {
         if (action.points > 0) {
           if (action.points === 1) statsObj.freeThrowMade++;
-          else if (action.points === 2) statsObj.fieldGoalMade++;
+          else if (action.points === 2) statsObj.twoPointMade++;
           else if (action.points === 3) statsObj.threePointMade++;
         }
         // Misses for 'score' type with points === 0
         if (action.points === 0 && action.actionName) {
           const missLabel = action.actionName.toLowerCase();
           if (missLabel.includes('ft miss')) statsObj.freeThrowMissed++;
-          else if (missLabel.includes('2pt miss')) statsObj.fieldGoalMissed++;
+          else if (missLabel.includes('2pt miss')) statsObj.twoPointMissed++;
           else if (missLabel.includes('3pt miss')) statsObj.threePointMissed++;
         }
       }
@@ -757,7 +837,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       if (action.type === 'action' || action.actionType) {
         const missLabel = (action.actionType || action.actionName || '').toLowerCase();
         if (missLabel.includes('ft miss')) statsObj.freeThrowMissed++;
-        else if (missLabel.includes('2pt miss')) statsObj.fieldGoalMissed++;
+        else if (missLabel.includes('2pt miss')) statsObj.twoPointMissed++;
         else if (missLabel.includes('3pt miss')) statsObj.threePointMissed++;
       }
 
@@ -767,6 +847,12 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
         if (actionLabel.includes('ft miss')) statsObj.freeThrowMissed++;
       }
     });
+  
+    // Combine 2-point and 3-point stats for total Field Goals
+    homeStats.fieldGoalMade = homeStats.twoPointMade + homeStats.threePointMade;
+    homeStats.fieldGoalMissed = homeStats.twoPointMissed + homeStats.threePointMissed;
+    awayStats.fieldGoalMade = awayStats.twoPointMade + awayStats.threePointMade;
+    awayStats.fieldGoalMissed = awayStats.twoPointMissed + awayStats.threePointMissed;
   
     // Calculate percentages
     const calculatePercentage = (made, missed) => {
