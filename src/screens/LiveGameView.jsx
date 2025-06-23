@@ -416,12 +416,12 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
           showStatsModal ? 'translate-y-0' : '-translate-y-4'
         }`}>
 <div className="w-full flex justify-center">
-<div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[360px]' : 'w-[270px]'} mx-auto`}>
+<div className={`relative flex bg-secondary-bg rounded-full p-1 ${trackingPlayers ? 'w-[450px]' : 'w-[360px]'} mx-auto`}>
   {/* Animated background */}
   <div 
     className={`absolute top-1 left-1 h-[calc(100%-8px)] bg-primary-cta bg-opacity-50 rounded-full transition-transform duration-300 ease-in-out`}
     style={{
-      width: trackingPlayers ? 'calc(25% - 4px)' : 'calc(33.333% - 4px)',
+      width: trackingPlayers ? 'calc(20% - 4px)' : 'calc(25% - 4px)',
       transform: trackingPlayers 
         ? (gameStatsToggleMode === 'Game' 
             ? 'translateX(0%)' 
@@ -429,19 +429,23 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
               ? 'translateX(100%)' 
               : gameStatsToggleMode === 'Stats' 
                 ? 'translateX(200%)' 
-                : 'translateX(300%)')
+                : gameStatsToggleMode === 'Map'
+                  ? 'translateX(300%)'
+                  : 'translateX(400%)')
         : (gameStatsToggleMode === 'Game' 
             ? 'translateX(0%)' 
             : gameStatsToggleMode === 'Stats' 
               ? 'translateX(100%)' 
-              : 'translateX(200%)')
+              : gameStatsToggleMode === 'Map'
+                ? 'translateX(200%)'
+                : 'translateX(300%)')
     }}
   ></div>
 
   {/* Game */}
   <button 
     onClick={() => setGameStatsToggleMode("Game")}
-    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+    className={`relative ${trackingPlayers ? 'w-1/5' : 'w-1/4'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
       gameStatsToggleMode === "Game" ? "text-white" : "text-gray-400"
     }`}
   >
@@ -452,7 +456,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
   {trackingPlayers && (
     <button 
       onClick={() => setGameStatsToggleMode("Player")}
-      className={`relative w-1/4 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      className={`relative w-1/5 px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
         gameStatsToggleMode === "Player" ? "text-white" : "text-gray-400"
       }`}
     >
@@ -463,21 +467,31 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
   {/* Stats */}
   <button 
     onClick={() => setGameStatsToggleMode("Stats")}
-    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+    className={`relative ${trackingPlayers ? 'w-1/5' : 'w-1/4'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
       gameStatsToggleMode === "Stats" ? "text-white" : "text-gray-400"
     }`}
   >
     Stats
   </button>
 
+  {/* Map */}
+  <button 
+    onClick={() => setGameStatsToggleMode("Map")}
+    className={`relative ${trackingPlayers ? 'w-1/5' : 'w-1/4'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+      gameStatsToggleMode === "Map" ? "text-white" : "text-gray-400"
+    }`}
+  >
+    Map
+  </button>
+
   {/* Lineouts */}
   <button 
     onClick={() => setGameStatsToggleMode("Lineouts")}
-    className={`relative ${trackingPlayers ? 'w-1/4' : 'w-1/3'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
+    className={`relative ${trackingPlayers ? 'w-1/5' : 'w-1/4'} px-4 py-1 rounded-full text-sm font-medium transition-all duration-300 z-10 ${
       gameStatsToggleMode === "Lineouts" ? "text-white" : "text-gray-400"
     }`}
   >
-    Lineouts
+    Team
   </button>
 </div>
 
@@ -602,7 +616,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 :gameStatsToggleMode === 'Lineouts' ? (
   trackingLineout || awayLineoutPlayers.length > 0 ? (
     
-<div className="relative w-full h-full aspect-square rounded-s-lg overflow-hidden">
+<div className="relative w-full h-full aspect-square rounded-s-lg overflow-hidden mx-0 px-0">
 
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
     <div className="flex h-full justify-center items-center w-full gap-4">
@@ -649,7 +663,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
     </div>
   </div>
 
-  <div className="h-[60%] border-t-2 border-t-white/5 relative" data-section="on-court-5">
+  <div className="h-[60%] border-t-2 border-t-white/5 relative mx-0 px-0" data-section="on-court-5">
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="absolute w-1/5 h-[55%] border-[1px] border-white/10 top-0" data-section="key"></div>
       <div className="absolute top-[55%] w-1/5 h-[20%] border-[1px] border-white/10 rounded-b-full" data-section="key-semi-circle"></div>
@@ -742,7 +756,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
     })()}
   </div>
 
-  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-2" data-section="bench-div">
+  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-0" data-section="bench-div">
     {(() => {
       const currentLineoutPlayers = selectedTeamLineout === 'home' ? lineoutPlayers : awayLineoutPlayers;
       
@@ -769,10 +783,39 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
   ) : (
     <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
   )
-)
-
-
-: (
+) : gameStatsToggleMode === 'Map' ? (
+  <>
+     <div className="flex flex-row w-full h-10 items-center justify-center space-x-4" data-section="map-team-nav-div">
+      <button style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="text-white text-sm font-medium border-b-2 ">{homeTeamName || "Home"}</button>
+      <button style={{borderBottomColor: gameData?.awayTeamColor || '#0b63fb'}} className="text-gray-600 line-through text-sm font-medium">{awayTeamName || "Away"}</button>
+     </div>
+  <div className="w-full h-[45vh] bg-secondary-bg  bg-opacity-40 rounded-lg flex items-center justify-center">
+   <div className="border-[1px] border-gray-600/40  rounded-md h-full w-full relative" data-section="court">
+   <div className="absolute left-1/2 top-0 w-[85%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
+   <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
+   <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40"></div>
+   {/* Home team score dots */}
+   {Array.isArray(gameData?.gameActions) && gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number').map((action, idx) => {
+     const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
+     return (
+       <div
+         key={idx}
+         className={`absolute w-3 h-3 border-2 border-white/20 shadow ${isMiss ? 'bg-red-500' : action.type === 'score' ? 'bg-primary-cta' : 'bg-gray-400'}`}
+         style={{
+           left: `${action.x}%`,
+           top: `${action.y}%`,
+           transform: 'translate(-50%, -50%)',
+           zIndex: 10,
+           clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)'
+         }}
+         title={`Q${action.quarter} (${action.points} pts)`}
+       />
+     );
+   })}
+   </div>
+  </div>
+  </>
+) : (
   <div className="w-full h-auto flex flex-col gap-3 px-4 ">
   
   {/* Team Headers */}

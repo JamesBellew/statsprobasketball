@@ -650,6 +650,14 @@ const updateLiveBroadcast = async () => {
   
   console.log('🏀 Final League Values - id:', finalLeagueId, 'name:', finalLeagueName);
 
+  // --- NEW: Map gameActions to include x/y for home team actions ---
+  const mappedGameActions = gameActions.map(action => {
+    if (action.team === 'home' && typeof action.x === 'number' && typeof action.y === 'number') {
+      return { ...action, x: action.x, y: action.y };
+    }
+    return action;
+  });
+
   try {
     // Structure the data to match your Firestore schema
     const liveGameData = {
@@ -693,7 +701,7 @@ const updateLiveBroadcast = async () => {
         away: opponentScore,
       },
       quarter: currentQuater,
-      gameActions,
+      gameActions: mappedGameActions,
       lastUpdated: new Date(),
       
       // Structure league data to match your Firestore schema
