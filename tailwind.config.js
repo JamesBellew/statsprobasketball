@@ -14,6 +14,8 @@ export default {
         "card-bg": "#1a1f2d",
         "secondary-bg": "#161a1f",
         "primary-cta": "#6366F1 ",
+        "primary-green": "#3B82F6",
+        "primary-red": "#EF4444",
         "secondary-cta": "#10B981",
         "primary-danger": "#9333EA",
         "primary-danger-light": "#A78BFA",

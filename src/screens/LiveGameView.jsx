@@ -27,6 +27,9 @@ export default function LiveGameView() {
   const isScheduled = Boolean(location?.state?.isScheduled);
   const [selectedTeamLineout, setSelectedTeamLineout] = useState('home'); // 'home' or 'away'
   const [awayLineoutPlayers, setAwayLineoutPlayers] = useState([]);
+  const [localSubstitutions, setLocalSubstitutions] = useState([]);
+    // ✅ Add this ref declaration at the component level
+    const prevOnCourtRef = useRef(null);
   useEffect(() => {
     if (gameData?.awayLineout?.players) {
       setAwayLineoutPlayers(gameData.awayLineout.players);
@@ -79,6 +82,75 @@ export default function LiveGameView() {
   
     return () => unsub();
   }, [slug]);
+  
+
+  useEffect(() => {
+    // Skip if no lineout data or if this is the initial load
+    if (!lineoutPlayers.length || !gameData?.onCourtPlayers) return;
+    
+    if (prevOnCourtRef.current === null) {
+      // First time setting up, just store current state
+      prevOnCourtRef.current = [...(gameData.onCourtPlayers || [])];
+      return;
+    }
+    
+    const currentOnCourt = gameData.onCourtPlayers || [];
+    const previousOnCourt = prevOnCourtRef.current || [];
+    
+    // Check if arrays are different
+    const hasChanged = currentOnCourt.length !== previousOnCourt.length || 
+                      currentOnCourt.some((player, index) => player !== previousOnCourt[index]);
+    
+    if (hasChanged && previousOnCourt.length > 0) {
+      // Find who was subbed out (in previous but not in current)
+      const subbedOut = previousOnCourt.filter(playerNum => !currentOnCourt.includes(playerNum));
+      // Find who was subbed in (in current but not in previous)
+      const subbedIn = currentOnCourt.filter(playerNum => !previousOnCourt.includes(playerNum));
+      
+      if (subbedOut.length > 0 && subbedIn.length > 0) {
+        // Get player details from lineout
+        const getPlayerDetails = (playerNumber) => {
+          const player = lineoutPlayers.find(p => String(p.number) === String(playerNumber));
+          return player ? { name: player.name, number: player.number } : { name: `Player ${playerNumber}`, number: playerNumber };
+        };
+        
+        // For each substitution pair, we'll create a substitution action
+        const newSubstitutions = [];
+        subbedOut.forEach((outPlayerNum, index) => {
+          if (subbedIn[index]) {
+            const playerOut = getPlayerDetails(outPlayerNum);
+            const playerIn = getPlayerDetails(subbedIn[index]);
+            
+            // Create substitution action object
+            const substitutionAction = {
+              type: "substitution",
+              team: "home",
+              quarter: gameData?.quarter || 1,
+              clockMinutesLeft: gameClock?.minutesLeft,
+              clockSecondsLeft: gameClock?.secondsLeft,
+              off: playerOut,
+              on: playerIn,
+              timestamp: Date.now() // Add timestamp to ensure uniqueness
+            };
+            
+            console.log('🔄 Substitution detected:', playerOut.name, '→', playerIn.name);
+            newSubstitutions.push(substitutionAction);
+          }
+        });
+        
+        // Add new substitutions to local array
+        if (newSubstitutions.length > 0) {
+          setLocalSubstitutions(prev => [...prev, ...newSubstitutions]);
+        }
+      }
+    }
+    
+    // Update the ref with current state
+    prevOnCourtRef.current = [...currentOnCourt];
+  }, [gameData?.onCourtPlayers, lineoutPlayers, gameData?.quarter, gameClock?.minutesLeft, gameClock?.secondsLeft]);
+
+
+
   
   useEffect(() => {
     const unsubscribeClock = onSnapshot(doc(firestore, "liveGameClocks", slug), (docSnap) => {
@@ -302,6 +374,31 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
     0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
     20% { opacity: 1; }
     100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(720deg); }
+  }
+  @keyframes shotGlow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(34,197,94,0.8), 0 0 0 0 rgba(239,68,68,0.8);
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    40% {
+      box-shadow: 0 0 48px 32px rgba(34,197,94,0.7), 0 0 48px 32px rgba(239,68,68,0.7);
+      opacity: 1;
+      transform: scale(1.5);
+    }
+    80% {
+      box-shadow: 0 0 24px 12px rgba(34,197,94,0.4), 0 0 24px 12px rgba(239,68,68,0.4);
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(34,197,94,0.0), 0 0 0 0 rgba(239,68,68,0.0);
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .animate-shot-glow {
+    animation: shotGlow 1.2s cubic-bezier(0.4,0,0.2,1) 1;
   }
 `}</style>
 
@@ -789,29 +886,37 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       <button style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="text-white text-sm font-medium border-b-2 ">{homeTeamName || "Home"}</button>
       <button style={{borderBottomColor: gameData?.awayTeamColor || '#0b63fb'}} className="text-gray-600 line-through text-sm font-medium">{awayTeamName || "Away"}</button>
      </div>
-  <div className="w-full h-[45vh] bg-secondary-bg  bg-opacity-40 rounded-lg flex items-center justify-center">
+  <div className="w-full h-[42vh] bg-secondary-bg  bg-opacity-40 rounded-lg flex items-center justify-center">
    <div className="border-[1px] border-gray-600/40  rounded-md h-full w-full relative" data-section="court">
-   <div className="absolute left-1/2 top-0 w-[85%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
+   <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
    <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
    <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40"></div>
    {/* Home team score dots */}
-   {Array.isArray(gameData?.gameActions) && gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number').map((action, idx) => {
-     const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
-     return (
-       <div
-         key={idx}
-         className={`absolute w-3 h-3 border-2 border-white/20 shadow ${isMiss ? 'bg-red-500' : action.type === 'score' ? 'bg-primary-cta' : 'bg-gray-400'}`}
-         style={{
-           left: `${action.x}%`,
-           top: `${action.y}%`,
-           transform: 'translate(-50%, -50%)',
-           zIndex: 10,
-           clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)'
-         }}
-         title={`Q${action.quarter} (${action.points} pts)`}
-       />
-     );
-   })}
+   {(() => {
+     // Find the index of the latest home team action with x/y
+     const homeShots = Array.isArray(gameData?.gameActions)
+       ? gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number')
+       : [];
+     const latestIdx = homeShots.length - 1;
+     return homeShots.map((action, idx) => {
+       const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
+       const dotClass = `${isMiss ? 'bg-primary-red' : action.type === 'score' ? 'bg-primary-green' : 'bg-gray-400'} border-2 border-white/20 shadow` + (idx === latestIdx ? ' animate-shot-glow' : '');
+       return (
+         <div
+           key={idx}
+           className={`absolute w-3 h-3 ${dotClass}`}
+           style={{
+             left: `${action.x}%`,
+             top: `${action.y}%`,
+             zIndex: 10,
+             clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+             transform: 'translate(-50%, -50%)',
+           }}
+           title={`Q${action.quarter} (${action.points} pts)`}
+         />
+       );
+     });
+   })()}
    </div>
   </div>
   </>
@@ -1076,109 +1181,151 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       </div>
 
       {gameData?.gameActions?.length > 0 && (
-        <div className="h-[65vh] mt-5 overflow-auto w-full px-4">
-     <ul className="timeline timeline-vertical">
-  {gameData?.gameActions?.length > 0 && (
-    <div className="h-full overflow-auto w-full px-4">
-      <ul className="timeline timeline-vertical w-full max-w-2xl mx-auto">
-        {[...gameData?.gameActions].reverse().map((action, index, array) => {
-          const isHome = action.team === "home";
-          const nameText = action.playerName || "";
-          const playerText = action.playerNumber ? `(${action.playerNumber})` : "";
-          const timeLabel = `Q${action.quarter || "-"}`;
-          const isNewQuarter = index === 0 || action.quarter !== array[index - 1]?.quarter;
+  <div className="h-[65vh] mt-5 overflow-auto w-full px-4">
+    <ul className="timeline timeline-vertical">
+      {(() => {
+        // Combine game actions with local substitutions
+        const allActions = [
+          ...(gameData?.gameActions || []),
+          ...localSubstitutions
+        ];
 
-          // Build clock only if both values exist
-          let clock = "";
-          if (typeof action.clockMinutesLeft === "number" && typeof action.clockSecondsLeft === "number") {
-            clock = `${action.clockMinutesLeft}:${String(action.clockSecondsLeft).padStart(2, "0")}`;
-          }
+        return allActions.length > 0 && (
+          <div className="h-full overflow-auto w-full px-4">
+            <ul className="timeline timeline-vertical w-full max-w-2xl mx-auto">
+              {[...allActions].reverse().map((action, index, array) => {
+                const isHome = action.team === "home";
+                const nameText = action.playerName || "";
+                const playerText = action.playerNumber ? `(${action.playerNumber})` : "";
+                const timeLabel = `Q${action.quarter || "-"}`;
+                const isNewQuarter = index === 0 || action.quarter !== array[index - 1]?.quarter;
 
-          // 🎯 Filter: show only scores, misses, FT, BLK, TO, STL
-          const displayType = action.type?.toLowerCase();
-          const isScore = action.points;
-          const isMiss = displayType?.includes("miss");
-          const isBlock = displayType?.includes("block");
-          const isTO = displayType?.includes("turnover");
-          const isSteal = displayType?.includes("steal");
-          const isFT = displayType?.includes("free throw");
+                // Build clock only if both values exist
+                let clock = "";
+                if (typeof action.clockMinutesLeft === "number" && typeof action.clockSecondsLeft === "number") {
+                  clock = `${action.clockMinutesLeft}:${String(action.clockSecondsLeft).padStart(2, "0")}`;
+                }
 
-          const shouldShow = isScore || isMiss || isBlock || isTO || isSteal || isFT;
+                // 🎯 Filter: show only scores, misses, FT, BLK, TO, STL, substitutions
+                const displayType = action.type?.toLowerCase();
+                const isScore = action.points;
+                const isMiss = displayType?.includes("miss");
+                const isBlock = displayType?.includes("block");
+                const isTO = displayType?.includes("turnover");
+                const isSteal = displayType?.includes("steal");
+                const isFT = displayType?.includes("free throw");
 
-          if (!shouldShow) return null;
+                const shouldShow = isScore || isMiss || isBlock || isTO || isSteal || isFT || action.type === "substitution";
 
-          return (
-            <React.Fragment key={index}>
-              {isNewQuarter && (
-                <div className="w-auto py-2 items-center mx-auto justify-center text-center">
-                  <div className="w-full px-4 py-1 rounded-md shadow-sm">
-                  <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
-  {action?.quarter > 4 
-    ? `── OT ${action.quarter - 4} ──`
-    : `── Q ${action.quarter} ──`}
-</p>
+                if (!shouldShow) return null;
 
-                  </div>
-                </div>
-              )}
-
-              <li className="w-full">
-                {isScore ? (
-                  <>
-                    {isHome ? (
-                      <div style={{borderLeftColor: gameData?.homeTeamColor || '#8B5CF6'}} className="timeline-start border-l-2  timeline-box bg-secondary-bg text-white border border-gray-700 w-36">
-                        {(timeLabel || clock) && (
-                          <div className="flex justify-between text-xs text-gray-400 mb-1">
-                            <span>{timeLabel}</span>
-                            {clock && <span>{clock}</span>}
+                // Substitution entry for home team
+                if (action.type === "substitution" && action.team === "home") {
+                  return (
+                    <li key={`${action.timestamp || index}-substitution`} className="w-full">
+                      <div
+                        style={{ borderRightColor: gameData?.homeTeamColor || '#8B5CF6' }}
+                        className="timeline-start border-r-2 timeline-box w-32 bg-secondary-bg border-gray-600 py-3 text-white border shadow-lg rounded-xl flex flex-col px-2 py-2 relative"
+                      >
+                  
+                        <div className="flex flex-col items-start ms-1 gap-0.5">
+                          <div className="flex items-center gap-1 text-xs text-gray-400 font-semibold">
+                            <svg className="w-3 h-3 text-primary-red" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m0 0l-4-4m4 4l4-4" />
+                            </svg>
+                            <span>{action.off?.name}</span>
+                            <span className="text-gray-400">({action.off?.number})</span>
                           </div>
-                        )}
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm font-semibold text-white">
-                            <span className="text-gray-400">{playerText}</span>{nameText}
-                          </p>
-                          <p className="text-md font-bold " style={{color: gameData?.homeTeamColor || '#8B5CF6'}}>+{action.points}</p>
+                          <div className="flex items-center gap-1 text-xs text-gray-100 font-semibold">
+                            <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 20V4m0 0l-4 4m4-4l4 4" />
+                            </svg>
+                            <span>{action.on?.name}</span>
+                            <span className="text-gray-400">({action.on?.number})</span>
+                          </div>
                         </div>
                       </div>
-                    ) : (
-                      <div 
-                      
-                      style={{borderRightColor: gameData?.awayTeamColor || '#0b63fb'}} className="timeline-end w-36 border-r-2  timeline-box bg-secondary-bg text-white border border-gray-700">
-                        <p className="text-xs text-gray-400 mb-1">{timeLabel}</p>
-                        <p className="font-semibold">
-                          {playerText} {nameText} + {action.points}
-                        </p>
+                      <div className="timeline-middle">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+</svg>
+
+                      </div>
+                      <hr className="bg-gray-400/40" />
+                    </li>
+                  );
+                }
+
+                return (
+                  <React.Fragment key={action.timestamp || index}>
+                    {isNewQuarter && (
+                      <div className="w-auto py-2 items-center mx-auto justify-center text-center">
+                        <div className="w-full px-4 py-1 rounded-md shadow-sm">
+                          <p className="text-xs text-gray-400 font-bold tracking-wider uppercase text-center">
+                            {action?.quarter > 4 
+                              ? `── OT ${action.quarter - 4} ──`
+                              : `── Q ${action.quarter} ──`}
+                          </p>
+                        </div>
                       </div>
                     )}
-                  </>
-                ) : (
-                  <div className={`text-sm text-white px-2 py-1 italic ${isHome ? "text-left pl-6" : "text-right pr-6"}`}>
-                    <p className="text-white/50">
-                      {displayType === "miss" && <>❌ FG Miss — <span className="font-semibold">{nameText} {playerText}</span></>}
-                      {isBlock && <>🔒 Block — <span className="font-semibold">{nameText} {playerText}</span></>}
-                      {isTO && <>⚠️ Turnover — <span className="font-semibold">{nameText} {playerText}</span></>}
-                      {isSteal && <>🛡️ Steal — <span className="font-semibold">{nameText} {playerText}</span></>}
-                      {isFT && <>🎯 Free Throw — <span className="font-semibold">{nameText} {playerText}</span></>}
-                    </p>
-                  </div>
-                )}
-                <div className="timeline-middle">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4 text-white/50 bg-secondary-bg rounded-full" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
-                  </svg>
-                </div>
-                <hr className="bg-gray-600" />
-              </li>
-            </React.Fragment>
-          );
-        })}
-      </ul>
-    </div>
-  )}
-</ul>
 
-        </div>
-      )}
+                    <li className="w-full">
+                      {isScore ? (
+                        <>
+                          {isHome ? (
+                            <div style={{borderLeftColor: gameData?.homeTeamColor || '#8B5CF6'}} className="timeline-start border-l-2  timeline-box bg-secondary-bg text-white border border-gray-700 w-36">
+                              {(timeLabel || clock) && (
+                                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                  <span>{timeLabel}</span>
+                                  {clock && <span>{clock}</span>}
+                                </div>
+                              )}
+                              <div className="flex justify-between items-center">
+                                <p className="text-sm font-semibold text-white">
+                                  <span className="text-gray-400">{playerText}</span>{nameText}
+                                </p>
+                                <p className="text-md font-bold " style={{color: gameData?.homeTeamColor || '#8B5CF6'}}>+{action.points}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div 
+                              style={{borderRightColor: gameData?.awayTeamColor || '#0b63fb'}} className="timeline-end w-36 border-r-2  timeline-box bg-secondary-bg text-white border border-gray-700">
+                              <p className="text-xs text-gray-400 mb-1">{timeLabel}</p>
+                              <p className="font-semibold">
+                                {playerText} {nameText} + {action.points}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={`text-sm text-white px-2 py-1 italic ${isHome ? "text-left pl-6" : "text-right pr-6"}`}>
+                          <p className="text-white/50">
+                            {displayType === "miss" && <>❌ FG Miss — <span className="font-semibold">{nameText} {playerText}</span></>}
+                            {isBlock && <>🔒 Block — <span className="font-semibold">{nameText} {playerText}</span></>}
+                            {isTO && <>⚠️ Turnover — <span className="font-semibold">{nameText} {playerText}</span></>}
+                            {isSteal && <>🛡️ Steal — <span className="font-semibold">{nameText} {playerText}</span></>}
+                            {isFT && <>🎯 Free Throw — <span className="font-semibold">{nameText} {playerText}</span></>}
+                          </p>
+                        </div>
+                      )}
+                      <div className="timeline-middle">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="size-4 text-white/50 bg-secondary-bg rounded-full" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                        </svg>
+                      </div>
+                      <hr className="bg-gray-600" />
+                    </li>
+                  </React.Fragment>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })()}
+    </ul>
+  </div>
+)}
     </div>
   );
 }
