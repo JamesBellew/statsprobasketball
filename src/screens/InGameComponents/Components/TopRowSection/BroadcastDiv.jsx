@@ -8,7 +8,7 @@ const BroadcastDiv = ({ gameFinsihedFlag, setShowBroadcastModal, showBroadCastDi
       onClick={() => {
         setShowBroadcastModal(true);
       }}
-      className={`h-full  flex justify-center
+      className={`h-full w-full md:w-[15%]  flex justify-center
         ${
           broadcastUpdate ? 
 "   border-2      border-primary animate-pulse  "

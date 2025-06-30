@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const QuarterDiv = ({ currentQuater }) => {
   return (
-    <div className="w-[15%] h-full bg-secondary-bg mt-1 flex items-center rounded-md overflow-hidden relative">
+    <div className="md:w-[15%] w-full h-full bg-secondary-bg mt-1 flex items-center rounded-md overflow-hidden relative">
       <AnimatePresence mode="wait">
         <motion.p
           key={currentQuater}

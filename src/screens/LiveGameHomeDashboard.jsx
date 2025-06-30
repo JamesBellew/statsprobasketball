@@ -340,82 +340,91 @@ navigate("/")
               }
             
               return (
-                <a
-                  key={game.id}
-                  onClick={() => handleLiveGameClick(game.link, false)}
-                  className="hover:scale-95 transition-all hover:bg-gray-800/50 duration-500 cursor-pointer overflow-hidden"
-                >
-                  <div className="relative h-32 group transition-all w-full bg-gray-800/30 rounded-lg overflow-hidden border border-gray-700">
-                    
-                    {/* Subtle top accent bar */}
-                    <div 
-                      className="absolute bottom-0 left-0 w-full h-[1px] z-10"
-                      style={{ 
-                        background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)` 
-                      }}
-                    />
-            
-                    {/* Away Team Logo (always left) */}
-                    <div className="absolute group-hover:scale-110 duration-300 left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-                      <div className="w-12 h-12 rounded-full bg-white p-0.5 shadow-lg">
+                <a key={game.id}
+                onClick={() => handleLiveGameClick(game.link, false)}
+                className="block hover:scale-[0.98] transition-all hover:bg-gray-800/50 rounded-xl duration-300 cursor-pointer"
+              >
+                <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-xl p-3 border border-gray-700/50 hover:border-gray-600">
+                  
+                  {/* Live indicator at top center */}
+                  <div className="absolute z-40 left-0 top-0 transform  justify-center ">                     
+  <div className="bg-red-600 text-white text-[10px] font-semibold px-2  rounded-e-sm flex items-center space-x-1">                       
+    <span>LIVE</span>                       
+    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />                     
+  </div>                   
+</div>
+              
+                  {/* Main content flex container */}
+                  <div className="flex items-center px-5 justify-between ">
+                    {/* Away Team Section */}
+                    <div className="w-20 flex  flex-col items-center">
+                      {/* Away Team Logo */}
+                      <div className="relative mb-1">
                         <img
                           src={awayLogo || opponentLogo}
-                          className="w-full h-full rounded-full"
+                          className="w-8 h-8 rounded-full bg-white p-0.5"
                           alt="away logo"
                         />
-                      </div>
-                      {/* Away team color indicator */}
-                      <div 
-                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
-                        style={{ backgroundColor: awayColor || '#0b63fb' }}
-                      />
-                    </div>
-            
-                    {/* Home Team Logo (always right) */}
-                    <div className="absolute left-3/4 group-hover:scale-110 duration-300 top-1/2  transform -translate-x-1/2 -translate-y-1/2 z-30">
-                      <div className="w-14 h-14 rounded-full bg-white p-0.5 shadow-lg">
-                        <img
-                          src={homeLogo || homeLogo}
-                          className="w-full h-full rounded-full"
-                          alt="home logo"
+                        <div 
+                          className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
+                          style={{ backgroundColor: awayColor || '#0b63fb' }}
                         />
                       </div>
-                      {/* Home team color indicator */}
-                      <div 
-                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white shadow-md"
-                        style={{ backgroundColor: homeColor || '#8B5CF6' }}
-                      />
-                    </div>
-            
-                    {/* Score Display - Subtle glass effect */}
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-40">
-                      <div className="bg-gray-800/30  backdrop-blur-md px-4 py-2 rounded-xl border border-white/5 shadow-lg">
-                        <p className="text-xl font-semibold text-white/90 text-center">{awayScore} - {homeScore}</p>
-                        <p className="text-xs text-white/70 text-center">
-                          {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
-                        </p>
+                      {/* Away Team Name */}
+                      <div className="text-center">
+                        <p className="text-white font-medium text-xs truncate">{awayTeam}</p>
+                        <p className="text-gray-400 text-xs">Away</p>
                       </div>
                     </div>
-            
-                    {/* Venue label (if exists) - now at the top center of the card */}
+              
+                    {/* Score Section */}
+                    <div className="flex-1  text-center mx-3">
+                      <p className="text-lg font-bold text-white">{awayScore} - {homeScore}</p>
+                      <p className="text-xs text-gray-300">
+                        {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+                      </p>
+                    </div>
+              
+                    {/* Home Team Section */}
+                    <div className="w-20  flex flex-col items-center">
+                      {/* Home Team Logo */}
+                      <div className="relative mb-1">
+                        <img
+                          src={homeLogo || homeLogo}
+                          className="w-8 h-8 rounded-full bg-white p-0.5"
+                          alt="home logo"
+                        />
+                        <div 
+                          className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
+                          style={{ backgroundColor: homeColor || '#8B5CF6' }}
+                        />
+                      </div>
+                      {/* Home Team Name */}
+                      <div className="text-center">
+                        <p className="text-white font-medium text-xs truncate">{homeTeam}</p>
+                        <p className="text-gray-400 text-xs">Home</p>
+                      </div>
+                    </div>
+                  </div>
+              
+                  {/* Venue at bottom center */}
+                  {/* <div className="flex justify-center">
                     {game.venue && (
-                      <div className="absolute top-0 left-1/2 transform mx-auto justify-end items-end flex w-full -translate-x-1/2 z-50">
-                        <span className="bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow">Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}</span>
-                      </div>
+                      <span className="text-gray-400 text-xs">
+                        @ {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
+                      </span>
                     )}
-            
-                    {/* Live Indicator */}
-                    <div className="absolute top-1 left-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-lg z-40 flex items-center space-x-1">
-                      <span className="text-[8px]">LIVE</span>
-                      <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                    </div>
-                  </div>
-            
-                  {/* Team Names (always Away @ Home) */}
-                  <div className="text-center py-3 text-white font-medium">
-                    {awayTeam} @ {homeTeam}
-                  </div>
-                </a>
+                  </div> */}
+              
+                  {/* Bottom accent */}
+                  <div 
+                    className="absolute bottom-0 left-0 w-full h-1 rounded-b-xl"
+                    style={{ 
+                      background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)` 
+                    }}
+                  />
+                </div>
+              </a>
               );
             })}
           </div>
@@ -536,7 +545,7 @@ navigate("/")
             </div>
           </div>
           {game.venue && (
-            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-40">
+            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-10">
               Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
             </div>
           )}
@@ -614,7 +623,7 @@ navigate("/")
             </div>
           </div>
           {game.venue && (
-            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-40">
+            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-10">
               Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
             </div>
           )}

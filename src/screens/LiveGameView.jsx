@@ -7,6 +7,7 @@ import homeLogo from '../assets/logo.jpg'
 import { useLocation } from 'react-router-dom';
 import opponentJersey from '../assets/jersey.webp'
 import { useNavigate } from "react-router-dom";
+import jersey from '../assets/jersey2.png'
 
 export default function LiveGameView() {
   const { slug } = useParams();
@@ -262,6 +263,15 @@ console.log('this is the gamedata object', gameData);
   
 //   },[])
 
+// Auto-show stats modal if there are few game actions
+useEffect(() => {
+  if (gameData?.gameActions?.length < 2) {
+    setGameStatsToggleMode("Stats")
+    setShowStatsModal(true);
+    
+  }
+}, [gameData?.gameActions?.length]);
+
   if (loading) {
     return (
       <div className="bg-primary-bg text-white min-h-screen flex items-center justify-center">
@@ -288,6 +298,29 @@ const bench = lineoutPlayers.filter(p => !onCourtPlayers.includes(String(p.numbe
 // Get the home team color from gameData, fallback to #8B5CF6
 const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
+// Get lead changes from Firestore gameData, with fallback to default draw
+const leadChanges = gameData?.leadChanges && gameData.leadChanges.length > 0 
+  ? gameData.leadChanges 
+  : [{ q: 1, score: "0-0", team: "Draw" }];
+
+// Current scores (dummy)
+const homeScore = 52;
+const awayScore = 47;
+const homeTeam = "DKIT Mens";
+const awayTeam = "Mayo Meteors";
+
+const getQuarterColor = (quarter) => {
+  const colors = {
+    1: "#3B82F6",
+    2: "#10B981", 
+    3: "#F59E0B",
+    4: "#EF4444"
+  };
+  return colors[quarter] || "#6B7280";
+};
+
+const latestLeadChange = leadChanges[leadChanges.length - 1];
+
   return (
     
     <div className={`${showStatsModal ? "h-auto" : "h-screen"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
@@ -296,7 +329,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       <header className="bg-primary-bg shadow w-full px-2 z-50">
         <div className="container mx-auto">
           <div className="flex cursor-pointer justify-between items-center py-4 mx-auto">
-            <a onClick={() => { navigate("/") }} className="text-xl font-bold text-white">
+            <a onClick={() => { navigate("/liveGameHomeDashboard") }} className="text-xl font-bold text-white">
               StatsPro <span className=" text-primary-cta">|</span> <span className="text-sm text-gray-400">Basketball</span>
             </a>
 
@@ -405,7 +438,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 {/* LIVE or Scheduled */}
 <div className="absolute top-1 left-1/2 transform -translate-x-1/2">
   {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
-    <span className="bg-secondary-danger text-white text-xs px-3 py-0.5 rounded font-bold">LIVE <span className="animate-pulse">⚪️</span></span>
+    <span className="bg-secondary-danger text-white text-xs px-3 py-0.5 rounded font-bold">LIVE <span className="animate-pulse text-xs font-extralight h-1">⚪️</span></span>
   ) : (
     <span className="bg-primary-bg text-white text-xs px-3 py-0.5 rounded font-medium">{gameData?.scheduledStart?.date || "Scheduled"}</span>
   )}
@@ -596,13 +629,13 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 </div>
 
 
-<div className="overflow-x-auto mt-2 px-2  min-h-[20vh]">
+<div className="overflow-x-auto mt-2 px-2  min-h-[20vh] py-5">
   {gameStatsToggleMode === 'Game' ? (
-    
+    <>
     <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-s-lg">
       <thead>
         <tr>
-          <th className="py-2 px-4 text-left">Team</th>
+          <th className="py-2 px-4 border-l-2 border-l-secondary-bg text-left">Team</th>
           {quarters.map((q) => (
   <th key={q} className={`py-2 px-4 ${gameData?.quarter === q && !gameData.gameState ? "text-primary-cta font-bold" : ""}`}>
     {q > 4 ? `OT ${q - 4}` : `Q${q}`}
@@ -613,7 +646,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       </thead>
       <tbody>
         <tr className="border-t border-gray-700">
-          <td className="py-2 px-4 text-left font-semibold">{homeTeamName}</td>
+          <td style={{borderLeftColor: gameData?.homeTeamColor || '#8B5CF6'}} className="py-2 px-4 border-l-2 text-left font-semibold">{homeTeamName}</td>
           {quarters.map((q) => {
             const score = homeScores[q];
             const value = score !== null ? score : gameData?.quarter === q ? 0 : "—";
@@ -621,7 +654,7 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
           })}
         </tr>
         <tr className="border-t border-gray-700">
-          <td className="py-2 px-4 text-left font-semibold">{awayTeamName}</td>
+          <td style={{borderLeftColor: gameData?.awayTeamColor || '#8B5CF6'}} className="py-2 border-l-2 px-4 text-left font-semibold">{awayTeamName}</td>
           {quarters.map((q) => {
             const score = awayScores[q];
             const value = score !== null ? score : gameData?.quarter === q ? 0 : "—";
@@ -630,6 +663,120 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
         </tr>
       </tbody>
     </table>
+    <div className=" backdrop-blur-sm rounded-xl  px-2  mt-2">
+      {/* Header */}
+      <h1 className="text-md font-semibold text-center mt-4 mb-4 text-white">
+        Lead Changes 
+  
+      </h1>
+
+      {/* Timeline Container */}
+      <div className="h-32 flex flex-row">
+        {/* Team Logos */}
+        <div className="h-24   my-auto flex flex-col w-auto">
+          {/* Home Team Logo */}
+          <div className={`w-10  flex items-center justify-center h-10 bg-white/10 rounded-full
+            ${homeScore > awayScore ? "border-2 border-purple-400" : ""}`}>
+        <img src={gameData?.logos?.home || opponentJersey} className="w-10 h-10 rounded-full" />
+          </div>
+          
+          {/* Away Team Logo */}
+          <div className={`w-10 flex items-center justify-center h-10 bg-white/10 rounded-full mt-2
+            ${awayScore > homeScore ? "border-2 border-red-400" : ""}`}>
+           <img src={gameData?.logos?.away || opponentJersey} className="w-10 h-10 rounded-full " />
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="timeline flex overflow-x-auto ml-4 w-11/12 space-x-3 relative px-2">
+          {leadChanges.map((lead, index) => {
+            const isLatest = lead === latestLeadChange;
+            const isHomeTeamLead = lead.team === homeTeam;
+            const isDraw = lead.team === "Draw";
+            const prevLead = leadChanges[index - 1];
+            const isNewQuarter = !prevLead || prevLead.q !== lead.q;
+
+            return (
+              <div key={index} className="flex-shrink-0 relative flex flex-col items-center h-full">
+                {/* Quarter indicator - only show when quarter changes */}
+                {isNewQuarter && (
+                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full text-white font-medium"
+                      style={{ backgroundColor: getQuarterColor(lead.q) }}
+                    >
+                      Q{lead.q}
+                    </span>
+                  </div>
+                )}
+
+                {/* Top Score Box (Home team lead) */}
+                <div className="h-10 flex items-end">
+                  {isHomeTeamLead && (
+                    <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+                      isLatest ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
+                    }`}>
+                      {lead.score}
+                    </div>
+                  )}
+                </div>
+
+                {/* Middle Icon */}
+                <div 
+  className="relative bg-gray-800 p-2 rounded-full border-none flex items-center my-1"
+  style={{ 
+    color: isHomeTeamLead 
+      ? (gameData?.homeTeamColor || '#8B5CF6') 
+      : isDraw 
+        ? '#6B7280' 
+        : (gameData?.awayTeamColor || '#EF4444')
+  }}
+>
+                  {isHomeTeamLead ? (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  ) : isDraw ? (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 9h16.5m-16.5 6.75h16.5" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
+                    </svg>
+                  )}
+                  
+                  {/* Connecting line */}
+                  {index !== leadChanges.length - 1 && (
+                    <div className="absolute top-1/2 left-full w-6 h-0.5 bg-gray-800"></div>
+                  )}
+
+                  {/* Draw score overlay */}
+                  {isDraw && (
+                    <div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+                      {lead.score}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Score Box (Away team lead) */}
+                <div className="h-10 flex items-start">
+                  {!isHomeTeamLead && !isDraw && (
+                    <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+                      isLatest ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300"
+                    }`}>
+                      {lead.score}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+</>
+
   ) : gameStatsToggleMode === 'Player' ? (
     <div className="w-full h-auto min-h-[20vh]">
  <div className="flex justify-center items-center w-full  gap-4">
@@ -674,16 +821,25 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
           const playersArray = Object.values(homePlayerScores);
           const sortedPlayersArray = [...playersArray].sort((a, b) => b.points - a.points);
           return sortedPlayersArray.map((player, index) => (
-            <div
-              key={index}
-              className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
-            >
-              <div className="w-12 h-12  bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold">
-                {player.number}
-              </div>
-              <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
-              <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
-            </div>
+            <div               
+            key={index}               
+            className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
+          >               
+            <div 
+              style={{
+                borderColor: gameData?.homeTeamColor || '#8B5CF6',
+                backgroundImage: `url(${jersey})`,
+                backgroundSize: '90%',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}  
+              className="w-12 h-12 border-[1px] bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold"
+            >                 
+              {player.number}               
+            </div>               
+            <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>               
+            <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>             
+          </div>
           ));
           
           if (playersArray.length === 0) {
@@ -886,7 +1042,8 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
       <button style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="text-white text-sm font-medium border-b-2 ">{homeTeamName || "Home"}</button>
       <button style={{borderBottomColor: gameData?.awayTeamColor || '#0b63fb'}} className="text-gray-600 line-through text-sm font-medium">{awayTeamName || "Away"}</button>
      </div>
-  <div className="w-full h-[42vh] bg-secondary-bg  bg-opacity-40 rounded-lg flex items-center justify-center">
+  <div className="w-full h-[40vh] pb-5  bg-opacity-40 rounded-lg flex items-center justify-center">
+    
    <div className="border-[1px] border-gray-600/40  rounded-md h-full w-full relative" data-section="court">
    <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
    <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
@@ -1056,30 +1213,30 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
           {/* Numbers and bar row */}
           <div className="flex items-center bg justify-between h-auto w-full">
             {/* Home team value */}
-            <div className="text-white font-bold text-base w-12 text-left flex items-center">
+            <div className="text-white font-bold text-sm w-12 text-left flex items-center">
               <span>{stat.home.made}/{stat.home.total}</span>
             </div>
             {/* Home team bar (extends right from center) */}
             <div className="flex-1 mx-1 flex justify-end">
-              <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
+              <div className="w-full bg-gray-700 rounded-s-lg h-2 relative">
                 <div 
-                  className=" rounded-s-lg h-3 transition-all duration-700 absolute right-0" 
+                  className=" rounded-s-lg h-2 transition-all duration-700 absolute right-0" 
                   style={{ width: `${Math.max(stat.home.pct, 5)}%`,backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
                 ></div>
               </div>
             </div>
             {/* Away team bar (extends left from center) */}
             <div className="flex-1 mx-1 flex justify-start">
-              <div className="w-full bg-gray-700 rounded-e-lg h-3 relative">
+              <div className="w-full bg-gray-700 rounded-e-lg h-2 relative">
                 <div 
-                  style={{ backgroundColor: gameData?.awayTeamColor || '#0b63fb', width: `${Math.max(stat.away.pct, 5)}%` }} className="rounded-e-lg h-3 transition-all
+                  style={{ backgroundColor: gameData?.awayTeamColor || '#0b63fb', width: `${Math.max(stat.away.pct, 5)}%` }} className="rounded-e-lg h-2 transition-all
                    duration-700 absolute left-0"
         
                 ></div>
               </div>
             </div>
             {/* Away team value */}
-            <div  className="text-white font-bold text-base w-12 text-right flex items-center justify-end">
+            <div  className="text-white font-bold text-sm w-12 text-right flex items-center justify-end">
               <span>{stat.away.made}/{stat.away.total}</span>
             </div>
           </div>
@@ -1101,21 +1258,21 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
             
             return (
               <>
-                     <div className=" text-white text-xs font-medium min-w-fit">
+                     <div className=" text-white text-sm font-medium min-w-fit">
                     {stat.label}
                   </div>
               <div key={i} className="">
                 <div className="flex items-center justify-between w-full">
                   {/* Home team value */}
-                  <div className="text-white font-bold text-base w-6 text-left">
+                  <div className="text-white font-bold text-sm w-6 text-left">
                     {stat.homeValue}
                   </div>
                   
                   {/* Home team bar (extends right from center) */}
                   <div className="flex-1 mx-1 flex justify-end">
-                    <div className="w-full bg-gray-700 rounded-s-lg h-3 relative">
+                    <div className="w-full bg-gray-700 rounded-s-lg h-2 relative">
                       <div 
-             className=" rounded-s-lg h-3 transition-all duration-700 absolute right-0 z-50 "
+             className=" rounded-s-lg h-2 transition-all duration-700 absolute right-0 z-50 "
              style={{ width: `${stat.homeValue + stat.awayValue > 0 ? (stat.homeValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%`, backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
                        
                       ></div>
@@ -1127,16 +1284,16 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
                   
                   {/* Away team bar (extends left from center) */}
                   <div className="flex-1 mx-1 flex justify-start">
-                    <div className="w-full rounded-e-lg bg-gray-700 h-3 relative">
+                    <div className="w-full rounded-e-lg bg-gray-700 h-2 relative">
                       <div 
-                        className=" rounded-e-lg h-3 transition-all duration-700 absolute left-0" 
+                        className=" rounded-e-lg h-2 transition-all duration-700 absolute left-0" 
                         style={{ backgroundColor: gameData?.awayTeamColor || '#0b63fb',width: `${stat.homeValue + stat.awayValue > 0 ? (stat.awayValue / (stat.homeValue + stat.awayValue)) * 100 : 0}%` }}
                       ></div>
                     </div>
                   </div>
                   
                   {/* Away team value */}
-                  <div className="text-white font-bold text-base w-6 text-right">
+                  <div className="text-white font-bold text-xs w-6 text-right">
                     {stat.awayValue}
                   </div>
                 </div>
@@ -1158,25 +1315,46 @@ const homeTeamColor = gameData?.homeTeamColor || '#8B5CF6';
 
         </div>
       </div>
-      
-      <button 
-        onClick={() => setShowStatsModal(!showStatsModal)} 
-        className="flex items-center px-2 w-full justify-center hover:text-primary-cta px-4 flex-col transition-colors duration-200"
-      >
-        {!showStatsModal &&
-        <p>Game Stats</p>
-}
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          strokeWidth="1.5" 
-          stroke="currentColor" 
-          className={`w-6 h-6 transition-transform duration-300 ease-in-out ${showStatsModal ? "rotate-180" : ""}`}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
+      <div className="w-full bg-secondary-bg/30 rounded-lg overflow-hidden">
+      <div className="w-full bg-secondary-bg/30 rounded-lg overflow-hidden">
+      <div className="relative">
+      <div className="bg-gradient-to-t from-primary-cta/10 via-primary-cta/5 to-transparent 
+       border-primary-cta rounded-lg">
+  <button               
+    onClick={() => setShowStatsModal(!showStatsModal)}               
+    className="flex items-center px-4 py-3 w-full justify-between hover:bg-primary-cta/10 transition-all duration-200 group"          
+  >              
+    <div className="flex items-center space-x-3">       
+      <div className="bg-primary-cta/20 p-2 rounded-lg">         
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-primary-cta">           
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 9C9.75 8.379 10.254 7.875 10.875 7.875h2.25C13.746 7.875 14.25 8.38 14.25 9v10.125c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 9.75 19.125V9ZM16.5 4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.875Z" />         
+        </svg>       
+      </div>       
+      <div className="text-left">         
+        <p className="text-white font-medium">Game Statistics</p>         
+        <p className="text-gray-400 text-sm">View detailed analytics</p>       
+      </div>     
+    </div>     
+    <svg                   
+      xmlns="http://www.w3.org/2000/svg"                   
+      fill="none"                   
+      viewBox="0 0 24 24"                   
+      strokeWidth="2"                   
+      stroke="currentColor"                   
+      className={`w-5 h-5 text-primary-cta transition-transform duration-300 ease-in-out group-hover:scale-110 ${showStatsModal ? "rotate-180" : ""}`}              
+    >                  
+      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />              
+    </svg>   
+  </button>
+</div>
+  
+  {/* Tooltip */}
+  <div className="fixed bottom-20 right-6 bg-gray-800 text-white px-3 py-1 rounded-lg text-sm opacity-0 pointer-events-none transition-opacity duration-200 hover:opacity-100">
+    View Stats
+  </div>
+</div>
+</div>
+</div>
     </div>
       </div>
 

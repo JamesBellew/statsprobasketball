@@ -84,15 +84,15 @@ const OpponentActionButtons = ({
         </div>
       )}
       {!savedGame?.isComplete ? (
-        <div className="w-[40%] max-w-4xl mx-auto h-full text-white relative z-50">
-          {/* Action buttons container */}
-          <div className="relative flex items-center space-x-2 h-full">
+        <div className="w-full md:w-[40%] bg-primary-bg mt-2 md:mt-0 max-w-4xl mx-auto h-full text-white relative z-50">
+          {/* Action buttons container: grid on mobile, flex on md+ */}
+          <div className="relative grid grid-cols-5 gap-2 w-full md:flex md:flex-nowrap md:items-center md:space-x-2 h-full">
             <DropdownButton label="+" showDropdown={showPlusDropdown} toggleDropdown={togglePlusDropdown}>
               {[1, 2, 3].map((points) => (
                 <button 
                   key={points}
                   onClick={() => handleUpdateOpponentScore(points)}
-                  className="w-full px-3 py-1 text-left bg-secondary-bg hover:bg-primary-danger transition-colors"
+                  className="w-full py-3 md:py-1 text-left bg-secondary-bg hover:bg-primary-danger transition-colors"
                   role="menuitem"
                 >
                   +{points}
@@ -109,7 +109,7 @@ const OpponentActionButtons = ({
                 <button 
                   key={points}
                   onClick={() => handleUpdateOpponentAction(action)}
-                  className="w-full px-3 py-1 text-left bg-secondary-bg hover:bg-primary-danger transition-colors"
+                  className="w-full py-3 md:py-1 text-left bg-secondary-bg hover:bg-primary-danger transition-colors"
                   role="menuitem"
                 >
                   -{points}
@@ -122,7 +122,7 @@ const OpponentActionButtons = ({
               <button
                 key={action}
                 onClick={() => handleUpdateOpponentAction(action)}
-                className="bg-secondary-bg hover:bg-primary-danger shadow-md h-full px-4 rounded-md transition-colors"
+                className="bg-secondary-bg hover:bg-primary-danger shadow-md h-full py-3 md:py-1 rounded-md transition-colors w-full"
               >
                 {action === 'turnover' ? 'T/O' : action}
               </button>
@@ -141,7 +141,7 @@ const OpponentActionButtons = ({
           )}
         </div>
       ) : (
-        <div className="w-[45%] h-full bg-secondary-bg flex items-center justify-center">
+        <div className="w-full md:w-[45%] h-full bg-secondary-bg flex items-center justify-center mt-2 md:mt-0">
           <p className="text-gray-400">Game completed. Statistics will be available soon.</p>
         </div>
       )}

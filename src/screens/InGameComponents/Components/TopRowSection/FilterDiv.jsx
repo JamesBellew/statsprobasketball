@@ -12,7 +12,7 @@ const FilterDiv = ({
   setCurrentGameActionFilter,
 }) => {
   return (
-    <Menu as="div" className="relative inline-block mt-1 text-left w-[15%] h-full">
+    <Menu as="div" className="relative inline-block mt-1 text-left md:w-[15%] w-full h-full">
       <Menu.Button
         className={`w-full h-full bg-secondary-bg hover:bg-white/10 rounded-lg flex items-center justify-center text-sm
           ${currentGameActionFilters.length >= 1 ? "bg-primary-bg text-primary-cta rounded-none" : "text-white"}

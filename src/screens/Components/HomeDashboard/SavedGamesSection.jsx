@@ -83,7 +83,7 @@ console.log(savedGames)
   const menuRef = useRef(null);
 
   return (
-<div className="bg-primary-bg pb-24 p-8 rounded-lg">
+<div className="bg-primary-bg pb-24 p-2 sm:p-8 rounded-lg w-full max-w-full">
 <div className="flex items-center space-x-3">
   <h4 className="text-xl font-medium">Saved Games</h4>
   <p className="text-sm text-gray-400 font-light">
@@ -94,10 +94,10 @@ console.log(savedGames)
 
 
   {/* In Progress Section */}
-  <div className="border-l-4 px-5 border-l-primary-danger">
+  <div className="border-l-4 px-2 sm:px-5 border-l-primary-danger">
     <h3 className="mt-8 mb-3">In Progress</h3>
   </div>
-  <div className="h-auto bg-secondary-bg rounded-md py-10 px-5 overflow-auto">
+  <div className="h-auto bg-secondary-bg rounded-md py-6 px-2 sm:px-5 overflow-auto">
   {/* Local Games */}
   {/* {user &&
   <h4 className="text-sm text-white font-semibold mb-2">Local</h4>

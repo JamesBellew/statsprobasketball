@@ -135,7 +135,7 @@ const defaultDate = nowPlus48.toISOString().split('T')[0]; // "YYYY-MM-DD"
 const defaultTime = new Date().toTimeString().slice(0, 5);  // "HH:MM"
 const [selectedDate, setSelectedDate] = useState(defaultDate);
 const [selectedTime, setSelectedTime] = useState(defaultTime);
-
+const [isMobile, setIsMobile] = useState(false);
 const [awayLineout, setAwayLineout] = useState(savedGame?.awayLineout || null);
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
@@ -163,7 +163,20 @@ const [homeTeamName, setHomeTeamName] = useState("Home");
 const [awayTeamColor, setAwayTeamColor] = useState(savedGame?.awayTeamColor || "#0b63fb");
 const [leagueId, setLeagueId] = useState(savedGame?.leagueId || "");
 const [leagueName, setLeagueName] = useState(savedGame?.leagueName || "");
-
+useEffect(() => {
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 768); // 768px is typical mobile breakpoint
+  };
+  
+  // Check on initial load
+  checkMobile();
+  
+  // Add resize listener
+  window.addEventListener("resize", checkMobile);
+  
+  // Cleanup listener on unmount
+  return () => window.removeEventListener("resize", checkMobile);
+}, []);
 // Ensure leagueId and leagueName are always set from navigation state or savedGame
 useEffect(() => {
   let id = "";
@@ -260,7 +273,7 @@ const filteredLeadChanges =
         .reverse()
         .filter((lead) => lead.q === parseInt(String(selectedQuarter).replace("Q", "")
       ));
-      const latestLeadChange = filteredLeadChanges.find(lead => lead.team === "Ravens");
+      const latestLeadChange = filteredLeadChanges.find(lead => lead.team === homeTeamName);
 
 useEffect(() => {
   const totalPoints = gameActions.reduce((sum, action) => {
@@ -436,7 +449,7 @@ useEffect(() => {
     if (opponentScore > teamScore) {
       addNewLeadChange(currentQuater, opponentName, `${teamScore}-${opponentScore}`);
     } else if (teamScore > opponentScore) {
-      addNewLeadChange(currentQuater, "Ravens", `${teamScore}-${opponentScore}`);
+      addNewLeadChange(currentQuater, homeTeamName, `${teamScore}-${opponentScore}`);
     } else {
       addNewLeadChange(currentQuater, "Draw", `${teamScore}-${opponentScore}`);
     }
@@ -446,8 +459,8 @@ useEffect(() => {
 
     if (opponentScore > teamScore && lastLeadChange.team !== opponentName) {
       addNewLeadChange(currentQuater, opponentName, `${teamScore}-${opponentScore}`);
-    } else if (teamScore > opponentScore && lastLeadChange.team !== "Ravens") {
-      addNewLeadChange(currentQuater, "Ravens", `${teamScore}-${opponentScore}`);
+    } else if (teamScore > opponentScore && lastLeadChange.team !== homeTeamName) {
+      addNewLeadChange(currentQuater, homeTeamName, `${teamScore}-${opponentScore}`);
     } else if (teamScore === opponentScore && lastLeadChange.team !== "Draw") {
       addNewLeadChange(currentQuater, "Draw", `${teamScore}-${opponentScore}`);
     }
@@ -670,10 +683,12 @@ const updateLiveBroadcast = async () => {
         home: teamImage,       // Your local variable or image URL
         away: opponentLogo     // Your local variable or image URL
       },
+      leadChanges:leadChanges,
       scheduledStart: {
         date: selectedDate,
         time: selectedTime
       },
+  
       awayLineout: awayLineout,
       lineout: passedLineout,
       onCourtPlayers: onCourtPlayers,
@@ -2342,7 +2357,7 @@ liveBroadcastGameFinished={liveBroadcastGameFinished}
 </div>
 
         </div>
-
+<div className=" md:block hidden">
 <Court
   savedGame={savedGame}
   handleCourtClick={handleCourtClick}
@@ -2358,15 +2373,15 @@ liveBroadcastGameFinished={liveBroadcastGameFinished}
   currentGameActionFilters={currentGameActionFilters}
   currentQuater={currentQuater}
 />
-
+</div>
 
 
         {/* Bottom Nav */}
-        <div className="bottom-nav  items-center justify-center w-full  h-[33vh] ">
+        <div className="bottom-nav  items-center justify-center w-full  md:h-[33vh] h- ">
 {/* Quick Stats Section */}
      {/* Quick Stats Section */}
 {/* Quick Stats Section */}
-<div className={`text-white items-center  justify-center flex-row space-x-4 flex 
+<div className={`text-white items-center hidden md:flex  justify-center flex-row space-x-4  
   w-auto 
   ${currentGameActionFilters.some(filter => !["All Game", "2 Points", "3 Points", "2Pt Miss", "3Pt Miss"].includes(filter)) ? "h-[33%]" : "h-1/4"}
 `}>
@@ -2595,7 +2610,7 @@ console.log("Final Selected Player Details:", playerDetails);
       <>
   
         {/* All Game Stats */}
-        <div className="relative w-[40%]  flex flex-row h-full">
+        <div className="relative w-[40%]   flex flex-row h-full">
         {alertMessage && (
   <motion.div
     className="absolute bottom-8  text-center left-0 w-full transform -translate-x-1/2 bg-primary-cta -z-50  text-white  py-3 rounded-lg shadow-lg flex items-center space-x-3"
@@ -2680,6 +2695,7 @@ console.log("Final Selected Player Details:", playerDetails);
   setAlertMessage={setAlertMessage}
   setActionSelected={setActionSelected}
   actionSelected={actionSelected}
+  isMobile={isMobile}
 />
 
 
@@ -2698,6 +2714,7 @@ passedLineout={passedLineout}
   setSeconds={setSeconds}
   isRunning={isRunning}
   setIsRunning={setIsRunning}
+  isMobile={isMobile}
 />
 
 

@@ -15,16 +15,16 @@ const LineoutSection = ({
   dropdownRef,
 }) => {
   return (
-    <div className="bg-secondary-bg p-8 col-span-2 sm:col-span-2 rounded-lg mt-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-secondary-bg p-4 sm:p-8 col-span-2 sm:col-span-2 rounded-lg mt-4 w-full max-w-full overflow-x-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 w-full">
         <p className="text-lg font-bold">Lineout</p>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2 sm:gap-4">
           {(localLineouts.length > 0 || cloudLineouts.length > 0) && (
             <select
               value={selectedLineoutId || ""}
               onChange={(e) => setSelectedLineoutId(e.target.value)}
-              className="ml-4 p-2 rounded bg-white/10 text-white"
+              className="p-2 rounded bg-white/10 text-white w-full sm:w-auto"
             >
               <optgroup label="Local Lineouts">
                 {localLineouts.map((lineout) => (
@@ -48,7 +48,7 @@ const LineoutSection = ({
 
           <button
             onClick={openLineoutModal}
-            className="btn btn-primary px-5 py-2 bg-primary-cta rounded-md"
+            className="btn btn-primary px-5 py-2 bg-primary-cta rounded-md w-full sm:w-auto"
           >
             Create
           </button>

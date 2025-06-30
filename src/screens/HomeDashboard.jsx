@@ -668,12 +668,12 @@ const handleConfirmCompleteGame = async () => {
 
 
 
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto px-2 py-2 sm:p-6 w-full max-w-full">
 
-        <div className="p-6">
+        <div className="py-2 sm:p-6 w-full">
           <button
             onClick={handleStartNewGame}
-            className="btn my-5 bg-primary-cta px-4 ml-8 py-2 rounded-lg"
+            className="btn my-4 bg-primary-cta px-4 py-2 rounded-lg w-full sm:w-auto sm:ml-8"
           >
             Start New Game
           </button>
@@ -698,7 +698,7 @@ const handleConfirmCompleteGame = async () => {
 
 
 
-          <div className="grid  grid-cols-2 gap-4 p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-2 sm:p-8 w-full">
             {/* Lineout Section */}
             <LineoutSection
   localLineouts={localLineouts}
