@@ -283,7 +283,79 @@ useEffect(() => {
     ); 
   }
   
-  if (!gameData) return <div className="text-center">Game not found or has ended.</div>;
+  if (!gameData) return <div className="min-h-screen bg-primary-bg flex items-center justify-center px-4">
+  <div className="max-w-md w-full text-center">
+    {/* Animated Basketball Icon */}
+    <div className="relative mb-8">
+      <div className="w-32 h-32 mx-auto bg-gradient-to-br from-primary-cta to-primary-danger rounded-full flex items-center justify-center shadow-2xl animate-bounce">
+        <div className="w-24 h-24 bg-primary-bg rounded-full flex items-center justify-center">
+          {/* <AlertCircle className="w-12 h-12 text-primary-red" /> */}
+        </div>
+      </div>
+      
+      {/* Floating elements */}
+      <div className="absolute -top-4 -right-4 w-8 h-8 bg-secondary-cta rounded-full animate-pulse"></div>
+      <div className="absolute -bottom-2 -left-6 w-6 h-6 bg-primary-green rounded-full animate-pulse delay-300"></div>
+      <div className="absolute top-8 -left-8 w-4 h-4 bg-primary-danger-light rounded-full animate-pulse delay-700"></div>
+    </div>
+
+    {/* Error Code */}
+    <div className="mb-6">
+      <h1 className="text-8xl font-black text-transparent bg-gradient-to-r from-primary-cta via-primary-danger to-secondary-cta bg-clip-text mb-2">
+        404
+      </h1>
+      <div className="w-24 h-1 bg-gradient-to-r from-primary-cta to-primary-danger mx-auto rounded-full"></div>
+    </div>
+
+    {/* Main Message */}
+    <div className="mb-8 space-y-4">
+      <h2 className="text-2xl font-bold text-white mb-2">Game Over!</h2>
+      <div className="bg-card-bg rounded-lg p-6 border border-gray-700/50">
+        <div className="flex items-center justify-center space-x-2 mb-3">
+          {/* <Clock className="w-5 h-5 text-primary-red" /> */}
+          <span className="text-primary-red font-semibold">Status: Unavailable</span>
+        </div>
+        <p className="text-gray-300 leading-relaxed">
+          This game has either ended or doesn't exist. The final buzzer has sounded, 
+          and this matchup is no longer available for viewing.
+        </p>
+      </div>
+    </div>
+
+    {/* Action Buttons */}
+    <div className="space-y-4">
+      <button 
+        onClick={()=>{navigate('/liveGameHomeDashboard')}}
+        className="w-full bg-gradient-to-r from-primary-cta to-primary-green hover:from-primary-cta/80 hover:to-primary-green/80 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+      >
+        {/* <Home className="w-5 h-5" /> */}
+        <span>View Live Games</span>
+      </button>
+
+      <button 
+        onClick={() => window.location.reload()}
+        className="w-full bg-secondary-bg hover:bg-card-bg text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 border border-gray-700/50 hover:border-primary-cta/50"
+      >
+        Try Again
+      </button>
+    </div>
+
+    {/* Additional Info */}
+    <div className="mt-8 text-sm text-gray-500">
+      <p>Looking for live games? Check out our</p>
+      <button className="text-primary-cta hover:text-primary-green transition-colors underline">
+        current schedule
+      </button>
+    </div>
+
+    {/* Decorative Elements */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary-cta rounded-full animate-ping"></div>
+      <div className="absolute top-3/4 right-1/4 w-3 h-3 bg-secondary-cta rounded-full animate-ping delay-500"></div>
+      <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-primary-green rounded-full animate-ping delay-1000"></div>
+    </div>
+  </div>
+</div>;
   console.log(gameData);
 // Get full players array
 // const lineoutPlayers = gameData?.lineout?.players ?? [];
@@ -320,7 +392,11 @@ const getQuarterColor = (quarter) => {
 };
 
 const latestLeadChange = leadChanges[leadChanges.length - 1];
-
+const handleTeamClick = () => {
+  const teamName = gameData?.teamNames.home || "Home";
+  // Navigate to the team page with the team name
+  navigate(`/teams/${encodeURIComponent(teamName)}`);
+};
   return (
     
     <div className={`${showStatsModal ? "h-auto" : "h-screen"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
@@ -448,7 +524,9 @@ const latestLeadChange = leadChanges[leadChanges.length - 1];
 <div className="flex justify-between items-center w-full">
 
   {/* HOME */}
-  <div className="relative flex flex-col items-center w-1/3">
+  <div className="relative flex hover:bg-primary-bg hover:backdrop-blur-lg hover:scale-95 duration-300 hover:rounded-lg cursor-pointer  flex-col items-center w-1/3"
+   onClick={handleTeamClick}
+  >
     <div
       className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${homeWon ? 'z-20' : ''}`}
       style={{ borderColor: homeTeamColor, ...(homeWon ? { animation: "confettiPulse 5s forwards" } : {}) }}
@@ -1038,44 +1116,47 @@ const latestLeadChange = leadChanges[leadChanges.length - 1];
   )
 ) : gameStatsToggleMode === 'Map' ? (
   <>
-     <div className="flex flex-row w-full h-10 items-center justify-center space-x-4" data-section="map-team-nav-div">
+     <div className="flex  flex-row w-full h-10 items-center justify-center space-x-4" data-section="map-team-nav-div">
       <button style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="text-white text-sm font-medium border-b-2 ">{homeTeamName || "Home"}</button>
       <button style={{borderBottomColor: gameData?.awayTeamColor || '#0b63fb'}} className="text-gray-600 line-through text-sm font-medium">{awayTeamName || "Away"}</button>
      </div>
-  <div className="w-full h-[40vh] pb-5  bg-opacity-40 rounded-lg flex items-center justify-center">
+     <div className="w-full  
+  h-[40vh] sm:h-[35vh] md:h-[30vh] lg:h-[28vh] xl:h-[25vh] 
+  max-h-[500px] pb-5 bg-opacity-40 rounded-lg flex items-center justify-center">
     
-   <div className="border-[1px] border-gray-600/40  rounded-md h-full w-full relative" data-section="court">
-   <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
-   <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
-   <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40"></div>
-   {/* Home team score dots */}
-   {(() => {
-     // Find the index of the latest home team action with x/y
-     const homeShots = Array.isArray(gameData?.gameActions)
-       ? gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number')
-       : [];
-     const latestIdx = homeShots.length - 1;
-     return homeShots.map((action, idx) => {
-       const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
-       const dotClass = `${isMiss ? 'bg-primary-red' : action.type === 'score' ? 'bg-primary-green' : 'bg-gray-400'} border-2 border-white/20 shadow` + (idx === latestIdx ? ' animate-shot-glow' : '');
-       return (
-         <div
-           key={idx}
-           className={`absolute w-3 h-3 ${dotClass}`}
-           style={{
-             left: `${action.x}%`,
-             top: `${action.y}%`,
-             zIndex: 10,
-             clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-             transform: 'translate(-50%, -50%)',
-           }}
-           title={`Q${action.quarter} (${action.points} pts)`}
-         />
-       );
-     });
-   })()}
-   </div>
+  <div className="border-[1px] border-gray-600/40 rounded-md h-full w-full relative" data-section="court">
+    <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
+    <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
+    <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40"></div>
+
+    {/* Home team score dots */}
+    {(() => {
+      const homeShots = Array.isArray(gameData?.gameActions)
+        ? gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number')
+        : [];
+      const latestIdx = homeShots.length - 1;
+      return homeShots.map((action, idx) => {
+        const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
+        const dotClass = `${isMiss ? 'bg-primary-red' : action.type === 'score' ? 'bg-primary-green' : 'bg-gray-400'} border-2 border-white/20 shadow` + (idx === latestIdx ? ' animate-shot-glow' : '');
+        return (
+          <div
+            key={idx}
+            className={`absolute w-3 h-3 ${dotClass}`}
+            style={{
+              left: `${action.x}%`,
+              top: `${action.y}%`,
+              zIndex: 10,
+              clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+              transform: 'translate(-50%, -50%)',
+            }}
+            title={`Q${action.quarter} (${action.points} pts)`}
+          />
+        );
+      });
+    })()}
   </div>
+</div>
+
   </>
 ) : (
   <div className="w-full h-auto flex flex-col gap-3 px-4 ">

@@ -1,8 +1,18 @@
 import React, { useRef, useEffect, useState } from "react";
 import jerseyPlaceholder from "../../../../assets/logo.jpg";
 import { db } from "../../../../db";
-
-import { doc as firestoreDoc, getDoc, setDoc } from "firebase/firestore";
+// Add these imports at the top of your file
+import { 
+  doc as firestoreDoc, 
+  getDoc, 
+  setDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs,
+  addDoc 
+} from "firebase/firestore";
+// import { doc as firestoreDoc, getDoc, setDoc } from "firebase/firestore";
 
 import { firestore } from "../../../../firebase";
 import useAuth from "../../../../hooks/useAuth";
@@ -87,54 +97,130 @@ const SettingsModal = ({ onClose ,setAlertMessage}) => {
   };
 
   const removeImage = () => setTeamImage(jerseyPlaceholder);
-  const handleSaveSettings = async () => {
-    const settingsData = {
-      teamName,
-      teamImage,
-      quarterLength,
-      teamColor,
-      theme,
-    };
+//   const handleSaveSettings = async () => {
+//     const settingsData = {
+//       teamName,
+//       teamImage,
+//       quarterLength,
+//       teamColor,
+//       theme,
+//     };
   
-    try {
-      setSaving(true);
+//     try {
+//       setSaving(true);
   
-      if (user) {
-        const ref = firestoreDoc(firestore, "users", user.uid, "settings", "preferences");
-        await setDoc(ref, settingsData);
-      } else {
-        await db.settings.put({ id: "preferences", ...settingsData });
-      }
+//       if (user) {
+//         const ref = firestoreDoc(firestore, "users", user.uid, "settings", "preferences");
+//         await setDoc(ref, settingsData);
+//       } else {
+//         await db.settings.put({ id: "preferences", ...settingsData });
+//       }
       
   
-      setSavedSettings(settingsData);
-      setTimeout(() => {
-        setSaving(false);
-        onClose();
-      }, 1000);
+//       setSavedSettings(settingsData);
+//       setTimeout(() => {
+//         setSaving(false);
+//         onClose();
+//       }, 1000);
 
   
-setTimeout(() => {
-  setSaving(false);
-  onClose();
-}, 1000);
-setSavedSettings(settingsData);
-setAlertMessage("✅ Settings updated!");
-setTimeout(() => {
-    setAlertMessage(""); // clear after showing
-  }, 3000);
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      setSaving(false);
-    }
+// setTimeout(() => {
+//   setSaving(false);
+//   onClose();
+// }, 1000);
+// setSavedSettings(settingsData);
+// setAlertMessage("✅ Settings updated!");
+// setTimeout(() => {
+//     setAlertMessage(""); // clear after showing
+//   }, 3000);
+//     } catch (error) {
+//       console.error("Error saving settings:", error);
+//       setSaving(false);
+//     }
 
-    if (setTeamImage) {
-      setTeamImage(teamImage); // ✅ Push to HomeDashboard
-    }
+//     if (setTeamImage) {
+//       setTeamImage(teamImage); // ✅ Push to HomeDashboard
+//     }
     
+//   };
+  
+  // Updated handleSaveSettings function
+const handleSaveSettings = async () => {
+  if (!isTeamNameValid) {
+    setAlertMessage("❌ Please enter a valid team name (minimum 3 characters)");
+    setTimeout(() => setAlertMessage(""), 3000);
+    return;
+  }
+
+  const settingsData = {
+    teamName,
+    teamImage,
+    quarterLength,
+    teamColor,
+    theme,
   };
-  
-  
+
+  try {
+    setSaving(true);
+
+    // Check if team name already exists in the Teams collection
+    const teamsRef = collection(firestore, "Teams");
+    const teamQuery = query(teamsRef, where("Name", "==", teamName.trim()));
+    const teamSnapshot = await getDocs(teamQuery);
+
+    if (!teamSnapshot.empty) {
+      // Team name already exists
+      setAlertMessage("❌ Team name already exists. Please choose a different name.");
+      setTimeout(() => setAlertMessage(""), 3000);
+      setSaving(false);
+      return;
+    }
+
+    // Team name doesn't exist, proceed with saving
+    if (user) {
+      // Save user settings to Firestore
+      const userSettingsRef = firestoreDoc(firestore, "users", user.uid, "settings", "preferences");
+      await setDoc(userSettingsRef, settingsData);
+
+      // Add team to Teams collection
+      await addDoc(teamsRef, {
+        Name: teamName.trim(),
+        Color: teamColor,
+        Image: teamImage,
+        CreatedBy: user.uid,
+        CreatedAt: new Date().toISOString(),
+        // Add any other team-related fields you want to store
+      });
+    } else {
+      // Save to local Dexie database
+      await db.settings.put({ id: "preferences", ...settingsData });
+      
+      // For non-authenticated users, you might want to handle this differently
+      // since they can't save to Firestore Teams collection
+      // You could store it locally or prompt them to sign in
+    }
+
+    setSavedSettings(settingsData);
+    setAlertMessage("✅ Settings and team created successfully!");
+    
+    setTimeout(() => {
+      setSaving(false);
+      onClose();
+      setAlertMessage(""); // Clear after closing
+    }, 2000);
+
+  } catch (error) {
+    console.error("Error saving settings:", error);
+    setAlertMessage("❌ Error saving settings. Please try again.");
+    setTimeout(() => setAlertMessage(""), 3000);
+    setSaving(false);
+  }
+
+  // Update team image if needed
+  if (setTeamImage) {
+    setTeamImage(teamImage);
+  }
+};
 
   // 🧠 Validation: Only enable save if there's a change
   const hasChanges = () => {

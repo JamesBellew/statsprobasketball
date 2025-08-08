@@ -235,6 +235,7 @@ navigate("/")
     <nav className="hidden md:flex space-x-6 text-gray-300 text-sm">
       <a onClick={()=>{navigate('/')}} className="hover:text-white">Home</a>
       <a  className="hover:text-white border-b-2 border-b-primary-cta pb-1">LiveGames</a>
+      <a  onClick={()=>{navigate('/teamsDashboard')}} className="hover:text-white ">Teams</a>
 
     </nav>
 
@@ -261,6 +262,7 @@ navigate("/")
         navigate('/')
       }} className="block hover:text-blue-400">Home</a>
       <a href="#" className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4 ">LiveGames</a>
+      <a onClick={()=>{navigate('/teamsDashboard')}} className="block hover:text-blue-400 text-white ">Teams</a>
   
     </nav>
     <div>
@@ -576,7 +578,7 @@ navigate("/")
         <div
           onClick={() => handleLiveGameClick(game.link, false)}
           key={game.id}
-          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
+          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer relative transition-all duration-200"
         >
           {/* Date and Status */}
           <div className="text-xs text-gray-400 mb-2">

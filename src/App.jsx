@@ -7,6 +7,7 @@ import HomeDashboard from "./screens/HomeDashboard";
 import StartGame from './screens/StartGame';
 import InGame from './screens/InGame';
 import Statistics from './screens/Statistics';
+import TeamsDashboard from './screens/TeamsDashboard';
 import StatisticsShotMap from './screens/StatisticsShotMap';
 import MobileBlocker from './screens/MobileBlocker';
 import kobe from './assets/kobe.jpg';
@@ -15,11 +16,12 @@ import HomeScreenCourtSVG from './screens/HomescreenCourtSVG'
 import LiveGameView from './screens/LiveGameView';
 import LiveGamesHomeDashboard from './screens/LiveGameHomeDashboard';
 import LandingPageTiles from './screens/Components/HomeScreen/LandingPageTiles';
+import TeamPage from './screens/TeamPage';
 
 export default function App() {
   // const navigate = useNavigate();
   const hamburgerRef = useRef(null);
-const mobileMenuRef = useRef(null);
+const mobileMenuRef = useRef(null); 
 const closeMenuRef = useRef(null);
   const { user, login, logout } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -253,13 +255,40 @@ const handleCloseMobileMenu = () => {
             </button>
           </div>
           <nav className="space-y-6 text-lg">
-            <a onClick={() => {
+            {/* <a onClick={() => {
               navigate('/');
               handleCloseMobileMenu(); // Close menu after navigation
             }} className="block hover:text-blue-400 border-l-2 pl-4 border-l-primary-cta">Home</a>
             <a onClick={()=>{
               navigate("/../liveGameHomeDashboard")
             }} className="block hover:text-blue-400 text-white  ">Live Games</a>
+                <a onClick={()=>{
+              navigate("/../teamsDashboard")
+            }} className="block hover:text-blue-400 text-white  ">Teams</a> */}
+                    <ul class="menu w-full menu-horizontal text-gray-300 px-1">
+              {user ?
+      <li className=' border-l-2 z-50 border-l-primary-cta  rounded-md rounded-l-none'>
+        <details>
+          <summary className=' text-white'>{user.email}</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
+            <li><a>Settings</a></li>
+            <hr className='my-2'></hr>
+            <li   onClick={()=>{handleLogout()}} className='bg-primary-danger rounded-md text-white'><a>Logout</a></li>
+          </ul>
+        </details>
+      </li>
+          : <>
+              <li className='   w-1/3 mx-auto text-center  bg-white/5 rounded-md '>
+        <details>
+          <summary>Guest</summary>
+          <ul class="shadow-xl bg-primary-bg w-full rounded-t-none p-2">
+            
+            <li   onClick={()=>{setShowAuthModal(true)}} className='bg-primary-danger rounded-md text-white'><a>Login</a></li>
+          </ul>
+        </details>
+      </li>
+          </>}
+          </ul>
           </nav>
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
@@ -292,6 +321,7 @@ const handleCloseMobileMenu = () => {
 
                      <p class="mx-auto text-base text-gray-300 sm:max-w-md lg:text-xl md:max-w-3xl"> Log in to manage your team, track live stats, broadcast live games to viewers,  and get real-time insights that help you win more games</p>
                      <div class="relative flex flex-col sm:flex-row sm:space-x-4">
+                    {user &&
                      <a
                 onClick={() => {
                   setShowLoginModal(true); // Trigger modal to open
@@ -306,6 +336,7 @@ const handleCloseMobileMenu = () => {
     <polyline points="12 5 19 12 12 19"></polyline>
   </svg>
 </a>
+          }
 {!user && (
         <button
           onClick={() => setShowAuthModal(true)}
@@ -446,8 +477,11 @@ const handleCloseMobileMenu = () => {
         />
         <Route path="/Login" element={<Login />} />
         <Route path="/homedashboard" element={<HomeDashboard />} />
+        <Route path="/teamsDashboard" element={<TeamsDashboard />} />
         <Route path="/startgame" element={<StartGame />} />
         <Route path="/liveGames/:slug" element={<LiveGameView />} />
+ 
+        <Route path="/teams/:teamName" element={<TeamPage />} />
         <Route path="/ingame" element={<InGame />} />
         <Route path="/liveGameHomeDashboard" element={<LiveGamesHomeDashboard />} />
         <Route path="/statistics" element={<Statistics />} />
