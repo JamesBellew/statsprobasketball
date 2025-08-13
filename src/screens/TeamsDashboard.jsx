@@ -11,32 +11,36 @@ export default function TeamsDashboard() {
   const [teamGameCounts, setTeamGameCounts] = useState({});
   const [teamRecords, setTeamRecords] = useState({});
   const [liveCount,setliveCount] = useState(0)
+  const [teamsWithLiveGame, setTeamsWithLiveGame] = useState({});
+
   //this is the useeffect for the count of the live game
   useEffect(() => {
     const fetchTeamRecords = async () => {
       try {
         const querySnapshot = await getDocs(collection(firestore, "liveGames"));
-        let liveGameCount = 0; // ✅ use let, not const
+        let liveGameCount = 0;
+        const liveTeamsMap = {};
   
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           const { teamNames, score, gameState } = data;
   
           if (!teamNames || !score) return;
-  //! this is where I left off
+  
+          if (gameState === false) {
+            // Game is live
+            liveTeamsMap[teamNames.home] = true;
+            liveTeamsMap[teamNames.away] = true;
+          }
+  
           if (gameState === true) {
-            console.log('game is finsihed');
-            
+            // Finished game
             liveGameCount += 1;
-          } else {
-            console.log('game is Live');
           }
         });
   
-        console.log('this is the count below');
-        console.log(liveGameCount);
-        //set the global use state 
-        setliveCount(liveGameCount)
+        setliveCount(liveGameCount);
+        setTeamsWithLiveGame(liveTeamsMap); // ✅ store which teams have live games
       } catch (error) {
         console.error("Error fetching team records:", error);
       }
@@ -44,6 +48,7 @@ export default function TeamsDashboard() {
   
     fetchTeamRecords();
   }, []);
+  
   
   useEffect(() => {
     const fetchTeamRecords = async () => {
@@ -274,10 +279,12 @@ export default function TeamsDashboard() {
               transform: `translateY(${scrollY * 0.5}px)`,
             }}
           />
+           <div className="absolute inset-0 bg-black bg-opacity-60 md:hidden block" />
+          
           <div className="absolute inset-0 bg-gradient-to-r from-primary-bg/90 via-primary-bg/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-primary-bg via-transparent to-transparent" />
 
-          <div className="relative z-10 flex items-center h-full max-w-7xl mx-auto px-4">
+          <div className="relative z-10 mt-10 md:mt-0 flex items-center h-full max-w-7xl mx-auto px-4">
             <div className="max-w-2xl">
               <h1 className="text-6xl md:text-8xl font-bold mb-4 text-white">
                 Irish Hoops
@@ -290,11 +297,11 @@ export default function TeamsDashboard() {
                 <span className="px-2 py-1 bg-primary-red text-sm rounded">{liveCount} Game{liveCount>1 ? "s" : ""} Live ⚪️</span>
                 }
               </div>
-              <p className="mb-5 text-gray-300 text-lg">Discover local basketball teams from every corner of Ireland. Whether you're a fan, a player, or just curious, explore the stories, rivalries, and live action happening across the country.</p>
+              <p className="mb-5 md:text-gray-300 text-white text-lg">Discover local basketball teams from every corner of Ireland. Whether you're a fan, a player, or just curious, explore the stories, rivalries, and live action happening across the country.</p>
               <div className="flex space-x-4">
                 <a
                 href="#teams"
-                  className="bg-white text-black hover:bg-gray-200 px-8 py-3 text-lg font-semibold rounded-md transition-colors flex items-center"
+                  className="bg-white text-black hover:bg-gray-200 md:px-8 px-4 py-3 text-lg font-semibold rounded-md transition-colors flex items-center"
                 >
                   View Teams
                 </a>
@@ -320,8 +327,13 @@ export default function TeamsDashboard() {
                 navigate(`/teams/${encodeURIComponent(team.Name)}`);
               }}
                 key={team.id}
-                className="bg-gradient-to-br from-card-bg bg-opacity-30 to-secondary-bg rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50"
+                className="bg-gradient-to-br relative from-card-bg bg-opacity-30 to-secondary-bg rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50"
               >
+                                 {teamsWithLiveGame[team.Name] && (
+      <span className="bg-red-500 absolute right-2 top-2 text-white text-xs font-bold  px-2 py-1 rounded-full">
+     LIVE <span className="animate-pulse">⚪️</span>  
+      </span>
+    )}
                 {/* Logo Section */}
                 <div className="flex justify-center mb-6">
                   <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
@@ -337,6 +349,7 @@ export default function TeamsDashboard() {
                 <div className="text-center space-y-3">
                   <h3 className="text-xl font-bold text-white group-hover:text-primary-cta transition-colors duration-300">
                     {team.Name}
+   
                   </h3>
 
                   {/* Stats Row */}

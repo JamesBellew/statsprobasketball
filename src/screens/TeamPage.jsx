@@ -294,7 +294,7 @@ function TeamPage() {
   // Loading state
   if (loading || isValidTeam === null) {
     return (
-      <div className="min-h-screen bg-primary-cta flex items-center justify-center">
+      <div className="min-h-screen bg-primary-cta  flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white text-lg">Loading team information...</p>
@@ -306,25 +306,34 @@ function TeamPage() {
   // Error state - invalid team
   if (!isValidTeam) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800">
+      <div className="min-h-screen bg-secondary-bg">
         
         {/* Hero Section - Error State */}
         <div className="mb-6">
-          <div className="relative bg-gradient-to-r from-red-500 to-red-600 overflow-hidden h-80 p-8 pt-12 rounded-b-2xl">
+          <div className="relative bg-primary-bg overflow-hidden h-80 p-8 pt-12 rounded-b-2xl">
             <div className="flex items-center justify-center h-full">
               <div className="text-center z-10">
                 <h1 className="text-white text-3xl font-bold mb-4 leading-tight">
                   Team Not Found
                 </h1>
                 <p className="text-white/80 text-lg mb-6">
-                  The team "{teamName}" could not be found in our database.
+                  The team "{teamName}" has not been created yet on our app
+                </p>
+                <p className="text-white/80 text-lg mb-6">
+                 
                 </p>
                 <div className="space-x-4">
                   <button 
                     onClick={() => navigate('/')}
-                    className="px-6 py-3 bg-white text-red-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                    className="px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-100 transition-colors"
                   >
                     Go Back Home
+                  </button>
+                  <button 
+                    onClick={() => navigate('/teamsDashboard')}
+                    className="px-6 py-3 bg-primary-cta text-white rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                  >
+                    View Teams
                   </button>
                 </div>
               </div>
@@ -337,10 +346,18 @@ function TeamPage() {
         </div>
 
         {/* Placeholder sections to maintain layout */}
-        <div className="px-4 mb-6">
-          <h2 className="text-white text-sm font-semibold mb-3 uppercase tracking-wide">Suggested Teams</h2>
+        <div className="px-4 flex justify-center items-center flex-col my-auto mb-6">
+          <h2 className="text-white text-sm font-semibold mb-2 uppercase tracking-wide text-center my-auto mt-5">Want to manage "{teamName}"</h2>
+          <h3 className="text-white text-sm font-semibold mb-1 capitalize tracking-wide text-center my-auto mt-5">Request an account to manage "{teamName}"</h3>
           <div className="text-center py-8">
-            <p className="text-white/60">Browse available teams from the home page</p>
+            {/* <p className="text-white/60">Browse available teams from the home page</p> */}
+            <br></br>
+            <a 
+                    href='https://www.instagram.com/james_bellew97/?hl=en'
+                    className="px-6 py-3 bg-primary-cta text-white rounded-lg font-semibold hover:bg-secondary-cta transition-colors"
+                  >
+                   Request account
+                  </a>
           </div>
         </div>
       </div>
@@ -353,7 +370,8 @@ function TeamPage() {
       bg-repeat bg-[length:150px_150px]">
         
 
-        <header className=" h-full w-full border-b-2 border-b-primary-cta bg-primary-cta z-50">
+        <header className=" h-full w-full  bg-primary-cta bg-[url('/assets/fabric.png')]
+      bg-repeat bg-[length:150px_150px] z-50">
 
         <div className="container px-2 mx-auto">
           <div className="flex  cursor-pointer justify-between items-center py-4 mx-auto">
@@ -413,7 +431,8 @@ function TeamPage() {
             }} className="block hover:text-blue-400">Home</a>
             <a onClick={()=>{
               navigate("/../liveGameHomeDashboard")
-            }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Live Games</a>
+            }} className="block hover:text-blue-400 text-white ">Live Games</a>
+             <a  className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Teams</a>
           </nav>
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">
@@ -429,7 +448,8 @@ function TeamPage() {
       {/* Hero Section - Team Welcome */}
       <div className="mb-6">
         <div 
-          className="relative bg-primary-cta overflow-hidden h-auto py-20 p-8 pt-12 rounded-b-2xl"
+          className="relative bg-primary-cta bg-[url('/assets/fabric.png')]
+      bg-repeat bg-[length:550px_550px] overflow-hidden h-auto py-20 p-8 pt-12 rounded-b-2xl"
         //   style={{ 
         //     background: teamData?.Color ? 
         //       `linear-gradient(to right, ${teamData.Color}, ${teamData.Color}dd)` : 

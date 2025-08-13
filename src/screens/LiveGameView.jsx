@@ -392,10 +392,10 @@ const getQuarterColor = (quarter) => {
 };
 
 const latestLeadChange = leadChanges[leadChanges.length - 1];
-const handleTeamClick = () => {
-  const teamName = gameData?.teamNames.home || "Home";
+const handleTeamClick = (passedteamName) => {
+  // const teamName = gameData?.teamNames.home || "Home";
   // Navigate to the team page with the team name
-  navigate(`/teams/${encodeURIComponent(teamName)}`);
+  navigate(`/teams/${encodeURIComponent(passedteamName)}`);
 };
   return (
     
@@ -525,7 +525,7 @@ const handleTeamClick = () => {
 
   {/* HOME */}
   <div className="relative flex hover:bg-primary-bg hover:backdrop-blur-lg hover:scale-95 duration-300 hover:rounded-lg cursor-pointer  flex-col items-center w-1/3"
-   onClick={handleTeamClick}
+   onClick={()=>{handleTeamClick(homeTeamName)}}
   >
     <div
       className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${homeWon ? 'z-20' : ''}`}
@@ -576,7 +576,7 @@ const handleTeamClick = () => {
   </div>
 
   {/* AWAY */}
-  <div className="relative flex flex-col items-center w-1/3">
+  <div className="relative flex flex-col items-center w-1/3"  onClick={()=>{handleTeamClick(awayTeamName)}}>
     <div
       className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''}`}
       style={ awayWon ? { animation: "confettiPulse 5s forwards", borderColor: gameData?.awayTeamColor || '#0b63fb' }  : { borderColor: gameData?.awayTeamColor || '#0b63fb' } }
@@ -856,8 +856,8 @@ const handleTeamClick = () => {
 </>
 
   ) : gameStatsToggleMode === 'Player' ? (
-    <div className="w-full h-auto min-h-[20vh]">
- <div className="flex justify-center items-center w-full  gap-4">
+    <div className="w-full h-auto min-h-[20vh] ">
+ <div className="flex justify-center items-center  w-full  gap-4">
   <p style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className=" bg-secondary-bg  w-auto text-center border-b-2 ">{homeTeamName || "Home"}</p>
 
 
@@ -947,7 +947,7 @@ const handleTeamClick = () => {
 :gameStatsToggleMode === 'Lineouts' ? (
   trackingLineout || awayLineoutPlayers.length > 0 ? (
     
-<div className="relative w-full h-full aspect-square rounded-s-lg overflow-hidden mx-0 px-0">
+<div className="relative w-full h-full  aspect-square rounded-s-lg overflow-hidden mx-0 px-0">
 
   <div className="h-[10%] relative w-full" data-section="team-nav-div">
     <div className="flex h-full justify-center items-center w-full gap-4">
@@ -1087,7 +1087,7 @@ const handleTeamClick = () => {
     })()}
   </div>
 
-  <div className="h-[20%] relative border-t-[1px] bg-secondary-bg border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-0" data-section="bench-div">
+  <div className="h-auto   relative border-t-[1px] bg-secondary-bg border-t-white/10 w-full flex flex-wrap justify-center items-center gap-3 px-0" data-section="bench-div">
     {(() => {
       const currentLineoutPlayers = selectedTeamLineout === 'home' ? lineoutPlayers : awayLineoutPlayers;
       
