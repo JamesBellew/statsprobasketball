@@ -370,8 +370,7 @@ function TeamPage() {
       bg-repeat bg-[length:150px_150px]">
         
 
-        <header className=" h-full w-full  bg-primary-cta bg-[url('/assets/fabric.png')]
-      bg-repeat bg-[length:150px_150px] z-50">
+        <header className=" h-full w-full  bg-primary-cta  z-50">
 
         <div className="container px-2 mx-auto">
           <div className="flex  cursor-pointer justify-between items-center py-4 mx-auto">
@@ -448,8 +447,8 @@ function TeamPage() {
       {/* Hero Section - Team Welcome */}
       <div className="mb-6">
         <div 
-          className="relative bg-primary-cta bg-[url('/assets/fabric.png')]
-      bg-repeat bg-[length:550px_550px] overflow-hidden h-auto py-20 p-8 pt-12 rounded-b-2xl"
+          className="relative bg-primary-cta bg-[url('/assets/bg6.svg')]
+      bg-cover bg-[length:550px_550px] overflow-hidden h-auto py-20 p-8 pt-12 rounded-b-2xl"
         //   style={{ 
         //     background: teamData?.Color ? 
         //       `linear-gradient(to right, ${teamData.Color}, ${teamData.Color}dd)` : 
@@ -502,7 +501,7 @@ function TeamPage() {
       </div>
 
       {/* Team Live Games */}
-      <div className="px-4 mb-6">
+      <div className="px-4 mb-6 container mx-auto">
         <h2 className="text-white text-sm font-semibold mb-3 uppercase tracking-wide">Matches</h2>
         <TeamLiveGames teamName={teamData?.Name || teamName} />
       </div>
