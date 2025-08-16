@@ -461,6 +461,10 @@ const handleTeamClick = (passedteamName) => {
             <a onClick={()=>{
               navigate("/../liveGameHomeDashboard")
             }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Live Games</a>
+                <a onClick={() => {
+              navigate('/teamsDashboard');
+              handleCloseMobileMenu(); // Close menu after navigation
+            }} className="block hover:text-blue-400">Teams</a>
           </nav>
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">

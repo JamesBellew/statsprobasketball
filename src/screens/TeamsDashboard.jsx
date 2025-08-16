@@ -291,7 +291,7 @@ export default function TeamsDashboard() {
               </h1>
               <div className="flex items-center space-x-2 mb-6">
                 <div className="flex items-center space-x-1">
-                  <span className="text-lg">2025 Season</span>
+                  {/* <span className="text-lg">24/25 Season</span> */}
                 </div>
                 { liveCount &&
                 <span className="px-2 py-1 bg-primary-red text-sm rounded">{liveCount} Game{liveCount>1 ? "s" : ""} Live ⚪️</span>

@@ -33,6 +33,8 @@ export default function StartGame() {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [customLeague, setCustomLeague] = useState("");
   const [selectedLeagueName, setSelectedLeagueName] = useState("");
+  const [customLeagueMode, setCustomLeagueMode] = useState(false);
+
   
   const handleGoBack = (e) => {
     e.preventDefault(); // Prevent form submission reload
@@ -122,6 +124,15 @@ const venueSelectedHandler=(venue)=>{
   };
 
   const handleGameStart = async () => {
+    if (!selectedLeagueId && !customLeague.trim()) {
+      alert("Please select a league or enter a custom league.");
+      return;
+    }
+  
+    if (!opponentName.trim()) {
+      alert("Please enter an opponent name.");
+      return;
+    }
     const selectedLineoutData =
       playerStatsEnabled && selectedLineout
         ? lineouts.find((lineout) => lineout.id.toString() === selectedLineout.toString()) || null
@@ -251,7 +262,7 @@ const venueSelectedHandler=(venue)=>{
           {/* League Selection */}
           <div>
             <label className="block mb-1 text-xs font-semibold text-gray-300">League</label>
-            <select
+            {/* <select
               value={selectedLeagueId && selectedLeagueName ? `${selectedLeagueId}|${selectedLeagueName}` : ""}
               onChange={handleLeagueChange}
               className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
@@ -260,14 +271,70 @@ const venueSelectedHandler=(venue)=>{
               {leagues.map((league, idx) => (
                 <option key={idx} value={`${league.id}|${league.name}`}>{league.name}</option>
               ))}
-            </select>
+            </select> */}
+            <div>
+  {/* <label className="block mb-1 text-xs font-semibold text-gray-300">League</label> */}
+
+  {!customLeagueMode ? (
+    <>
+      <select
+        value={selectedLeagueId && selectedLeagueName ? `${selectedLeagueId}|${selectedLeagueName}` : ""}
+        onChange={handleLeagueChange}
+        className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm
+          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 
+          dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+      >
+        <option value="">Select a league</option>
+        {leagues.map((league, idx) => (
+          <option key={idx} value={`${league.id}|${league.name}`}>
+            {league.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => {
+          setCustomLeagueMode(true);
+          setSelectedLeagueId("");
+          setSelectedLeagueName("");
+        }}
+        className="mt-2 text-xs text-blue-400 hover:underline"
+      >
+        + Custom League
+      </button>
+    </>
+  ) : (
+    <>
+      <input
+        type="text"
+        value={customLeague}
+        onChange={handleCustomLeagueChange}
+        placeholder="Enter custom league/tournament"
+        className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm
+          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 
+          dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setCustomLeagueMode(false);
+          setCustomLeague("");
+        }}
+        className="mt-2 text-xs text-red-400 hover:underline"
+      >
+        ← Back to League List
+      </button>
+    </>
+  )}
+</div>
+{/* 
             <input
               type="text"
               value={customLeague}
               onChange={handleCustomLeagueChange}
               placeholder="Or enter a custom league/tournament"
               className="mt-2 block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            />
+            /> */}
           </div>
 
           {/* Opponent */}
