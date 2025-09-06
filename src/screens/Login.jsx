@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 2.24 🔥 (16/08/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 2.25 🔥 (06/09/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is in Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,6 +33,12 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">16/08/2025 - Version 2.25🐒</p>
+<li className="py-2">Added in Groups to the teams settings page, you can now create groups withn your team like 'senior mens 2025'</li>
+<li className="py-2">When starting a game you can now select a group for the game like senior womens 2025</li>
+<li className="py-2">In the livegame home dashboard, it now shows the groupd of which each game was for again like seior mens 2025</li>
+<li className="py-2">Major UI changes to accomidate the new label for the groups</li>
+<li className="py-2">Cenetered a out of line player in the ingame lineout section</li>
 <p className="font-bold text-primary-danger text-sm">16/08/2025 - Version 2.24🦧</p>
 <li className="py-2">Conditionaly renders the cutsom league dropdown and inout based on whether the user has selected a custom league</li>
 <li className="py-2">Recent Games - Better UI for mobile view on smaller Iphone devices</li>

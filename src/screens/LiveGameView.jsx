@@ -520,8 +520,10 @@ const handleTeamClick = (passedteamName) => {
   {gameData?.gameActions?.length > 0 && !gameFinsihedFlag && !gameData?.gameState ? (
     <span className="bg-secondary-danger text-white text-xs px-3 py-0.5 rounded font-bold">LIVE <span className="animate-pulse text-xs font-extralight h-1">⚪️</span></span>
   ) : (
+    
     <span className="bg-primary-bg text-white text-xs px-3 py-0.5 rounded font-medium">{gameData?.scheduledStart?.date || "Scheduled"}</span>
   )}
+  
 </div>
 
 {/* Teams & Score Row */}
@@ -573,7 +575,7 @@ const handleTeamClick = (passedteamName) => {
       {gameClock?.minutesLeft ?? "--"}:{String(gameClock?.secondsLeft ?? "00").padStart(2, "0")}
     </p>
     {broadcastUpdate && (
-              <div className=" mt-2 w-full text-xs bg-white/5 rounded-md p-3">
+              <div className=" mt-2 w-full text-xs border-x-2 px-1 border-primary-green  py-1">
                 {broadcastUpdate}
               </div>
             )}
@@ -1031,14 +1033,14 @@ const handleTeamClick = (passedteamName) => {
           {onCourt.length === 5 && (
             <>
               {/* Center */}
-              <div className="absolute top-[10%] left-[50%] transform -translate-x-1/2">
+              <div className="absolute top-[10%] left-[50%]  transform -translate-x-1/2">
                 <div 
-                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
+                  className="w-10 h-10 mx-auto bg-white/10 rounded-full flex items-center justify-center text-white font-bold shadow-lg border-[1px] text-xs"
                   style={{ borderColor: currentTeamColor }}
                 >
                   #{onCourt[0].number}
                 </div>
-                <div className="text-white text-sm text-center mt-1">{onCourt[0].name}</div>
+                <div className="text-white text-sm flex text-center mt-1">{onCourt[0].name}</div>
               </div>
 
               {/* Left Wing */}

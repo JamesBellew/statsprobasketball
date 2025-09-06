@@ -145,15 +145,15 @@ const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
 });
 const [broadcastUpdate,setBroadcastUpdate]= useState(null);
 const broadcastUpdatesText=[
-  "Waiting Game Start",
+  "Waiting Start",
   "Waiting QTR Start",
   "Timeout",
   "Quarter End",
   "Half Time",
   "Stoppage",
-  "🔥 Overtime 🔥",
-  "🔥 2nd Overtime 🔥",
-  "🔥 3rd Overtime 🔥",
+  "🔥Overtime🔥",
+  "🔥 2nd OT 🔥",
+  "🔥 3rd OT 🔥",
 ]
 
 
@@ -728,7 +728,7 @@ const updateLiveBroadcast = async () => {
       // You might also want to include these for backward compatibility
       leagueId: finalLeagueId,
       leagueName: finalLeagueName,
-      
+       opponentGroup: savedGame?.opponentGroup || null,
       // Additional fields that might be useful
       homeTeamColor: "#6366F1", // Your team color
       awayTeamColor: awayTeamColor,
@@ -1160,6 +1160,7 @@ const handleSaveGame = async () => {
     awayTeamColor, // <-- Save the away team color
     leagueId,
     leagueName,
+    opponentGroup: savedGame?.opponentGroup || null,
   };
 
   try {

@@ -342,92 +342,104 @@ navigate("/")
               }
             
               return (
-                <a key={game.id}
+                <a
+                key={game.id}
                 onClick={() => handleLiveGameClick(game.link, false)}
                 className="block hover:scale-[0.98] transition-all hover:bg-gray-800/50 rounded-xl duration-300 cursor-pointer"
               >
                 <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-xl p-3 border border-gray-700/50 hover:border-gray-600">
-                  
-                  {/* Live indicator at top center */}
-                  <div className="absolute z-40 left-0 top-0 transform  justify-center ">                     
-  <div className="bg-red-600 text-white text-[10px] font-semibold px-2  rounded-e-sm flex items-center space-x-1">                       
-    <span>LIVE</span>                       
-    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />                     
-  </div>                   
-</div>
               
-                  {/* Main content flex container */}
-                  <div className="flex items-center px-5 justify-between ">
-                    {/* Away Team Section */}
-                    <div className="w-20 flex  flex-col items-center">
-                      {/* Away Team Logo */}
-                      <div className="relative mb-1">
-                        <img
-                          src={awayLogo || opponentLogo}
-                          className="w-8 h-8 rounded-full bg-white p-0.5"
-                          alt="away logo"
-                        />
-                        <div 
-                          className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                          style={{ backgroundColor: awayColor || '#0b63fb' }}
-                        />
-                      </div>
-                      {/* Away Team Name */}
-                      <div className="text-center">
-                        <p className="text-white font-medium text-xs truncate">{awayTeam}</p>
-                        <p className="text-gray-400 text-xs">Away</p>
-                      </div>
+                  {/* LIVE badge (top-left, truly flush) */}
+                  <div className="absolute left-0 top-0 z-40">
+                    <div className="bg-red-600 text-white text-[10px] font-semibold px-2 rounded-e-sm flex items-center space-x-1">
+                      <span>LIVE</span>
+                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     </div>
+                  </div>
               
-                    {/* Score Section */}
-                    <div className="flex-1  text-center mx-3">
-                      <p className="text-lg font-bold text-white">{awayScore} - {homeScore}</p>
-                      <p className="text-xs text-gray-300">
-                        {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
-                      </p>
-                    </div>
-              
-                    {/* Home Team Section */}
-                    <div className="w-20  flex flex-col items-center">
-                      {/* Home Team Logo */}
-                      <div className="relative mb-1">
-                        <img
-                          src={homeLogo || homeLogo}
-                          className="w-8 h-8 rounded-full bg-white p-0.5"
-                          alt="home logo"
-                        />
-                        <div 
-                          className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                          style={{ backgroundColor: homeColor || '#8B5CF6' }}
-                        />
+                  {/* GROUP pill (top-right, no extra gap) */}
+                  {(() => {
+                    const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
+                    return groupLabel ? (
+                      <div className="absolute mx-auto flex  right-0 top-0">
+                        <span
+                          title={groupLabel}
+                          className="inline-flex items-center gap-1 text-[10px]  leading-none text-gray-100 bg-white/10 px-2 py-[2px] rounded-full max-w-[160px] truncate"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
+                          </svg>
+                          <span className="truncate">{groupLabel}</span>
+                        </span>
                       </div>
-                      {/* Home Team Name */}
-                      <div className="text-center">
-                        <p className="text-white font-medium text-xs truncate">{homeTeam}</p>
-                        <p className="text-gray-400 text-xs">Home</p>
+                    ) : null;
+                  })()}
+              
+                  {/* Main content (give it its own top padding) */}
+                  <div className="pt-6">
+                    <div className="flex items-center px-5 justify-between">
+                      {/* Away */}
+                      <div className="w-20 flex flex-col items-center">
+                        <div className="relative mb-1">
+                          <img
+                            src={awayLogo || opponentLogo}
+                            className="w-8 h-8 rounded-full bg-white p-0.5"
+                            alt="away logo"
+                          />
+                          <div
+                            className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
+                            style={{ backgroundColor: awayColor || '#0b63fb' }}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white font-medium text-xs truncate">{awayTeam}</p>
+                          <p className="text-gray-400 text-xs">Away</p>
+                        </div>
+                      </div>
+              
+                      {/* Score */}
+                      <div className="flex-1 text-center mx-3">
+                        <p className="text-lg font-bold text-white">
+                          {awayScore} - {homeScore}
+                        </p>
+                        <p className="text-xs text-gray-300">
+                          {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+                        </p>
+                      </div>
+              
+                      {/* Home */}
+                      <div className="w-20 flex flex-col items-center">
+                        <div className="relative mb-1">
+                          <img
+                            src={homeLogo || homeLogo}
+                            className="w-8 h-8 rounded-full bg-white p-0.5"
+                            alt="home logo"
+                          />
+                          <div
+                            className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
+                            style={{ backgroundColor: homeColor || '#8B5CF6' }}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white font-medium text-xs truncate">{homeTeam}</p>
+                          <p className="text-gray-400 text-xs">Home</p>
+                        </div>
                       </div>
                     </div>
                   </div>
               
-                  {/* Venue at bottom center */}
-                  {/* <div className="flex justify-center">
-                    {game.venue && (
-                      <span className="text-gray-400 text-xs">
-                        @ {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
-                      </span>
-                    )}
-                  </div> */}
-              
                   {/* Bottom accent */}
-                  <div 
+                  <div
                     className="absolute bottom-0 left-0 w-full h-1 rounded-b-xl"
-                    style={{ 
-                      background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)` 
+                    style={{
+                      background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)`,
                     }}
                   />
                 </div>
               </a>
+              
               );
+              
             })}
           </div>
         </div>
@@ -461,35 +473,32 @@ navigate("/")
   )}
 </div>
 
+
 {/* Scheduled Games (flat) */}
+{/* Scheduled Games (flat) */}
+{/* Scheduled Games */}
 <div className="mb-8">
   <h3 className="text-lg font-bold text-white mb-2 pl-2">Scheduled Games</h3>
+
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {scheduledGames.map((game) => {
       const dateStr = game.scheduledStart?.date || "";
       const timeStr = game.scheduledStart?.time || "";
       let displayDateTime = `${dateStr} @ ${timeStr}`;
-      
+
       if (dateStr) {
         const today = new Date();
         const tomorrow = new Date();
         tomorrow.setDate(today.getDate() + 1);
-      
         const scheduledDate = new Date(`${dateStr}T${timeStr}`);
-        const isToday =
-          scheduledDate.toDateString() === today.toDateString();
-        const isTomorrow =
-          scheduledDate.toDateString() === tomorrow.toDateString();
-      
-        if (isToday) {
-          displayDateTime = `Today @ ${timeStr}`;
-        } else if (isTomorrow) {
-          displayDateTime = `Tomorrow @ ${timeStr}`;
-        }
+        const isToday = scheduledDate.toDateString() === today.toDateString();
+        const isTomorrow = scheduledDate.toDateString() === tomorrow.toDateString();
+        if (isToday) displayDateTime = `Today @ ${timeStr}`;
+        else if (isTomorrow) displayDateTime = `Tomorrow @ ${timeStr}`;
       }
 
-      // Determine home/away based on venue
-      const isVenueHome = game.venue === 'home';
+      // Home/away based on venue
+      const isVenueHome = game.venue === "home";
       const homeTeam = isVenueHome ? game.teamNames?.home : game.teamNames?.away;
       const homeLogo = isVenueHome ? game?.logos?.home : game?.logos?.away;
       const homeColor = isVenueHome ? game.homeTeamColor : game.awayTeamColor;
@@ -497,24 +506,53 @@ navigate("/")
       const awayLogo = isVenueHome ? game?.logos?.away : game?.logos?.home;
       const awayColor = isVenueHome ? game.awayTeamColor : game.homeTeamColor;
 
+      const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
+      const leagueLabel = game.league?.name || game.leagueName || "";
+
       return (
         <div
-          onClick={() => handleLiveGameClick(game.link, true)}
           key={game.id}
-          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer relative transition-all duration-200"
+          onClick={() => handleLiveGameClick(game.link, true)}
+          className="bg-gray-800/30 hover:bg-gray-700/40 rounded-lg p-4 cursor-pointer transition-all duration-200"
         >
-          {/* Date and Time */}
-          <div className="text-xs text-gray-400 mb-2">
-            {displayDateTime}
+          {/* Top bar: Group (left) | League (right) */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {groupLabel && (
+                <span
+                  title={groupLabel}
+                  className="inline-flex items-center gap-1 text-[10px] text-gray-100 bg-white/5 px-2 py-0.5 rounded-full max-w-[160px] truncate"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
+                  </svg>
+                  <span className="truncate">{groupLabel}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {leagueLabel && (
+                <span
+                  title={leagueLabel}
+                  className="inline-flex items-center gap-1 text-[10px] text-gray-300 bg-white/5 px-2 py-0.5 rounded-full max-w-[180px] truncate"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 4h10l1 4H6l1-4zm-1 6h12l-1.5 9h-9L6 10z" />
+                  </svg>
+                  <span className="truncate">{leagueLabel}</span>
+                </span>
+              )}
+            </div>
           </div>
-                      
-          {/* Game Info */}
+
+          {/* Teams row */}
           <div className="flex items-center justify-between">
-            {/* Away Team */}
+            {/* Away */}
             <div className="flex items-center space-x-3 flex-1">
-              <div 
-                className="w-12 h-12 rounded-full p-0.5"
-                style={{backgroundColor: awayColor || '#0b63fb'}}
+              <div
+                className="relative w-12 h-12 rounded-full p-0.5"
+                style={{ backgroundColor: awayColor || "#0b63fb" }}
               >
                 <img
                   src={awayLogo || opponentLogo}
@@ -522,128 +560,174 @@ navigate("/")
                   alt="away logo"
                 />
               </div>
-              <span className="text-gray-200 text-sm font-medium">
-                {awayTeam}
-              </span>
+              <span className="text-gray-200 text-sm font-medium">{awayTeam}</span>
             </div>
-                                
+
             {/* VS */}
-            <div className="flex items-center space-x-2 mx-4">
+            <div className="mx-4">
               <span className="text-gray-400 text-sm font-medium">vs</span>
             </div>
-                                
-            {/* Home Team */}
+
+            {/* Home */}
             <div className="flex items-center space-x-3 flex-1 justify-end">
-              <span className="text-gray-200 text-sm font-medium">
-                {homeTeam}
-              </span>
-              <div className="w-14 h-14 rounded-full p-0.5" style={{backgroundColor: homeColor || '#8B5CF6'}}>
+              <span className="text-gray-200 text-sm font-medium">{homeTeam}</span>
+
+              <div
+                className="relative w-14 h-14 rounded-full p-0.5"
+                style={{ backgroundColor: homeColor || "#8B5CF6" }}
+              >
                 <img
                   src={homeLogo || homeLogo}
                   className="w-full h-full rounded-full bg-white p-0.5"
                   alt="home logo"
                 />
+                {/* tiny HOME badge */}
+                <span className="absolute -bottom-1 -right-1 bg-white text-gray-600 text-[9px] font-semibold rounded-full px-1.5 py-0.5 shadow">
+                  Home
+                </span>
               </div>
             </div>
           </div>
-          {game.venue && (
-            <div className="absolute top-3 right-3 bg-gray-700/5 text-gray-200 text-xs font-medium px-3 py-1 rounded-lg shadow z-10">
-              Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
+
+          {/* Venue chip under the HOST (home) logo */}
+          {/* {homeTeam && (
+            <div className="mt-2 flex justify-end">
+              <span className="inline-flex items-center gap-1 text-[10px] text-gray-300 bg-white/5 px-2 py-0.5 rounded-full max-w-[220px]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+                </svg>
+                <span className="truncate">{homeTeam}</span>
+              </span>
             </div>
-          )}
+          )} */}
+
+          {/* Date/Time bottom center */}
+          <div className="mt-3 flex justify-center">
+            <span className="text-xs text-gray-400">{displayDateTime}</span>
+          </div>
         </div>
       );
     })}
   </div>
 </div>
 
+
+
 {/* Recent Games (flat) */}
-{/* Recent Games (stacked, mobile friendly) */}
 <div className="mb-8">
   <h3 className="text-lg font-bold text-white mb-2 pl-2">Recent Games</h3>
+
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {recentGamesOnly.map((game) => {
       const homeScore = game.score?.home ?? 0;
       const awayScore = game.score?.away ?? 0;
 
-      // Determine home/away
+      // home/away via venue (same logic you already use)
       const isVenueHome = game.venue === 'home';
-      const homeTeam = isVenueHome ? game.teamNames?.home : game.teamNames?.away;
-      const homeLogo = isVenueHome ? game?.logos?.home : game?.logos?.away;
-      const homeColor = isVenueHome ? game.homeTeamColor : game.awayTeamColor;
-      const awayTeam = isVenueHome ? game.teamNames?.away : game.teamNames?.home;
-      const awayLogo = isVenueHome ? game?.logos?.away : game?.logos?.home;
-      const awayColor = isVenueHome ? game.awayTeamColor : game.homeTeamColor;
+      const homeTeam  = isVenueHome ? game.teamNames?.home : game.teamNames?.away;
+      const homeLogo  = isVenueHome ? game?.logos?.home      : game?.logos?.away;
+      const homeColor = isVenueHome ? game.homeTeamColor     : game.awayTeamColor;
+      const awayTeam  = isVenueHome ? game.teamNames?.away : game.teamNames?.home;
+      const awayLogo  = isVenueHome ? game?.logos?.away      : game?.logos?.home;
+      const awayColor = isVenueHome ? game.awayTeamColor     : game.homeTeamColor;
+
+      const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
+      const dateOnly   = game.scheduledStart?.date || "";
 
       return (
         <div
-          onClick={() => handleLiveGameClick(game.link, false)}
           key={game.id}
-          className="relative bg-gray-700/30 hover:bg-gray-700/50 rounded-xl p-3 border border-gray-600/30 transition-all duration-200 cursor-pointer"
+          onClick={() => handleLiveGameClick(game.link, false)}
+          className="relative rounded-lg p-4 pt-8 bg-gray-800/25 hover:bg-gray-800/35 transition-colors border border-gray-700/30"
         >
-          {/* Final badge */}
-          <div className="absolute top-2 left-2 bg-gray-500 text-white text-[10px] font-semibold px-2 rounded-sm">
-            FINAL
+          {/* FINAL (top-left) */}
+          <div className="absolute top-2 left-2">
+            <span className="bg-gray-600/70 text-white text-[10px] font-semibold px-2 py-[2px] rounded-sm">
+              FINAL
+            </span>
           </div>
 
-          {/* Date */}
-          <div className="text-xs text-gray-400 text-center mb-3">
-            {game.scheduledStart?.date}
-          </div>
+          {/* GROUP (top-right) */}
+          {groupLabel && (
+            <div className="absolute top-2 right-2">
+              <span
+                title={groupLabel}
+                className="inline-flex items-center gap-1 text-[10px] text-gray-100 bg-white/5 px-2 py-[2px] rounded-full max-w-[160px] truncate"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
+                </svg>
+                <span className="truncate">{groupLabel}</span>
+              </span>
+            </div>
+          )}
 
-          {/* Teams + Score */}
+          {/* Teams row */}
           <div className="flex items-center justify-between">
-            {/* Away Team */}
-            <div className="w-20 flex flex-col items-center">
-              <div className="relative mb-1">
+            {/* Away */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div
+                className="w-10 h-10 rounded-full p-0.5 shrink-0"
+                style={{ backgroundColor: awayColor || '#0b63fb' }}
+              >
                 <img
                   src={awayLogo || opponentLogo}
-                  className="w-8 h-8 rounded-full bg-white p-0.5"
                   alt="away logo"
-                />
-                <div 
-                  className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                  style={{ backgroundColor: awayColor || '#0b63fb' }}
+                  className="w-full h-full rounded-full bg-white p-0.5"
                 />
               </div>
-              <p className="text-gray-200 font-medium text-xs truncate">{awayTeam}</p>
-              <p className="text-gray-400 text-xs">Away</p>
+              <div className="min-w-0">
+                <p className="text-gray-200 text-sm font-medium truncate">{awayTeam}</p>
+                <p className="text-[11px] text-gray-400">Away</p>
+              </div>
             </div>
 
             {/* Score */}
-            <div className="flex-1 text-center mx-3">
-              <p className="text-lg font-bold text-white">{awayScore} - {homeScore}</p>
+            <div className="mx-4 text-center">
+              <p className="text-xl font-semibold text-white leading-6">
+                {awayScore} - {homeScore}
+              </p>
             </div>
 
-            {/* Home Team */}
-            <div className="w-20 flex flex-col items-center">
-              <div className="relative mb-1">
+            {/* Home */}
+            <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
+              <div className="min-w-0 text-right">
+                <p className="text-gray-200 text-sm font-medium truncate">{homeTeam}</p>
+                <p className="text-[11px] text-gray-400">Home</p>
+              </div>
+              <div
+                className="w-11 h-11 rounded-full p-0.5 shrink-0"
+                style={{ backgroundColor: homeColor || '#8B5CF6' }}
+              >
                 <img
                   src={homeLogo || homeLogo}
-                  className="w-8 h-8 rounded-full bg-white p-0.5"
                   alt="home logo"
-                />
-                <div 
-                  className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                  style={{ backgroundColor: homeColor || '#8B5CF6' }}
+                  className="w-full h-full rounded-full bg-white p-0.5"
                 />
               </div>
-              <p className="text-gray-200 font-medium text-xs truncate">{homeTeam}</p>
-              <p className="text-gray-400 text-xs">Home</p>
             </div>
           </div>
 
-          {/* Venue */}
-          {game.venue && (
-            <div className="mt-3 text-center text-gray-400 text-xs">
-              Venue: {game.venue === 'home' ? game.teamNames?.home : game.teamNames?.away}
+          {/* Date (bottom center) */}
+          {dateOnly && (
+            <div className="mt-3 flex justify-center">
+              <span className="text-xs text-gray-400">{dateOnly}</span>
             </div>
           )}
+
+          {/* Subtle accent line */}
+          <div
+            className="absolute bottom-0 left-0 w-full h-1 rounded-b-lg opacity-60"
+            style={{
+              background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)`,
+            }}
+          />
         </div>
       );
     })}
   </div>
 </div>
+
 
 
     </>

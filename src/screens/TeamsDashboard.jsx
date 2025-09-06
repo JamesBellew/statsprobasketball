@@ -327,7 +327,8 @@ export default function TeamsDashboard() {
                 navigate(`/teams/${encodeURIComponent(team.Name)}`);
               }}
                 key={team.id}
-                className="bg-gradient-to-br relative from-card-bg bg-opacity-30 to-secondary-bg rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50"
+                className=" relative rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50 bg-white/20 hover:bg-white/30 bg-[url('/assets/bg6.svg')]
+      bg-cover "
               >
                                  {teamsWithLiveGame[team.Name] && (
       <span className="bg-red-500 absolute right-2 top-2 text-white text-xs font-bold  px-2 py-1 rounded-full">
@@ -363,20 +364,20 @@ export default function TeamsDashboard() {
                     </div> */}
 
                     <div className="text-center">
-                      <div className="text-lg font-bold text-primary-cta">{teamGameCounts[team.Name] || '0'}</div>
-                      <div className="text-xs text-gray-500">Games</div>
+                      <div className="text-lg font-bold text-white">{teamGameCounts[team.Name] || '0'}</div>
+                      <div className="text-xs black">Games</div>
                     </div>
 
                     <div className="text-center">
-                      <div className="text-lg font-bold text-primary-cta">{teamGameCounts[team.Name] || '0'}</div>
-                      <div className="text-xs text-gray-500">Season</div>
+                      <div className="text-lg font-bold text-white">{teamGameCounts[team.Name] || '0'}</div>
+                      <div className="text-xs text-white">Season</div>
                     </div>
                   </div>
 
                   {/* Action Button */}
-                  <button className="w-full mt-4 bg-primary-cta hover:bg-primary-cta/80 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0">
+                  {/* <button className="w-full mt-4 bg-primary-cta hover:bg-primary-cta/80 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-300 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0">
                     View Team
-                  </button>
+                  </button> */}
                 </div>
               </div>
             ))}

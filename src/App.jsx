@@ -12,6 +12,7 @@ import StatisticsShotMap from './screens/StatisticsShotMap';
 import MobileBlocker from './screens/MobileBlocker';
 import kobe from './assets/kobe.jpg';
 import useAuth from "./hooks/useAuth";
+import Users from './screens/Users';
 import HomeScreenCourtSVG from './screens/HomescreenCourtSVG'
 import LiveGameView from './screens/LiveGameView';
 import LiveGamesHomeDashboard from './screens/LiveGameHomeDashboard';
@@ -479,6 +480,7 @@ const handleCloseMobileMenu = () => {
         <Route path="/homedashboard" element={<HomeDashboard />} />
         <Route path="/teamsDashboard" element={<TeamsDashboard />} />
         <Route path="/startgame" element={<StartGame />} />
+        <Route path="/users" element={<Users />} />
         <Route path="/liveGames/:slug" element={<LiveGameView />} />
  
         <Route path="/teams/:teamName" element={<TeamPage />} />

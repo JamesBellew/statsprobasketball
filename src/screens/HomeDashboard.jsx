@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlusMinus, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { db } from "../db";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
 import { uploadGameToCloud } from "../utils/syncGameToCloud"; // adjust path
 import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
 import { downloadGamesFromCloud } from "../utils/downloadGamesFromCloud";
@@ -25,6 +27,7 @@ export default function HomeDashboard() {
   const { user } = useAuth();
   // Dashboard states
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [savedGames, setSavedGames] = useState({ local: [], synced: [] });
 const [alertMessage, setAlertMessage] = useState("");
   // We now load all saved lineouts from the DB and display only one (the most recent)
@@ -123,7 +126,31 @@ const checkProfileCompletion = async () => {
 };
 
 
+useEffect(() => {
+  const auth = getAuth();
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      console.log('yes we have a user');
+      
+      const userRef = firestoreDoc(firestore, "users", user.uid);
 
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        console.log('snap exists');
+        
+        const data = userSnap.data();
+        if (data.userType === "admin") {
+          setIsAdmin(true);
+        }
+      }
+    } else {
+      setIsAdmin(false);
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
 const loadTeamSettings = async () => {
   const settings = await fetchTeamSettings(user);
   if (settings?.teamImage) {
@@ -677,7 +704,14 @@ const handleConfirmCompleteGame = async () => {
           >
             Start New Game
           </button>
-
+          {isAdmin && (
+        <button
+          onClick={()=>{navigate('/users')}}
+          className="btn my-4 bg-primary-green px-4 py-2 rounded-lg w-full sm:w-auto sm:ml-8"
+        >
+          Users
+        </button>
+      )}
 {/* Saved Games Section */}
 <SavedGamesSection
   savedGames={savedGames}
