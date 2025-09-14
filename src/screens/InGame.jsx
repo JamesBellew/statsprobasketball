@@ -2252,6 +2252,7 @@ liveBroadcastGameFinished={liveBroadcastGameFinished}
 
 {/* bottom  of the top nav contents */}
 <div className=" flex flex-row  text-white space-x-1 px-2 p-1 h-1/2 items-center    w-full">
+
 <Scoreboard
   opponentName={opponentName}
   opponentLogo={opponentLogo}

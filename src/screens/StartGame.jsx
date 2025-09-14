@@ -1,92 +1,111 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faUpload, faPlay } from "@fortawesome/free-solid-svg-icons";
-import { useNavigate } from "react-router-dom";
-import { db } from "../db"; // Import your Dexie instance
-import useAuth from "../hooks/useAuth"; // if inside component, otherwise pass user in
-import { useLocation } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { firestore } from "../firebase"; // Adjust path based on your project structure
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { firestore as firestoreDb } from "../firebase"; // 👈 Rename it on import
+import { faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate, useLocation } from "react-router-dom";
+import { db } from "../db";
+import useAuth from "../hooks/useAuth";
+import { collection, getDocs, query, where, doc, setDoc, getDoc } from "firebase/firestore";
+import { firestore } from "../firebase";
+import { firestore as firestoreDb } from "../firebase";
 
 export default function StartGame() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const selectedLineoutFromNav = location.state?.lineout;
+  const passedTeamName = location.state?.teamName || "Home";
+
   const [opponentName, setOpponentName] = useState("");
   const [selectedVenue, setSelectedVenue] = useState("home");
   const [lineouts, setLineouts] = useState([]);
-  const location = useLocation();
-  const selectedLineoutFromNav = location.state?.lineout;
-  const passedTeamName = location.state?.teamName || "Home";
   const [selectedLineout, setSelectedLineout] = useState(selectedLineoutFromNav?.id || null);
   const [playerStatsEnabled, setPlayerStatsEnabled] = useState(false);
-  const [broadcastToggle,setBroadcastToggle] = useState(false)
+  const [broadcastToggle, setBroadcastToggle] = useState(false);
   const [minutesTracked, setMinutesTracked] = useState(false);
-  const [opponentLogo, setOpponentLogo] = useState(null); // Store the uploaded logo
+  const [opponentLogo, setOpponentLogo] = useState(null);
   const [awayTeamColor, setAwayTeamColor] = useState("#0b63fb");
-  const [teamColor, setTeamColor] = useState("#8B5CF6"); // Home team color from settings
+  const [teamColor, setTeamColor] = useState("#8B5CF6");
+
   const [leagues, setLeagues] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [customLeague, setCustomLeague] = useState("");
   const [selectedLeagueName, setSelectedLeagueName] = useState("");
   const [customLeagueMode, setCustomLeagueMode] = useState(false);
-  const [createCustomOpponent, setCreateCustomOpponent] = useState("no"); // "yes" or "no"
+
+  const [createCustomOpponent, setCreateCustomOpponent] = useState("no");
   const [selectedOpponent, setSelectedOpponent] = useState("");
   const [teams, setTeams] = useState([]);
   const [selectedOpponentId, setSelectedOpponentId] = useState("");
   const [selectedOpponentName, setSelectedOpponentName] = useState("");
   const [customOpponent, setCustomOpponent] = useState("");
   const [customOpponentMode, setCustomOpponentMode] = useState(false);
-  
-  // New state for groups
+
+  // Groups (from the user's team)
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [userTeamName, setUserTeamName] = useState("");
+
+  // PREVIEW: local toggle
+  const [showPreview, setShowPreview] = useState(false);
 
   const isOpponentValid =
     (selectedOpponentId && selectedOpponentName) || customOpponent.trim() !== "";
 
   const handleGoBack = (e) => {
-    e.preventDefault(); // Prevent form submission reload
-    // Perform login logic here (e.g., validation, API call)
-    navigate("/startgame"); // Navigate to HomeDashboard after login
+    e.preventDefault();
+    navigate("/startgame");
   };
 
+  // Helpers for preview avatar
+  const getInitials = (str) =>
+    (str || "?")
+      .split(" ")
+      .filter(Boolean)
+      .map((s) => s[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+  const TeamBadge = ({ name, logo, color }) => (
+    <div
+      className="w-10 h-10 rounded-full p-0.5 shrink-0"
+      style={{ backgroundColor: color || "#6b7280" }}
+    >
+      {logo ? (
+        <img
+          src={logo}
+          className="w-full h-full rounded-full bg-white p-0.5"
+          alt={`${name || "team"} logo`}
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-gray-700 font-semibold">
+          {getInitials(name)}
+        </div>
+      )}
+    </div>
+  );
+
   useEffect(() => {
-    // Fetch user's team name from their settings
     async function fetchUserTeamName() {
       if (user) {
         try {
-          // Firestore settings
           const ref = doc(firestore, "users", user.uid, "settings", "preferences");
           const snap = await getDoc(ref);
           if (snap.exists() && snap.data().teamName) {
             const teamName = snap.data().teamName;
-            console.log("User's team name from settings:", teamName);
             setUserTeamName(teamName);
-            
-            // Now fetch the user's team groups based on the team name
             await fetchUserTeamGroups(teamName);
-          } else {
-            console.log("No team name found in user settings");
           }
         } catch (error) {
           console.error("Error fetching user team name:", error);
         }
       } else {
-        console.log("User not logged in, checking local settings");
-        // Check local DB settings if not logged in
         try {
           const localSettings = await db.settings.get("preferences");
           if (localSettings && localSettings.teamName) {
-            console.log("User's team name from local settings:", localSettings.teamName);
             setUserTeamName(localSettings.teamName);
-            
-            // Fetch groups for local team as well
             await fetchUserTeamGroups(localSettings.teamName);
-          } else {
-            console.log("No team name found in local settings");
           }
         } catch (error) {
           console.error("Error fetching local team name:", error);
@@ -96,26 +115,14 @@ export default function StartGame() {
     fetchUserTeamName();
   }, [user]);
 
-  // New function to fetch user's team groups
   const fetchUserTeamGroups = async (teamName) => {
     try {
-      console.log("Searching for team with name:", teamName);
-      
-      // Query Teams collection where Name field equals the user's team name
-      const q = query(collection(firestore, "Teams"), where("Name", "==", teamName));
-      const snapshot = await getDocs(q);
-      
+      const qTeams = query(collection(firestore, "Teams"), where("Name", "==", teamName));
+      const snapshot = await getDocs(qTeams);
       if (!snapshot.empty) {
-        const userTeamDoc = snapshot.docs[0];
-        const userTeamData = userTeamDoc.data();
-        const userTeamGroups = userTeamData.groups || [];
-        
-        console.log("Found user's team:", userTeamDoc.id);
-        console.log("User's team groups:", userTeamGroups);
-        
-        setGroups(userTeamGroups);
+        const userTeamData = snapshot.docs[0].data();
+        setGroups(userTeamData.groups || []);
       } else {
-        console.log("No team found with name:", teamName);
         setGroups([]);
       }
     } catch (error) {
@@ -127,31 +134,21 @@ export default function StartGame() {
   useEffect(() => {
     async function fetchTeams() {
       const snapshot = await getDocs(collection(firestore, "Teams"));
-      const teamList = snapshot.docs.map((doc) => {
-        console.log("Team data:", doc.id, doc.data()); // Debug log
-        return {
-          id: doc.id,
-          name: doc.data().Name || "Unnamed Team",
-          groups: doc.data().groups || [], // Include groups array
-        };
-      });
-      console.log("All teams with groups:", teamList); // Debug log
+      const teamList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().Name || "Unnamed Team",
+        groups: doc.data().groups || [],
+      }));
       setTeams(teamList);
     }
-
     fetchTeams();
   }, []);
-
 
   useEffect(() => {
     const fetchLineouts = async () => {
       let allLineouts = [];
-
-      // 1. Fetch local lineouts
       const local = await db.lineouts.toArray();
       allLineouts = [...local];
-
-      // 2. Fetch cloud lineouts if user is logged in
       if (user) {
         const snapshot = await getDocs(collection(firestore, "users", user.uid, "lineouts"));
         const cloudLineouts = snapshot.docs.map((doc) => ({
@@ -159,26 +156,20 @@ export default function StartGame() {
           ...doc.data(),
           isCloud: true,
         }));
-
         allLineouts = [...local, ...cloudLineouts];
       }
-
       setLineouts(allLineouts);
     };
-
     fetchLineouts();
   }, [user]);
 
-  const venueSelectedHandler=(venue)=>{
-    console.log('we are in the venue handler '+venue);
-    setSelectedVenue(venue)
-  }
+  const venueSelectedHandler = (venue) => setSelectedVenue(venue);
 
   useEffect(() => {
     if (playerStatsEnabled) {
       if (lineouts.length === 0) {
         alert("You don't have any saved lineout");
-        setPlayerStatsEnabled(false)
+        setPlayerStatsEnabled(false);
         setSelectedLineout(null);
       } else {
         setSelectedLineout(lineouts[lineouts.length - 1].id);
@@ -186,24 +177,20 @@ export default function StartGame() {
     }
   }, [playerStatsEnabled, lineouts]);
 
-  const handleOpponentInputChange = (event) => {
-    setOpponentName(event.target.value);
-  };
+  const handleOpponentInputChange = (event) => setOpponentName(event.target.value);
 
   useEffect(() => {
-    // Fetch leagues from Firestore (new structure: each doc has a Names array)
     async function fetchLeagues() {
       const snapshot = await getDocs(collection(firestore, "Leagues"));
-      // Extract all Names arrays and flatten them with region
       const leagueList = [];
-      snapshot.docs.forEach(doc => {
+      snapshot.docs.forEach((doc) => {
         const region = doc.id;
         const names = doc.data().Names || [];
-        names.forEach(name => {
+        names.forEach((name) => {
           leagueList.push({ id: region, name });
         });
       });
-      setLeagues(leagueList); // leagues is now an array of {id, name}
+      setLeagues(leagueList);
     }
     fetchLeagues();
   }, []);
@@ -223,9 +210,7 @@ export default function StartGame() {
 
   const handleGameStart = async () => {
     let opponentNameFinal = selectedOpponentName;
-    if (customOpponent.trim()) {
-      opponentNameFinal = customOpponent.trim();
-    }
+    if (customOpponent.trim()) opponentNameFinal = customOpponent.trim();
 
     if (!opponentNameFinal) {
       alert("Please select or enter an opponent.");
@@ -237,39 +222,31 @@ export default function StartGame() {
       return;
     }
 
-    // 🏗️ If user typed custom opponent and selected "Yes", create in Teams
     if (customOpponent.trim() && createCustomOpponent === "yes") {
       try {
         const newTeamRef = doc(collection(firestore, "Teams"));
         await setDoc(newTeamRef, {
           Name: customOpponent.trim(),
-          Color: "#6366F1", // default purple
+          Color: "#6366F1",
           CreatedAt: new Date().toISOString(),
-          CreatedBy: user?.uid || "system", // assumes you have user from auth
-          Image: opponentLogo || "", // optional: you can later let them upload
+          CreatedBy: user?.uid || "system",
+          Image: opponentLogo || "",
         });
-
-        console.log("✅ Custom opponent saved to Teams:", newTeamRef.id);
       } catch (err) {
-        console.error("❌ Error creating opponent team:", err);
+        console.error("Error creating opponent team:", err);
       }
     }
 
     const selectedLineoutData =
       playerStatsEnabled && selectedLineout
-        ? lineouts.find(
-            (lineout) =>
-              lineout.id.toString() === selectedLineout.toString()
-          ) || null
+        ? lineouts.find((l) => l.id.toString() === selectedLineout.toString()) || null
         : null;
 
-    // 🧠 Create the slug (e.g., ravens-vs-wolves-2025-04-11)
     const dateStr = new Date().toISOString().split("T")[0];
     const slug = `${passedTeamName}-vs-${opponentNameFinal}-${dateStr}`
       .toLowerCase()
       .replace(/\s+/g, "-");
 
-    // Determine league info
     let leagueId = selectedLeagueId;
     let leagueName = selectedLeagueName;
     if (customLeague.trim()) {
@@ -277,26 +254,21 @@ export default function StartGame() {
       leagueName = customLeague.trim();
     }
 
-    // ✅ Save public document if broadcasting
     if (broadcastToggle) {
-      console.log("we have a broadcast toggle activated");
       await setDoc(doc(firestoreDb, "liveGames", slug), {
         homeTeamName: passedTeamName,
         opponentName: opponentNameFinal,
         createdAt: new Date(),
         isLive: true,
-        slug, // Optional: makes it easier to reference later
+        slug,
         awayTeamColor,
-        homeTeamColor: teamColor || "#8B5CF6", // <-- Save home team color
+        homeTeamColor: teamColor || "#8B5CF6",
         leagueId,
         leagueName,
-        venue: selectedVenue, // Save venue
+        venue: selectedVenue,
       });
-    } else {
-      console.log("no broadcast toggle");
     }
 
-    // 📦 Package game state to send to InGame screen
     const gameState = {
       opponentName: opponentNameFinal,
       selectedVenue,
@@ -305,82 +277,156 @@ export default function StartGame() {
       opponentLogo,
       minutesTracked,
       passedTeamName,
-      broadcast: broadcastToggle, // Pass this if needed later
-      slug, // You may want to keep this around too
+      broadcast: broadcastToggle,
+      slug,
       awayTeamColor,
       leagueId,
       leagueName,
-      opponentGroup: selectedGroup, // Pass the selected group
+      opponentGroup: selectedGroup,
     };
-
-    console.log("Game state with opponent group:", gameState); // Debug log
 
     navigate("/ingame", { state: gameState });
   };
 
-  // Handle image upload
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setOpponentLogo(reader.result); // Save image as Base64
-      };
+      reader.onloadend = () => setOpponentLogo(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle drag & drop
   const handleDrop = (event) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setOpponentLogo(reader.result);
-      };
+      reader.onloadend = () => setOpponentLogo(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
   useEffect(() => {
-    // Fetch home team color from Settings
     async function fetchTeamColor() {
       if (user) {
-        // Firestore settings
         const ref = doc(firestore, "users", user.uid, "settings", "preferences");
         const snap = await getDoc(ref);
-        if (snap.exists() && snap.data().teamColor) {
-          setTeamColor(snap.data().teamColor);
-        }
+        if (snap.exists() && snap.data().teamColor) setTeamColor(snap.data().teamColor);
       } else {
-        // Local DB settings
         const localSettings = await db.settings.get("preferences");
-        if (localSettings && localSettings.teamColor) {
-          setTeamColor(localSettings.teamColor);
-        }
+        if (localSettings && localSettings.teamColor) setTeamColor(localSettings.teamColor);
       }
     }
     fetchTeamColor();
   }, [user]);
 
+  // ---------- Derived values for PREVIEW ----------
+  const leagueDisplay = customLeague.trim() || selectedLeagueName || "";
+  const groupLabel = selectedGroup || "";
+  const opponentResolved =
+    (customOpponentMode && customOpponent.trim()) || selectedOpponentName || "";
+  const isHome = selectedVenue === "home";
+
+  const homeName = isHome ? passedTeamName : opponentResolved || "Home Team";
+  const awayName = isHome ? opponentResolved || "Opponent" : passedTeamName;
+
+  const homeLogo = isHome ? null : opponentLogo; // opponent logo only available when *they* are home
+  const awayLogo = isHome ? opponentLogo : null;
+
+  const homeColor = isHome ? teamColor : awayTeamColor;
+  const awayColor = isHome ? awayTeamColor : teamColor;
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center py-8 px-2">
-      <div className="relative w-full max-w-xl mx-auto bg-gray-900/90 rounded-2xl shadow-lg p-8 flex flex-col gap-6 border border-gray-800">
-        {/* Back Button (better design, inside card, left-aligned) */}
-        <button
-          onClick={() => navigate("/homedashboard")}
-          className="flex items-center gap-2 w-fit rounded-lg bg-gray-800 hover:bg-gray-700 text-white shadow-md px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-          <span className="font-medium text-sm">Back</span>
-        </button>
+      <div className="relative w-full max-w-xl mx-auto bg-gray-900/90 rounded-2xl shadow-lg p-8 flex flex-col gap-3 border border-gray-800">
 
-        {/* Form Fields */}
+        {/* Header buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate("/homedashboard")}
+            className="flex items-center h-12 gap-2 w-fit rounded-lg bg-gray-800 hover:bg-gray-700 text-white shadow-md px-3 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            <span className="font-medium text-sm">Back</span>
+          </button>
+
+          {/* PREVIEW toggle */}
+          <button
+            onClick={() => setShowPreview((s) => !s)}
+            className="flex items-center h-12 gap-2 w-fit rounded-lg bg-gray-800 hover:bg-gray-700 text-white shadow-md px-3 p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+              <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 110-10 5 5 0 010 10z" />
+            </svg>
+            <span className="font-medium text-sm">{showPreview ? "Hide Preview" : "Preview"}</span>
+          </button>
+        </div>
+
+        {/* PREVIEW CARD (hidden by default) */}
+        {showPreview && (
+          <div className="w-full flex">
+            <div className="w-full mx-auto bg-gray-800/30 rounded-lg border border-zinc-800/60 overflow-hidden">
+              {/* Header row: group (left) | league (right) */}
+              <div className="px-4 py-2 flex items-center justify-between border-b border-zinc-800/60 bg-gray-900/40">
+                <div className="flex items-center gap-2">
+                  {groupLabel && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-gray-100 bg-white/5 px-2 py-[2px] rounded-full max-w-[180px] truncate">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
+                      </svg>
+                      <span className="truncate">{groupLabel}</span>
+                    </span>
+                  )}
+                </div>
+                <span className="text-zinc-400 text-xs font-medium truncate max-w-[60%]">
+                  {leagueDisplay || "League"}
+                </span>
+              </div>
+
+              {/* Teams */}
+              <div className="p-5">
+                <div className="flex items-center justify-between">
+                  {/* Away */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <TeamBadge name={awayName} logo={awayLogo} color={awayColor} />
+                    <div className="min-w-0">
+                      <div className="text-white text-base font-semibold truncate max-w-[140px]">{awayName || "Away Team"}</div>
+                      <div className="text-zinc-400 text-xs">Away</div>
+                    </div>
+                  </div>
+
+                  <div className="px-6 text-center">
+                    <div className="text-zinc-400 text-sm">VS</div>
+                  </div>
+
+                  {/* Home */}
+                  <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+                    <div className="min-w-0 text-right">
+                      <div className="text-white text-base font-semibold truncate max-w-[140px]">{homeName || "Home Team"}</div>
+                      <div className="text-zinc-400 text-xs">Home</div>
+                    </div>
+                    <TeamBadge name={homeName} logo={homeLogo} color={homeColor} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Accent line */}
+              <div
+                className="h-1 w-full"
+                style={{
+                  background: `linear-gradient(to right, ${awayColor || "#0b63fb"} 0%, ${awayColor || "#0b63fb"} 50%, ${homeColor || "#8B5CF6"} 50%, ${homeColor || "#8B5CF6"} 100%)`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ------------ FORM FIELDS ------------ */}
         <div className="flex flex-col gap-4">
-          {/* League Selection */}
+          {/* League */}
           <div>
             <label className="block mb-1 text-xs font-semibold text-gray-300">League</label>
             <div>
@@ -447,12 +493,10 @@ export default function StartGame() {
                   value={selectedOpponent}
                   onChange={(e) => {
                     setSelectedOpponent(e.target.value);
-
                     const [id, name] = e.target.value.split("|");
                     setSelectedOpponentId(id);
                     setSelectedOpponentName(name);
                     setCustomOpponent("");
-                    // Note: Groups are now loaded from user's own team, not opponent team
                   }}
                   className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm 
                              focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 
@@ -471,7 +515,6 @@ export default function StartGame() {
                     setCustomOpponentMode(true);
                     setSelectedOpponentId("");
                     setSelectedOpponentName("");
-                    // Groups remain from user's team, no need to clear
                   }}
                   className="mt-2 text-xs text-blue-400 hover:underline"
                 >
@@ -494,7 +537,6 @@ export default function StartGame() {
                   onClick={() => {
                     setCustomOpponentMode(false);
                     setCustomOpponent("");
-                    // Groups remain from user's team, no need to clear
                   }}
                   className="mt-2 text-xs text-red-400 hover:underline"
                 >
@@ -503,52 +545,27 @@ export default function StartGame() {
               </>
             )}
 
-            {/* Groups Dropdown - Shows when groups are available */}
+            {/* Groups (from user's team) */}
             {groups.length > 0 && (
               <div className="mt-3">
                 <label className="block mb-1 text-xs font-semibold text-gray-300">
                   Team Group ({userTeamName})
                 </label>
-                {console.log("Rendering groups dropdown with groups:", groups)}
                 <select
                   value={selectedGroup}
-                  onChange={(e) => {
-                    console.log("Group selected:", e.target.value);
-                    setSelectedGroup(e.target.value);
-                  }}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
                   className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm
                              focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 
                              dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 >
                   <option value="">Select group (optional)</option>
-                  {groups.map((group, idx) => {
-                    console.log("Rendering group option:", group);
-                    return (
-                      <option key={idx} value={group}>{group}</option>
-                    );
-                  })}
+                  {groups.map((group, idx) => (
+                    <option key={idx} value={group}>{group}</option>
+                  ))}
                 </select>
               </div>
             )}
           </div>
-
-          {customOpponentMode && (
-            <div className="mt-2">
-              <label className="block mb-1 text-xs font-semibold text-gray-300">
-                Save this opponent as a Team?
-              </label>
-              <select
-                value={createCustomOpponent}
-                onChange={(e) => setCreateCustomOpponent(e.target.value)}
-                className="block w-full p-2 text-gray-900 border border-gray-700 rounded-lg bg-gray-100 text-sm 
-                           focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 
-                           dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              >
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-              </select>
-            </div>
-          )}
 
           {/* Away Team Color Picker */}
           <div>
@@ -561,7 +578,7 @@ export default function StartGame() {
                   key={color}
                   type="button"
                   className={`w-8 h-8 rounded-full border-2 transition-all duration-200 flex items-center justify-center ${
-                    awayTeamColor === color ? 'border-white scale-110 shadow-lg' : 'border-gray-500'
+                    awayTeamColor === color ? "border-white scale-110 shadow-lg" : "border-gray-500"
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => setAwayTeamColor(color)}
@@ -575,9 +592,8 @@ export default function StartGame() {
             </div>
           </div>
 
-          {/* Toggles and Logo Upload */}
+          {/* Toggles & Logo */}
           <div className="flex flex-col md:flex-row gap-4 mt-2">
-            {/* Player Stats Toggle */}
             <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3">
               <span className="text-sm text-gray-200 font-medium">Player Stats</span>
               <label className="inline-flex items-center cursor-pointer">
@@ -587,11 +603,10 @@ export default function StartGame() {
                   onChange={(e) => setPlayerStatsEnabled(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
+                <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all" />
               </label>
             </div>
 
-            {/* Logo Upload */}
             <div
               className="flex-1 bg-gray-800 rounded-lg flex items-center justify-center px-4 py-3 cursor-pointer relative min-h-[56px]"
               onDragOver={(e) => e.preventDefault()}
@@ -623,24 +638,23 @@ export default function StartGame() {
               )}
             </div>
 
-            {/* Broadcast Toggle (if user) */}
             {user && (
               <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-gray-200 font-medium">Broadcast</span>
                 <label className="inline-flex items-center cursor-pointer">
                   <input
                     checked={broadcastToggle}
-                    onClick={(e) => setBroadcastToggle(e.target.checked)}
+                    onChange={(e) => setBroadcastToggle(e.target.checked)}
                     type="checkbox"
                     className="sr-only peer"
                   />
-                  <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
+                <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all" />
                 </label>
               </div>
             )}
           </div>
 
-          {/* Lineout Selector (if Player Stats enabled) */}
+          {/* Lineout selection */}
           {playerStatsEnabled && (
             <div className="bg-gray-800 rounded-lg p-4 mt-2">
               <label className="block text-xs font-semibold text-gray-300 mb-2">Select Lineout</label>
@@ -670,7 +684,7 @@ export default function StartGame() {
                       type="checkbox"
                       className="sr-only peer"
                     />
-                    <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all"></div>
+                    <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all" />
                     <span className="ml-3 text-xs font-medium text-gray-200">Timer</span>
                   </label>
                 </div>
@@ -679,28 +693,28 @@ export default function StartGame() {
           )}
         </div>
 
-        {/* Venue Toggle and Start Game Button */}
+        {/* Venue + Start */}
         <div className="flex flex-col md:flex-row gap-4 mt-6 items-center">
           <div className="flex-1 bg-gray-800 rounded-lg flex overflow-hidden relative h-16">
-            {/* Sliding background */}
             <div
-              className={`absolute top-0 left-0 h-full w-1/2 bg-white rounded-lg transition-transform duration-300 ease-in-out ${selectedVenue === "away" ? "translate-x-full" : "translate-x-0"}`}
+              className={`absolute top-0 left-0 h-full w-1/2 bg-white rounded-lg transition-transform duration-300 ease-in-out ${
+                selectedVenue === "away" ? "translate-x-full" : "translate-x-0"
+              }`}
             />
-            {/* Home Button */}
             <div
               className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
-              onClick={() => venueSelectedHandler('home')}
+              onClick={() => venueSelectedHandler("home")}
             >
               <button className={`px-4 py-2 rounded ${selectedVenue === "home" ? "text-gray-800 font-bold" : "text-white"}`}>Home</button>
             </div>
-            {/* Away Button */}
             <div
               className="z-10 w-1/2 h-full flex justify-center items-center cursor-pointer"
-              onClick={() => venueSelectedHandler('away')}
+              onClick={() => venueSelectedHandler("away")}
             >
               <button className={`px-4 py-2 rounded ${selectedVenue === "away" ? "text-gray-800 font-bold" : "text-white"}`}>Away</button>
             </div>
           </div>
+
           <button
             disabled={!isOpponentValid}
             onClick={handleGameStart}

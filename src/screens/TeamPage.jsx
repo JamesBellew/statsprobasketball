@@ -65,6 +65,7 @@ const RecentResults = ({ teamName }) => {
 
 
 
+
 // Team Live Games Component
 const TeamLiveGames = ({ teamName }) => {
   const navigate = useNavigate();
@@ -240,6 +241,33 @@ function TeamPage() {
   const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
+  const TEAM_GROUPS = [
+    "All Teams",
+    "Senior Mens 2025",
+    "U18s Boys",
+    "U16s Girls",
+    "Senior Womens 2025",
+    "U20s Mixed",
+    "Junior Boys",
+    "Junior Girls",
+    "Veterans",
+    "Development Squad",
+  ];
+  const [teamGroups, setTeamGroups] = useState([]);
+
+  const [selectedFilter, setSelectedFilter] = useState("All Teams");
+const [searchQuery, setSearchQuery] = useState("");
+const [showFilters, setShowFilters] = useState(false);
+
+const handleFilterSelect = (filter) => {
+  setSelectedFilter(filter);
+  setShowFilters(false);
+};
+
+const clearFilters = () => {
+  setSelectedFilter("All Teams");
+  setSearchQuery("");
+};
 
   useEffect(() => {
     const validateTeamFromDatabase = async () => {
@@ -270,9 +298,11 @@ function TeamPage() {
         if (foundTeam && teamName && teamName !== 'Home') {
           setIsValidTeam(true);
           setTeamData(foundTeam);
+          setTeamGroups(Array.isArray(foundTeam.groups) ? foundTeam.groups : []); // ← add this
         } else {
           setIsValidTeam(false);
           setTeamData(null);
+          setTeamGroups([]); 
         }
         
       } catch (error) {
@@ -499,6 +529,137 @@ function TeamPage() {
           </div> */}
         </div>
       </div>
+{/* Filters */}
+<div className="px-4 mb-6 container mx-auto">
+  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+    <div>
+      <h2 className="text-white text-lg font-semibold mb-1">Team Groups</h2>
+      <p className="text-gray-400 text-sm">Filter teams by category or search</p>
+    </div>
+
+    {/* Search and Filter Toggle */}
+    <div className="flex gap-2 w-full sm:w-auto">
+      <div className="relative flex-1 sm:w-64">
+        {/* search icon */}
+        <svg
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M10 2a8 8 0 105.293 14.293l3.707 3.707a1 1 0 001.414-1.414l-3.707-3.707A8 8 0 0010 2zm-6 8a6 6 0 1112 0 6 6 0 01-12 0z" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search teams..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="bg-gray-800/50 border border-gray-700 text-white px-3 py-2 rounded-lg hover:bg-gray-700 flex items-center"
+      >
+        {/* filter icon */}
+        <svg
+          className="w-4 h-4 mr-2"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path d="M3 5a1 1 0 011-1h16a1 1 0 01.8 1.6l-5.2 6.934V18a1 1 0 01-.553.894l-4 2A1 1 0 019 20v-7.466L3.2 5.6A1 1 0 013 5z" />
+        </svg>
+        Filter
+      </button>
+    </div>
+  </div>
+
+  {/* Filter Pills */}
+  <div
+    className={`transition-all duration-300 overflow-hidden ${
+      showFilters ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+    }`}
+  >
+    <div className="bg-gray-800/30 rounded-lg p-4 mb-4 border border-gray-700/50">
+      <div className="flex flex-wrap gap-2 mb-3">
+   {/* Build the pill list: “All Teams” + unique non-empty groups from the team */}
+{[ "All Teams", ...Array.from(new Set((teamGroups || []).filter(Boolean))) ].map((group) => {
+  const active = selectedFilter === group;
+  return (
+    <button
+      key={group}
+      onClick={() => handleFilterSelect(group)}
+      className={`px-3 py-1 rounded-full text-xs transition-all ${
+        active
+          ? "bg-indigo-600 text-white hover:bg-indigo-700"
+          : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+      }`}
+    >
+      <span className="inline-flex items-center">
+        {group}
+        {active && (
+          <svg
+            className="w-3 h-3 ml-1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </span>
+    </button>
+  );
+})}
+
+      </div>
+
+      {/* Active Filters Display */}
+      {(selectedFilter !== "All Teams" || searchQuery) && (
+        <div className="flex items-center gap-2 pt-3 border-t border-gray-700">
+          <span className="text-sm text-gray-400">Active filters:</span>
+
+          {selectedFilter !== "All Teams" && (
+            <span className="text-xs px-2 py-1 rounded-full border border-indigo-400 text-indigo-400">
+              {selectedFilter}
+            </span>
+          )}
+
+          {searchQuery && (
+            <span className="text-xs px-2 py-1 rounded-full border border-green-400 text-green-400">
+              Search: "{searchQuery}"
+            </span>
+          )}
+
+          <button
+            onClick={clearFilters}
+            className="text-sm text-gray-400 hover:text-white ml-auto"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+
+  {/* Results Summary (UI only; optional) */}
+  <div className="flex items-center justify-between mb-4">
+    <div className="text-sm text-gray-400">
+      {selectedFilter !== "All Teams" || searchQuery ? (
+        <span>
+          Filtered results •{" "}
+          {selectedFilter !== "All Teams" ? selectedFilter : "All Teams"}
+        </span>
+      ) : (
+        <span>Showing all teams</span>
+      )}
+    </div>
+    {/* You can wire a real count later */}
+    <div className="text-sm text-gray-500"> </div>
+  </div>
+</div>
 
       {/* Team Live Games */}
       <div className="px-4 mb-6 container mx-auto">

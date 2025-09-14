@@ -229,7 +229,7 @@ export default function LiveGameView() {
   };
   
 // const quarters = [1, 2, 3, 4];
-
+const groupName = gameData?.opponentGroup;
 const homeTeamName = gameData?.teamNames?.home;
 const awayTeamName = gameData?.teamNames?.away;
 const homeScores = getQuarterScores(gameData?.gameActions, "home");
@@ -401,7 +401,9 @@ const handleTeamClick = (passedteamName) => {
     
     <div className={`${showStatsModal ? "h-auto" : "h-screen"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
      min-h-screen bg-repeat bg-[length:150px_150px]`}>
-
+      {groupName &&
+<span class="bg-primary-cta/20 absolute right-2 bottom-2 text-gray-300 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm  ">{groupName}</span>
+}
       <header className="bg-primary-bg shadow w-full px-2 z-50">
         <div className="container mx-auto">
           <div className="flex cursor-pointer justify-between items-center py-4 mx-auto">
