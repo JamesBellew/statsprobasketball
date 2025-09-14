@@ -67,7 +67,8 @@ const RecentResults = ({ teamName }) => {
 
 
 // Team Live Games Component
-const TeamLiveGames = ({ teamName }) => {
+// Team Live Games Component
+const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange }) => {
   const navigate = useNavigate();
   const [liveGames, setLiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,24 +77,35 @@ const TeamLiveGames = ({ teamName }) => {
     const fetchTeamLiveGames = async () => {
       try {
         setLoading(true);
-        
-        // Query live games where the team is either home or away
+
         const liveGamesRef = collection(firestore, "liveGames");
         const liveGamesSnapshot = await getDocs(liveGamesRef);
-        
+
         const teamGames = [];
-        liveGamesSnapshot.forEach((doc) => {
-          const game = { id: doc.id, ...doc.data() };
-          
-          // Check if this team is playing in this game
+        liveGamesSnapshot.forEach((docSnap) => {
+          const game = { id: docSnap.id, ...docSnap.data() };
+
+          // A game counts if this team is home by name match,
+          // or if legacy teamNames has either side equal to teamName.
           const isHomeTeam = game.homeTeamName === teamName;
-          const isAwayTeam = game.teamNames?.away === teamName || game.teamNames?.home === teamName;
-          
+          const isAwayTeam =
+            game.teamNames?.away === teamName || game.teamNames?.home === teamName;
+
           if (isHomeTeam || isAwayTeam) {
             teamGames.push(game);
           }
         });
-        
+
+        // Compute which opponentGroup values actually exist
+        const groupsPresent = Array.from(
+          new Set(teamGames.map(g => g.opponentGroup).filter(Boolean))
+        );
+
+        // Let parent know which groups are available
+        if (typeof onGroupsChange === "function") {
+          onGroupsChange(groupsPresent);
+        }
+
         setLiveGames(teamGames);
       } catch (error) {
         console.error("Error fetching team live games:", error);
@@ -102,18 +114,22 @@ const TeamLiveGames = ({ teamName }) => {
       }
     };
 
-    if (teamName) {
-      fetchTeamLiveGames();
-    }
-  }, [teamName]);
+    if (teamName) fetchTeamLiveGames();
+  }, [teamName, onGroupsChange]);
 
-const handleLiveGameClick = (gameSlug) => {
-    // Handle both full URLs and just slugs
-    const slug = gameSlug.includes('http') 
-        ? new URL(gameSlug).pathname.split('/').pop()
-        : gameSlug;
+  const handleLiveGameClick = (gameSlugOrLink) => {
+    const slug = gameSlugOrLink?.includes?.("http")
+      ? new URL(gameSlugOrLink).pathname.split("/").pop()
+      : gameSlugOrLink;
+    if (!slug) return;
     navigate(`/liveGames/${slug}`);
-};
+  };
+
+  // Apply group filter
+  const filteredGames =
+    selectedFilter === "All Teams"
+      ? liveGames
+      : liveGames.filter((g) => g.opponentGroup === selectedFilter);
 
   if (loading) {
     return (
@@ -124,106 +140,97 @@ const handleLiveGameClick = (gameSlug) => {
     );
   }
 
-  if (liveGames.length === 0) {
+  if (filteredGames.length === 0) {
     return (
       <div className="text-center py-8 bg-white/10 rounded-lg">
-        <p className="text-white/80">No live games for this team</p>
-        <p className="text-white/60 text-sm mt-2">Check back when games are in progress</p>
+        {selectedFilter === "All Teams" ? (
+          <>
+            <p className="text-white/80">No live games for this team</p>
+            <p className="text-white/60 text-sm mt-2">Check back when games are in progress</p>
+          </>
+        ) : (
+          <p className="text-white/80">
+            No “{selectedFilter}” games found
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-
-      {liveGames.map((game) => {
+      {filteredGames.map((game) => {
         const homeScore = game.score?.home ?? 0;
         const awayScore = game.score?.away ?? 0;
-        
-        // Determine home and away teams
+
+        // Decide home/away labels & visuals relative to this team
         let homeTeam, homeLogo, homeColor, awayTeam, awayLogo, awayColor;
-        
+
         if (game.homeTeamName === teamName) {
           homeTeam = game.homeTeamName;
           homeLogo = game.logos?.home || jerseyPlaceholder;
-          homeColor = game.homeTeamColor || '#8B5CF6';
-          awayTeam = game.teamNames?.away || 'Away Team';
+          homeColor = game.homeTeamColor || "#8B5CF6";
+          awayTeam = game.teamNames?.away || "Away Team";
           awayLogo = game.logos?.away || jerseyPlaceholder;
-          awayColor = game.awayTeamColor || '#0b63fb';
+          awayColor = game.awayTeamColor || "#0b63fb";
         } else {
-          homeTeam = game.teamNames?.home || 'Home Team';
+          homeTeam = game.teamNames?.home || "Home Team";
           homeLogo = game.logos?.home || jerseyPlaceholder;
-          homeColor = game.homeTeamColor || '#8B5CF6';
+          homeColor = game.homeTeamColor || "#8B5CF6";
           awayTeam = teamName;
           awayLogo = game.logos?.away || jerseyPlaceholder;
-          awayColor = game.awayTeamColor || '#0b63fb';
+          awayColor = game.awayTeamColor || "#0b63fb";
         }
-  
+
         return (
           <div
             key={game.id}
-            onClick={() => handleLiveGameClick(game.link)}
+            onClick={() => handleLiveGameClick(game.link || game.slug || game.id)}
             className="w-full cursor-pointer hover:scale-[0.98] transition-all duration-300"
-
           >
             <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 hover:border-gray-600">
-              
-              {/* Grid layout with 3 equal columns */}
               <div className="grid grid-cols-3 items-center gap-2">
-                {/* Away Team Section */}
+                {/* Away */}
                 <div className="flex flex-col items-center">
-                  {/* Away Team Logo */}
                   <div className="relative mb-2">
-                    <img
-                      src={awayLogo}
-                      className="w-10 h-10 rounded-full bg-white p-0.5"
-                      alt="away logo"
-                    />
-                    <div 
+                    <img src={awayLogo} className="w-10 h-10 rounded-full bg-white p-0.5" alt="away logo" />
+                    <div
                       className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border border-white"
                       style={{ backgroundColor: awayColor }}
                     />
                   </div>
-                  {/* Away Team Name */}
                   <div className="text-center">
                     <p className="text-white font-medium text-sm truncate max-w-[120px]">{awayTeam}</p>
                     <p className="text-gray-400 text-xs">Away</p>
                   </div>
                 </div>
-  
-                {/* Score Section - Fixed center */}
+
+                {/* Score */}
                 <div className="text-center">
                   <p className="text-xl font-bold text-white">{awayScore} - {homeScore}</p>
-                  {/* <p className="text-xs text-gray-300 mt-1">Click to View</p> */}
                 </div>
-  
-                {/* Home Team Section */}
+
+                {/* Home */}
                 <div className="flex flex-col items-center">
-                  {/* Home Team Logo */}
                   <div className="relative mb-2">
-                    <img
-                      src={homeLogo}
-                      className="w-10 h-10 rounded-full bg-white p-0.5"
-                      alt="home logo"
-                    />
-                    <div 
+                    <img src={homeLogo} className="w-10 h-10 rounded-full bg-white p-0.5" alt="home logo" />
+                    <div
                       className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border border-white"
                       style={{ backgroundColor: homeColor }}
                     />
                   </div>
-                  {/* Home Team Name */}
                   <div className="text-center">
                     <p className="text-white font-medium text-sm truncate max-w-[120px]">{homeTeam}</p>
                     <p className="text-gray-400 text-xs">Home</p>
                   </div>
                 </div>
               </div>
-  
+
               {/* Bottom accent */}
-              <div 
+              <div
                 className="absolute bottom-0 left-0 w-full h-1 rounded-b-xl"
-                style={{ 
-                  background: `linear-gradient(to right, ${awayColor} 0%, ${awayColor} 50%, ${homeColor} 50%, ${homeColor} 100%)` 
+                style={{
+                  background: `linear-gradient(to right, ${awayColor} 0%, ${awayColor} 50%, ${homeColor} 50%, ${homeColor} 100%)`,
                 }}
               />
             </div>
@@ -233,6 +240,7 @@ const handleLiveGameClick = (gameSlug) => {
     </div>
   );
 };
+
 
 function TeamPage() {
   const { teamName } = useParams();
@@ -254,7 +262,9 @@ function TeamPage() {
     "Development Squad",
   ];
   const [teamGroups, setTeamGroups] = useState([]);
+  const [availableGroups, setAvailableGroups] = useState([]);
 
+  
   const [selectedFilter, setSelectedFilter] = useState("All Teams");
 const [searchQuery, setSearchQuery] = useState("");
 const [showFilters, setShowFilters] = useState(false);
@@ -560,7 +570,9 @@ const clearFilters = () => {
 
       <button
         onClick={() => setShowFilters(!showFilters)}
-        className="bg-gray-800/50 border border-gray-700 text-white px-3 py-2 rounded-lg hover:bg-gray-700 flex items-center"
+        className={`bg-gray-800/50 border border-gray-700 text-white px-3 py-2 rounded-lg hover:bg-gray-700 flex items-center
+          ${selectedFilter && selectedFilter !== 'All Teams'    ? 'border-primary-cta'     : 'border-gray-800/50'}
+          `}
       >
         {/* filter icon */}
         <svg
@@ -585,7 +597,8 @@ const clearFilters = () => {
     <div className="bg-gray-800/30 rounded-lg p-4 mb-4 border border-gray-700/50">
       <div className="flex flex-wrap gap-2 mb-3">
    {/* Build the pill list: “All Teams” + unique non-empty groups from the team */}
-{[ "All Teams", ...Array.from(new Set((teamGroups || []).filter(Boolean))) ].map((group) => {
+{/* Build the pill list: “All Teams” + only groups that actually have games */}
+{["All Teams", ...availableGroups].map((group) => {
   const active = selectedFilter === group;
   return (
     <button
@@ -613,6 +626,7 @@ const clearFilters = () => {
     </button>
   );
 })}
+
 
       </div>
 
@@ -664,7 +678,12 @@ const clearFilters = () => {
       {/* Team Live Games */}
       <div className="px-4 mb-6 container mx-auto">
         <h2 className="text-white text-sm font-semibold mb-3 uppercase tracking-wide">Matches</h2>
-        <TeamLiveGames teamName={teamData?.Name || teamName} />
+        <TeamLiveGames
+  teamName={teamData?.Name || teamName}
+  selectedFilter={selectedFilter}
+  onGroupsChange={setAvailableGroups}
+/>
+
       </div>
 
 
