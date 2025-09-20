@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-
+import opponentLogo from "../assets/jersey.webp";
 export default function TeamsDashboard() {
-
+  const DEFAULT_TEAM_LOGO = opponentLogo;
     const navigate = useNavigate();
   const firestore = getFirestore(); // ✅ fix: initialize Firestore
   const [basketballTeams, setBasketballTeams] = useState([]);
@@ -13,6 +13,16 @@ export default function TeamsDashboard() {
   const [liveCount,setliveCount] = useState(0)
   const [teamsWithLiveGame, setTeamsWithLiveGame] = useState({});
 
+  const isBadLogo = (src) => {
+    if (!src || typeof src !== "string") return true;
+    const s = src.trim();
+    if (!s || s === "undefined" || s === "null") return true;
+    if (s.includes("/src/") || s.startsWith("../") || s.startsWith("file:")) return true;
+    const ok = ["http://", "https://", "data:", "blob:", "/"];
+    if (!ok.some((p) => s.startsWith(p))) return true;
+    return false;
+  };
+  const safeLogo = (src) => (isBadLogo(src) ? DEFAULT_TEAM_LOGO : src);
   //this is the useeffect for the count of the live game
   useEffect(() => {
     const fetchTeamRecords = async () => {
@@ -321,7 +331,9 @@ export default function TeamsDashboard() {
           <h2 className="text-3xl font-bold mb-8 text-white">Featured Teams</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {basketballTeams.map((team) => (
+            {basketballTeams.map((team) => {
+               const safeTeamLogo = safeLogo(team.Image);
+               return(
               <div
               onClick={()=>{
                 navigate(`/teams/${encodeURIComponent(team.Name)}`);
@@ -339,7 +351,7 @@ export default function TeamsDashboard() {
                 <div className="flex justify-center mb-6">
                   <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                     <img
-                      src={team.Image || "/placeholder.svg?height=80&width=80"}
+                      src={safeTeamLogo}
                       alt={team.Name}
                       className="w-16 h-16 object-contain"
                     />
@@ -380,7 +392,7 @@ export default function TeamsDashboard() {
                   </button> */}
                 </div>
               </div>
-            ))}
+)})}
           </div>
         </div>
       </section>

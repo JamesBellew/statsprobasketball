@@ -190,6 +190,11 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
           >
             <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 hover:border-gray-600">
               <div className="grid grid-cols-3 items-center gap-2">
+                <div className='absolute bottom-5 h-auto w-[100%] left-0 grid-cols-3 items-center flex justify-center  bg-red-500'>
+                <span class="bg-gray-100/10 absolute   text-gray-100 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm ">
+                {game.opponentGroup}</span>
+                </div>
+            
                 {/* Away */}
                 <div className="flex flex-col items-center">
                   <div className="relative mb-2">

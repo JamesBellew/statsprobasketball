@@ -9,7 +9,19 @@ import TeamFilter from "./Components/TeamFilter";
 export default function LiveGamesHomeDashboard() {
   //* CONSTS START
   const navigate = useNavigate();
-  
+  const DEFAULT_TEAM_LOGO = opponentLogo;
+  // Treat obvious bad/dev paths or non-URLs as invalid
+const isBadLogo = (src) => {
+  if (!src || typeof src !== "string") return true;
+  const s = src.trim();
+  if (!s || s === "undefined" || s === "null") return true;
+  if (s.includes("/src/") || s.startsWith("../") || s.startsWith("file:")) return true;
+  const ok = ["http://", "https://", "data:", "blob:", "/"];
+  if (!ok.some((p) => s.startsWith(p))) return true;
+  return false;
+};
+
+const safeLogo = (src) => (isBadLogo(src) ? DEFAULT_TEAM_LOGO : src);
   //* CONST END 
   //*USE STATES START
   const [liveGames, setLiveGames] = useState([]);
@@ -340,7 +352,9 @@ navigate("/")
                 awayLogo = game?.logos?.away;
                 awayColor = game.awayTeamColor;
               }
-            
+              const safeAwayLogo = safeLogo(awayLogo);
+              const safeHomeLogo = safeLogo(homeLogo);
+              
               return (
                 <a
                 key={game.id}
@@ -382,7 +396,7 @@ navigate("/")
                       <div className="w-20 flex flex-col items-center">
                         <div className="relative mb-1">
                           <img
-                            src={awayLogo || opponentLogo}
+                            src={safeAwayLogo}
                             className="w-8 h-8 rounded-full bg-white p-0.5"
                             alt="away logo"
                           />
@@ -411,7 +425,7 @@ navigate("/")
                       <div className="w-20 flex flex-col items-center">
                         <div className="relative mb-1">
                           <img
-                            src={homeLogo || homeLogo}
+                            src={safeHomeLogo}
                             className="w-8 h-8 rounded-full bg-white p-0.5"
                             alt="home logo"
                           />
@@ -508,7 +522,8 @@ navigate("/")
 
       const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
       const leagueLabel = game.league?.name || game.leagueName || "";
-
+      const safeAwayLogo = safeLogo(awayLogo);
+      const safeHomeLogo = safeLogo(homeLogo);
       return (
         <div
           key={game.id}
@@ -555,7 +570,7 @@ navigate("/")
                 style={{ backgroundColor: awayColor || "#0b63fb" }}
               >
                 <img
-                  src={awayLogo || opponentLogo}
+                  src={safeAwayLogo}
                   className="w-full h-full rounded-full bg-white p-0.5"
                   alt="away logo"
                 />
@@ -577,7 +592,7 @@ navigate("/")
                 style={{ backgroundColor: homeColor || "#8B5CF6" }}
               >
                 <img
-                  src={homeLogo || homeLogo}
+                  src={safeHomeLogo}
                   className="w-full h-full rounded-full bg-white p-0.5"
                   alt="home logo"
                 />
@@ -633,7 +648,8 @@ navigate("/")
 
       const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
       const dateOnly   = game.scheduledStart?.date || "";
-
+      const safeAwayLogo = safeLogo(awayLogo);
+      const safeHomeLogo = safeLogo(homeLogo);
       return (
         <div
           key={game.id}
@@ -671,7 +687,7 @@ navigate("/")
                 style={{ backgroundColor: awayColor || '#0b63fb' }}
               >
                 <img
-                  src={awayLogo || opponentLogo}
+                  src={safeAwayLogo}
                   alt="away logo"
                   className="w-full h-full rounded-full bg-white p-0.5"
                 />
@@ -700,7 +716,7 @@ navigate("/")
                 style={{ backgroundColor: homeColor || '#8B5CF6' }}
               >
                 <img
-                  src={homeLogo || homeLogo}
+                  src={safeHomeLogo}
                   alt="home logo"
                   className="w-full h-full rounded-full bg-white p-0.5"
                 />
