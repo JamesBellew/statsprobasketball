@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 2.26 🔥 (14/09/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Version 2.30 🔥 (21/09/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is in Alpha(calm down) !!</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This shit will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,6 +33,11 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">14/09/2025 - Version 2.30🐒</p>
+<li className="py-2">Fixed fucking annoying rendering issue with the FT's for both teams being rendered twice on the livegameview page. This was soo fucking stupid</li>
+<li className="py-2">New animtion on the livegame view page , slight pulse animation for each time there is a score
+</li>
+<li className="py-2">much better handling of no team lgoos, takes into account if the link/URL of image is broken</li>
 <p className="font-bold text-primary-danger text-sm">14/09/2025 - Version 2.25🐒</p>
 <li className="py-2">LiveGame view now shows the group filter tags</li>
 <li className="py-2">Team page now has a filter option for filtering the team groups </li>

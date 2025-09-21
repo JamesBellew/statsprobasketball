@@ -29,6 +29,10 @@ export default function LiveGameView() {
   const [selectedTeamLineout, setSelectedTeamLineout] = useState('home'); // 'home' or 'away'
   const [awayLineoutPlayers, setAwayLineoutPlayers] = useState([]);
   const [localSubstitutions, setLocalSubstitutions] = useState([]);
+  // pop when score changes
+const [homePop, setHomePop] = useState(false);
+const [awayPop, setAwayPop] = useState(false);
+const prevScoresRef = useRef({ home: null, away: null });
     // ✅ Add this ref declaration at the component level
     const prevOnCourtRef = useRef(null);
   useEffect(() => {
@@ -57,6 +61,28 @@ export default function LiveGameView() {
   
     return () => unsubscribe();
   }, [slug]);
+  useEffect(() => {
+    const home = gameData?.score?.home ?? null;
+    const away = gameData?.score?.away ?? null;
+  
+    // skip first load
+    if (prevScoresRef.current.home === null && prevScoresRef.current.away === null) {
+      prevScoresRef.current = { home, away };
+      return;
+    }
+  
+    if (home != null && prevScoresRef.current.home != null && home > prevScoresRef.current.home) {
+      setHomePop(true);
+      setTimeout(() => setHomePop(false), 300);
+    }
+  
+    if (away != null && prevScoresRef.current.away != null && away > prevScoresRef.current.away) {
+      setAwayPop(true);
+      setTimeout(() => setAwayPop(false), 300);
+    }
+  
+    prevScoresRef.current = { home, away };
+  }, [gameData?.score?.home, gameData?.score?.away]);
   
   useEffect(() => {
     if (!slug) return;
@@ -481,6 +507,51 @@ const handleTeamClick = (passedteamName) => {
 
 {/* Inline keyframes */}
 <style>{`
+  @keyframes confettiPulse { /* ...yours unchanged... */ }
+  @keyframes confettiBurst { /* ...yours unchanged... */ }
+  @keyframes shotGlow { /* ...yours unchanged... */ }
+
+  /* NEW: subtle score pop */
+  @keyframes scorePop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  .animate-scorePop {
+    animation: scorePop 300ms cubic-bezier(0.2, 0.6, 0.3, 1) 1;
+  }
+    /* pop */
+@keyframes scorePop { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+.fx-pop { animation: scorePop 260ms cubic-bezier(.2,.7,.3,1) 1; }
+
+/* shockwave ring */
+@keyframes shock { to { transform: scale(1.7); opacity: 0; } }
+.fx-shockwave { position: relative; }
+.fx-shockwave::before {
+  content: "";
+  position: absolute; inset: -2px;
+  border: 2px solid var(--fx-color, #8B5CF6);
+  border-radius: 9999px;
+  opacity: .6;
+  transform: scale(1);
+  animation: shock 420ms ease-out 1;
+  pointer-events: none;
+}
+
+/* light sweep */
+@keyframes shine { to { transform: translateX(140%); } }
+.fx-shine { position: relative; overflow: visible; }
+.fx-shine::after{
+  content:"";
+  position:absolute; top:-8%; bottom:-8%; left:-40%;
+  width:40%;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.55) 40%, transparent 80%);
+  transform: translateX(-120%);
+  filter: blur(1px);
+  animation: shine 520ms ease-out 1;
+  pointer-events:none;
+}
+
   @keyframes confettiPulse {
     0%, 100% { box-shadow: 0 0 10px #8B5CF6, 0 0 20px rgba(139, 92, 246, 0.4); }
     50% { box-shadow: 0 0 20px #8B5CF6, 0 0 40px rgba(139, 92, 246, 0.2); }
@@ -535,12 +606,13 @@ const handleTeamClick = (passedteamName) => {
   <div className="relative flex hover:bg-primary-bg hover:backdrop-blur-lg hover:scale-95 duration-300 hover:rounded-lg cursor-pointer  flex-col items-center w-1/3"
    onClick={()=>{handleTeamClick(homeTeamName)}}
   >
-    <div
-      className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${homeWon ? 'z-20' : ''}`}
-      style={{ borderColor: homeTeamColor, ...(homeWon ? { animation: "confettiPulse 5s forwards" } : {}) }}
-    >
-      <img src={gameData?.logos?.home || homeLogo} className="w-full h-full rounded-full p-1" />
-    </div>
+<div
+  className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${homeWon ? 'z-20' : ''} ${homePop ? 'fx-pop fx-shockwave fx-shine' : ''}`}
+  style={{ borderColor: homeTeamColor, '--fx-color': homeTeamColor }}
+>
+  <img src={gameData?.logos?.home || homeLogo} className="w-full h-full rounded-full p-1" />
+</div>
+
     <p className="text-sm text-white">{gameData?.teamNames.home || "Home"}</p>
 
     {/* Confetti for Home */}
@@ -585,12 +657,14 @@ const handleTeamClick = (passedteamName) => {
 
   {/* AWAY */}
   <div className="relative flex flex-col items-center w-1/3"  onClick={()=>{handleTeamClick(awayTeamName)}}>
-    <div
-      className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''}`}
-      style={ awayWon ? { animation: "confettiPulse 5s forwards", borderColor: gameData?.awayTeamColor || '#0b63fb' }  : { borderColor: gameData?.awayTeamColor || '#0b63fb' } }
-    >
-      <img src={gameData?.logos?.away || opponentJersey} className="w-full h-full rounded-full p-1" />
-    </div>
+  <div
+  className={`w-12 h-12 border-2 rounded-full bg-white mb-1 ${awayWon ? 'z-20' : ''} ${awayPop ? 'fx-pop fx-shockwave fx-shine' : ''}`}
+  style={{ borderColor: gameData?.awayTeamColor || '#0b63fb', '--fx-color': gameData?.awayTeamColor || '#0b63fb' }}
+>
+  <img src={gameData?.logos?.away || opponentJersey} className="w-full h-full rounded-full p-1" />
+</div>
+
+
     <p className="text-sm text-white">{gameData?.teamNames.away || "Away"}</p>
 
     {/* Confetti for Away */}
@@ -1236,10 +1310,10 @@ const handleTeamClick = (passedteamName) => {
       }
 
       // Always count FT Score and FT Miss for home team by action name/type
-      if (action.team === 'home') {
-        if (actionLabel.includes('ft score')) statsObj.freeThrowMade++;
-        if (actionLabel.includes('ft miss')) statsObj.freeThrowMissed++;
-      }
+      // if (action.team === 'home') {
+      //   if (actionLabel.includes('ft score')) statsObj.freeThrowMade++;
+      //   if (actionLabel.includes('ft miss')) statsObj.freeThrowMissed++;
+      // }
     });
   
     // Combine 2-point and 3-point stats for total Field Goals

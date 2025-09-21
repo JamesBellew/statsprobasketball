@@ -299,14 +299,7 @@ export default function TeamsDashboard() {
               <h1 className="text-6xl md:text-8xl font-bold mb-4 text-white">
                 Irish Hoops
               </h1>
-              <div className="flex items-center space-x-2 mb-6">
-                <div className="flex items-center space-x-1">
-                  {/* <span className="text-lg">24/25 Season</span> */}
-                </div>
-                { liveCount &&
-                <span className="px-2 py-1 bg-primary-red text-sm rounded">{liveCount} Game{liveCount>1 ? "s" : ""} Live ⚪️</span>
-                }
-              </div>
+       
               <p className="mb-5 md:text-gray-300 text-white text-lg">Discover local basketball teams from every corner of Ireland. Whether you're a fan, a player, or just curious, explore the stories, rivalries, and live action happening across the country.</p>
               <div className="flex space-x-4">
                 <a
@@ -339,7 +332,7 @@ export default function TeamsDashboard() {
                 navigate(`/teams/${encodeURIComponent(team.Name)}`);
               }}
                 key={team.id}
-                className=" relative rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50 bg-white/20 hover:bg-white/30 bg-[url('/assets/bg6.svg')]
+                className=" relative rounded-xl p-6 hover:scale-105 hover:shadow-2xl hover:shadow-primary-cta/20 transition-all duration-300 cursor-pointer group border border-gray-700/50 bg-white/20 hover:bg-white/10 bg-[url('/assets/bg6.svg')]
       bg-cover "
               >
                                  {teamsWithLiveGame[team.Name] && (
