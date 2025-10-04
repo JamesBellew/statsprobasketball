@@ -21,7 +21,7 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()} // Prevent close on content click
           >
-            <h2 className="text-xl font-bold text-gray-700 mb-4">Beta Version 1.00 🔥 (04/10/2025)</h2>
+            <h2 className="text-xl font-bold text-gray-700 mb-4">Beta Version 1.11 🔥 (04/10/2025)</h2>
             <h2 className="text-xl font-bold text-primary-danger">This is in Beta</h2>
             <h2 className="text-xl font-semibold text-gray-600 mb-4">This will break <span className="font-bold underline text-primary-danger">A LOT</span></h2>
             <form onSubmit={handleLogin} className=" ">
@@ -33,6 +33,9 @@ export default function Login({ showLoginModal, setShowLoginModal }) {
 
 
 <ul class="list-disc py-2 gap-y-3 text-gray-700">
+<p className="font-bold text-primary-danger text-sm">04/10/2025 - Beta Version 1.11 (Game Week)</p>
+<li className="py-2">Team Page Live game section added </li>
+<li className="py-2">Major UI improvements </li>
 <p className="font-bold text-primary-danger text-sm">04/10/2025 - Beta Version 1.00 (Game Week)</p>
 <li className="py-2">Major UI changes in livegamedashboard</li>
 <li className="py-2">New feature in the lkivegame view where the user can click on the player name and it wiull show that players stats
