@@ -308,7 +308,7 @@ navigate("/")
       {liveGamesLeagueEntries.map(([league, games]) => (
         <div key={league} className="mb-8">
           <h3 className="text-sm font-semibold text-gray-300 mb-4 border-l-gray-800/40 py-2 pl-2">{league}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-10">
             {games.map((game) => {
               const homeScore = game.score?.home ?? 0;
               const awayScore = game.score?.away ?? 0;
@@ -352,6 +352,7 @@ navigate("/")
                 awayLogo = game?.logos?.away;
                 awayColor = game.awayTeamColor;
               }
+              const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
               const safeAwayLogo = safeLogo(awayLogo);
               const safeHomeLogo = safeLogo(homeLogo);
               
@@ -359,26 +360,77 @@ navigate("/")
                 <a
                 key={game.id}
                 onClick={() => handleLiveGameClick(game.link, false)}
-                className="block hover:scale-[0.98] transition-all hover:bg-gray-800/50 rounded-xl duration-300 cursor-pointer"
+                className="block group cursor-pointer"
               >
-                <div className="relative bg-gray-800/40 backdrop-blur-sm rounded-xl p-3 border border-gray-700/50 hover:border-gray-600">
-              
-                  {/* LIVE badge (top-left, truly flush) */}
-                  <div className="absolute left-0 top-0 z-40">
-                    <div className="bg-red-600 text-white text-[10px] font-semibold px-2 rounded-e-sm flex items-center space-x-1">
-                      <span>LIVE</span>
-                      <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                <div className="relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10">
+                  {/* Base gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+          
+                  {/* Team color radial gradients */}
+                  <div
+                    className="absolute inset-0 opacity-30 transition-opacity duration-300 group-hover:opacity-50"
+                    style={{
+                      background: `radial-gradient(circle at 20% 50%, ${awayColor}15 0%, transparent 50%), radial-gradient(circle at 80% 50%, ${homeColor}15 0%, transparent 50%)`,
+                    }}
+                  />
+          
+                  {/* Dot pattern texture */}
+                  <div
+                    className="absolute inset-0 opacity-[0.03]"
+                    style={{
+                      backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+                      backgroundSize: "24px 24px",
+                    }}
+                  />
+          
+                  {/* <CHANGE> Replaced bottom bars with subtle left/right edge accents */}
+                  {/* Left edge accent (away team color) */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1 opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{
+                      background: `linear-gradient(to bottom, transparent, ${awayColor} 30%, ${awayColor} 70%, transparent)`,
+                      boxShadow: `2px 0 12px ${awayColor}60`,
+                    }}
+                  />
+          
+                  {/* Right edge accent (home team color) */}
+                  <div
+                    className="absolute right-0 top-0 bottom-0 w-1 opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{
+                      background: `linear-gradient(to bottom, transparent, ${homeColor} 30%, ${homeColor} 70%, transparent)`,
+                      boxShadow: `-2px 0 12px ${homeColor}60`,
+                    }}
+                  />
+          
+                  {/* Border overlay */}
+                  <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-colors duration-300" />
+                  
+                  {/* Gradient border effect */}
+                  <div
+                    className="absolute inset-0 rounded-2xl opacity-50"
+                    style={{
+                      background: `linear-gradient(135deg, ${awayColor}20 0%, transparent 30%, transparent 70%, ${homeColor}20 100%)`,
+                      maskImage: "linear-gradient(to bottom, transparent, black 2px, black calc(100% - 2px), transparent)",
+                      WebkitMaskImage: "linear-gradient(to bottom, transparent, black 2px, black calc(100% - 2px), transparent)",
+                    }}
+                  />
+          
+                  {/* Main content with frosted glass */}
+                  <div className="relative backdrop-blur-xl bg-black/20 p-4">
+                    {/* LIVE badge (top-left) */}
+                    <div className="absolute left-0 top-0 z-40">
+                      <div className="bg-gradient-to-r from-red-600 to-red-500 text-white text-[10px] font-semibold px-3 py-1 rounded-br-lg rounded-tl-2xl flex items-center space-x-1.5 shadow-lg shadow-red-500/30">
+                        <span>LIVE</span>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      </div>
                     </div>
-                  </div>
-              
-                  {/* GROUP pill (top-right, no extra gap) */}
-                  {(() => {
-                    const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
-                    return groupLabel ? (
-                      <div className="absolute mx-auto flex  right-0 top-0">
+          
+                    {/* GROUP pill (top-right) */}
+                    {groupLabel && (
+                      <div className="absolute right-3 top-3 z-40">
                         <span
                           title={groupLabel}
-                          className="inline-flex items-center gap-1 text-[10px]  leading-none text-gray-100 bg-white/10 px-2 py-[2px] rounded-full max-w-[160px] truncate"
+                          className="inline-flex items-center gap-1.5 text-[10px] font-medium leading-none text-white/90 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 max-w-[160px] truncate shadow-lg"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
@@ -386,69 +438,120 @@ navigate("/")
                           <span className="truncate">{groupLabel}</span>
                         </span>
                       </div>
-                    ) : null;
-                  })()}
-              
-                  {/* Main content (give it its own top padding) */}
-                  <div className="pt-6">
-                    <div className="flex items-center px-5 justify-between">
-                      {/* Away */}
-                      <div className="w-20 flex flex-col items-center">
-                        <div className="relative mb-1">
-                          <img
-                            src={safeAwayLogo}
-                            className="w-8 h-8 rounded-full bg-white p-0.5"
-                            alt="away logo"
-                          />
-                          <div
-                            className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                            style={{ backgroundColor: awayColor || '#0b63fb' }}
-                          />
+                    )}
+          
+                    {/* Main content */}
+                    <div className="pt-8">
+                      <div className="flex items-center justify-between px-2">
+                        {/* Away Team */}
+                        <div className="w-24 flex flex-col items-center">
+                          <div className="relative mb-2">
+                            <div className="relative w-12 h-12">
+                              {/* Outer glow effect */}
+                              <div
+                                className="absolute -inset-2 rounded-full opacity-30 blur-xl transition-opacity duration-300 group-hover:opacity-50"
+                                style={{ background: `radial-gradient(circle, ${awayColor}, transparent 70%)` }}
+                              />
+          
+                              {/* Colored ring */}
+                              <div
+                                className="absolute inset-0 rounded-full transition-all duration-300"
+                                style={{
+                                  boxShadow: `0 0 0 2px transparent, 0 0 0 4px ${awayColor}40`,
+                                }}
+                              />
+          
+                              {/* Team logo */}
+                              <img
+                                src={safeAwayLogo || "/placeholder.svg"}
+                                alt={`${awayTeam} logo`}
+                                className="relative w-12 h-12 rounded-full bg-white p-1 shadow-xl"
+                              />
+          
+                              {/* Status indicator */}
+                              <div
+                                className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 shadow-lg"
+                                style={{ backgroundColor: awayColor }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p 
+                              className="text-white font-semibold text-sm truncate max-w-[90px]"
+                              title={awayTeam}
+                            >
+                              {awayTeam}
+                            </p>
+                            <p className="text-gray-400 text-xs mt-0.5">Away</p>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <p className="text-white font-medium text-xs truncate">{awayTeam}</p>
-                          <p className="text-gray-400 text-xs">Away</p>
+          
+                        {/* Score */}
+                        <div className="flex-1 text-center mx-4 min-w-[120px]">
+                          <div className="relative inline-block">
+                            <div
+                              className="absolute inset-0 rounded-lg opacity-20 blur-md"
+                              style={{
+                                background: `linear-gradient(90deg, ${awayColor}40, ${homeColor}40)`,
+                              }}
+                            />
+                            <p className="relative text-2xl font-bold text-white tracking-tight px-4 py-1 whitespace-nowrap">
+                              {awayScore} - {homeScore}
+                            </p>
+                          </div>
+                          <div className="mt-2 inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+                            <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                            <p className="text-xs font-medium text-gray-200">
+                              {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-              
-                      {/* Score */}
-                      <div className="flex-1 text-center mx-3">
-                        <p className="text-lg font-bold text-white">
-                          {awayScore} - {homeScore}
-                        </p>
-                        <p className="text-xs text-gray-300">
-                          {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
-                        </p>
-                      </div>
-              
-                      {/* Home */}
-                      <div className="w-20 flex flex-col items-center">
-                        <div className="relative mb-1">
-                          <img
-                            src={safeHomeLogo}
-                            className="w-8 h-8 rounded-full bg-white p-0.5"
-                            alt="home logo"
-                          />
-                          <div
-                            className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white"
-                            style={{ backgroundColor: homeColor || '#8B5CF6' }}
-                          />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-white font-medium text-xs truncate">{homeTeam}</p>
-                          <p className="text-gray-400 text-xs">Home</p>
+          
+                        {/* Home Team */}
+                        <div className="w-24 flex flex-col items-center">
+                          <div className="relative mb-2">
+                            <div className="relative w-12 h-12">
+                              {/* Outer glow effect */}
+                              <div
+                                className="absolute -inset-2 rounded-full opacity-30 blur-xl transition-opacity duration-300 group-hover:opacity-50"
+                                style={{ background: `radial-gradient(circle, ${homeColor}, transparent 70%)` }}
+                              />
+          
+                              {/* Colored ring */}
+                              <div
+                                className="absolute inset-0 rounded-full transition-all duration-300"
+                                style={{
+                                  boxShadow: `0 0 0 2px transparent, 0 0 0 4px ${homeColor}40`,
+                                }}
+                              />
+          
+                              {/* Team logo */}
+                              <img
+                                src={safeHomeLogo || "/placeholder.svg"}
+                                alt={`${homeTeam} logo`}
+                                className="relative w-12 h-12 rounded-full bg-white p-1 shadow-xl"
+                              />
+          
+                              {/* Status indicator */}
+                              <div
+                                className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 shadow-lg"
+                                style={{ backgroundColor: homeColor }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p 
+                              className="text-white font-semibold text-sm truncate max-w-[90px]"
+                              title={homeTeam}
+                            >
+                              {homeTeam}
+                            </p>
+                            <p className="text-gray-400 text-xs mt-0.5">Home</p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-              
-                  {/* Bottom accent */}
-                  <div
-                    className="absolute bottom-0 left-0 w-full h-1 rounded-b-xl"
-                    style={{
-                      background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)`,
-                    }}
-                  />
                 </div>
               </a>
               

@@ -1,5 +1,5 @@
 // LiveGameView.jsx
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef ,useMemo} from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { firestore } from "../firebase"; // ✅ make sure it's 'firestore', not 'db'
@@ -29,10 +29,88 @@ export default function LiveGameView() {
   const [selectedTeamLineout, setSelectedTeamLineout] = useState('home'); // 'home' or 'away'
   const [awayLineoutPlayers, setAwayLineoutPlayers] = useState([]);
   const [localSubstitutions, setLocalSubstitutions] = useState([]);
+  const [selectedPlayerCard, setSelectedPlayerCard] = useState(null);  
+                
   // pop when score changes
 const [homePop, setHomePop] = useState(false);
 const [awayPop, setAwayPop] = useState(false);
 const prevScoresRef = useRef({ home: null, away: null });
+
+
+// NEW: toggle logic (same -> close, different -> switch)
+const handlePlayerCardClick = (player) => {
+  setSelectedPlayerCard((prev) =>
+    prev && String(prev.number) === String(player.number) && prev.name === player.name
+      ? null
+      : player
+  );
+};
+// --- NEW: compute a single player's shooting stats from gameActions ---
+const getPlayerShootingStats = (gameActions = [], teamKey, player) => {
+  if (!player) return null;
+
+  // normalize match by number first, else by name
+  const matchesPlayer = (a) => {
+    const aNum = a.playerNumber != null ? String(a.playerNumber) : null;
+    const pNum = player.number != null ? String(player.number) : null;
+    if (aNum && pNum && aNum === pNum) return true;
+
+    const aName = (a.playerName || "").trim().toLowerCase();
+    const pName = (player.name || "").trim().toLowerCase();
+    return aName && pName && aName === pName;
+  };
+
+  const acc = {
+    points: 0,
+    twoMade: 0, twoMiss: 0,
+    threeMade: 0, threeMiss: 0,
+    ftMade: 0, ftMiss: 0,
+  };
+
+  gameActions.forEach((a) => {
+    if (!a || a.team !== teamKey || !matchesPlayer(a)) return;
+
+    const label = String(a.actionType || a.actionName || "").toLowerCase();
+
+    // scores
+    if (a.type === "score") {
+      if (a.points === 1) { acc.ftMade += 1; acc.points += 1; }
+      if (a.points === 2) { acc.twoMade += 1; acc.points += 2; }
+      if (a.points === 3) { acc.threeMade += 1; acc.points += 3; }
+      if (a.points === 0 && label.includes("miss")) {
+        if (label.includes("ft")) acc.ftMiss += 1;
+        else if (label.includes("3pt")) acc.threeMiss += 1;
+        else if (label.includes("2pt")) acc.twoMiss += 1;
+      }
+    }
+
+    // explicit miss/action records
+    if (a.type === "action" || a.actionType) {
+      if (label.includes("ft miss")) acc.ftMiss += 1;
+      else if (label.includes("3pt miss")) acc.threeMiss += 1;
+      else if (label.includes("2pt miss")) acc.twoMiss += 1;
+    }
+  });
+
+  const fgMade = acc.twoMade + acc.threeMade;
+  const fgMiss = acc.twoMiss + acc.threeMiss;
+  const pct = (m, miss) => {
+    const att = m + miss;
+    return att > 0 ? Math.round((m / att) * 100) : 0;
+  };
+
+  return {
+    points: acc.points,
+    fg: { made: fgMade, att: fgMade + fgMiss, pct: pct(fgMade, fgMiss) },
+    tp: { made: acc.threeMade, att: acc.threeMade + acc.threeMiss, pct: pct(acc.threeMade, acc.threeMiss) }, // 3PT
+    ft: { made: acc.ftMade, att: acc.ftMade + acc.ftMiss, pct: pct(acc.ftMade, acc.ftMiss) },
+  };
+};
+const selectedStats = useMemo(() => {
+  if (!selectedPlayerCard) return null;
+  // Players tab is showing the HOME team right now
+  return getPlayerShootingStats(gameData?.gameActions || [], "home", selectedPlayerCard);
+}, [selectedPlayerCard, gameData?.gameActions]);
     // ✅ Add this ref declaration at the component level
     const prevOnCourtRef = useRef(null);
   useEffect(() => {
@@ -937,94 +1015,191 @@ const handleTeamClick = (passedteamName) => {
     </div>
 </>
 
-  ) : gameStatsToggleMode === 'Player' ? (
+  ) :gameStatsToggleMode === 'Player' ? (
     <div className="w-full h-auto min-h-[20vh] ">
- <div className="flex justify-center items-center  w-full  gap-4">
-  <p style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className=" bg-secondary-bg  w-auto text-center border-b-2 ">{homeTeamName || "Home"}</p>
-
-
-<div className="relative group">
-    <button 
-      type="button" 
-      className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center px-2 py-2"
-    >
- {awayTeamName || "Away"}
-    </button>
-    <div 
-      className="absolute  top-2/2 w-auto h-auto  overflow-y-auto -translate-y-1/2 ml-2 
-                 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 
-                 whitespace-nowrap opacity-0 group-hover:opacity-100 
-                 transition-opacity duration-300 z-50"
-    >
-      Release 2.0
-    </div>
-  </div>
-
-</div>
-
-      <div className="flex overflow-x-auto space-x-3 px-2 py-1 ">
+      {/* header */}
+      <div className="flex justify-center items-center w-full gap-4">
+        <p
+          style={{ borderBottomColor: gameData?.homeTeamColor || '#8B5CF6' }}
+          className="bg-secondary-bg w-auto text-center border-b-2"
+        >
+          {homeTeamName || 'Home'}
+        </p>
+  
+        <div className="relative group">
+          <button
+            type="button"
+            className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center px-2 py-2"
+          >
+            {awayTeamName || 'Away'}
+          </button>
+          <div className="absolute top-2/2 w-auto h-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+            Release 2.0
+          </div>
+        </div>
+      </div>
+  
+      {/* player strip */}
+      <div className="flex overflow-x-auto space-x-3 px-2 py-2">
         {(() => {
           const homePlayerScores = {};
-
-          gameData?.gameActions?.forEach(action => {
+          gameData?.gameActions?.forEach((action) => {
             if (action.type === 'score' && action.team === 'home') {
               const playerId = action.playerNumber || 'Unknown';
               const playerName = action.playerName || playerId;
-
               if (!homePlayerScores[playerId]) {
                 homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
               }
               homePlayerScores[playerId].points += action.points || 0;
             }
           });
-
-          const playersArray = Object.values(homePlayerScores);
-          const sortedPlayersArray = [...playersArray].sort((a, b) => b.points - a.points);
-          return sortedPlayersArray.map((player, index) => (
-            <div               
-            key={index}               
-            className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
-          >               
-            <div 
-              style={{
-                borderColor: gameData?.homeTeamColor || '#8B5CF6',
-                backgroundImage: `url(${jersey})`,
-                backgroundSize: '90%',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-              }}  
-              className="w-12 h-12 border-[1px] bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold"
-            >                 
-              {player.number}               
-            </div>               
-            <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>               
-            <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>             
-          </div>
-          ));
-          
-          if (playersArray.length === 0) {
-            return (
-              <div className="text-white text-center w-full py-4">
-                No player scores yet.
-              </div>
-            );
+  
+          const sorted = Object.values(homePlayerScores).sort((a, b) => b.points - a.points);
+  
+          if (sorted.length === 0) {
+            return <div className="text-white/80 text-center w-full py-4">No player scores yet.</div>;
           }
-
-          return playersArray.map((player, index) => (
-            <div
-              key={index}
-              className="min-w-[100px] bg-secondary-bg rounded-s-lg p-2 flex flex-col items-center shadow-md scroll-snap-x scroll-smooth snap-mandatory"
-            >
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white text-lg font-bold">
-                #{player.number}
-              </div>
-              <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
-              <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
-            </div>
-          ));
+  
+          return sorted.map((player) => {
+            const isSelected =
+              selectedPlayerCard &&
+              String(selectedPlayerCard.number) === String(player.number) &&
+              selectedPlayerCard.name === player.name;
+  
+            return (
+              <button
+                type="button"
+                key={`${player.number}-${player.name}`}
+                onClick={() => handlePlayerCardClick(player)}
+                aria-pressed={isSelected}
+                className={`min-w-[100px] bg-secondary-bg rounded-xl p-2 flex flex-col items-center shadow-md focus:outline-none transition-transform duration-150 active:scale-95 ${
+                  isSelected ? 'ring-2 ring-white/40' : 'ring-0'
+                }`}
+              >
+                <div
+                  style={{
+                    borderColor: gameData?.homeTeamColor || '#8B5CF6',
+                    backgroundImage: `url(${jersey})`,
+                    backgroundSize: '90%',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                  className="w-12 h-12 border bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold"
+                >
+                  {player.number}
+                </div>
+                <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
+                <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+              </button>
+            );
+          });
         })()}
       </div>
+  
+      {/* selected player panel (single instance) */}
+     {/* selected player panel (compact) */}
+<div
+  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+    selectedPlayerCard ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+  }`}
+>
+  <div className="mx-2 mb-3 rounded-2xl  bg-secondary-bg/80 px-3 py-2 backdrop-blur">
+    {/* header row */}
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-2">
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
+          />
+          {/* <span className="uppercase tracking-wider text-gray-400">Selected</span> */}
+        </span>
+
+        {selectedPlayerCard && (
+          <span className="text-white font-semibold">
+            {selectedPlayerCard.name}{' '}
+            <span className="text-gray-400">#{selectedPlayerCard.number}</span>
+          </span>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setSelectedPlayerCard(null)}
+        className="text-xs px-2 py-1 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10"
+      >
+        Clear
+      </button>
     </div>
+
+    {/* tiles */}
+    <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+      {/* FG */}
+      <div className="rounded-xl bg-white/5 p-2">
+        <div className="text-[10px] text-gray-400">FG</div>
+        <div className="text-sm font-semibold">
+          {selectedStats ? `${selectedStats.fg.made}/${selectedStats.fg.att}` : '— / —'}
+        </div>
+        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${selectedStats?.fg?.pct ?? 0}%`,
+              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
+            }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-gray-400">
+          {selectedStats ? `${selectedStats.fg.pct}%` : '—'}
+        </div>
+      </div>
+
+      {/* 3PT */}
+      <div className="rounded-xl bg-white/5 p-2">
+        <div className="text-[10px] text-gray-400">3PT</div>
+        <div className="text-sm font-semibold">
+          {selectedStats ? `${selectedStats.tp.made}/${selectedStats.tp.att}` : '— / —'}
+        </div>
+        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${selectedStats?.tp?.pct ?? 0}%`,
+              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
+            }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-gray-400">
+          {selectedStats ? `${selectedStats.tp.pct}%` : '—'}
+        </div>
+      </div>
+
+      {/* FT */}
+      <div className="rounded-xl bg-white/5 p-2">
+        <div className="text-[10px] text-gray-400">FT</div>
+        <div className="text-sm font-semibold">
+          {selectedStats ? `${selectedStats.ft.made}/${selectedStats.ft.att}` : '— / —'}
+        </div>
+        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${selectedStats?.ft?.pct ?? 0}%`,
+              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
+            }}
+          />
+        </div>
+        <div className="mt-1 text-[10px] text-gray-400">
+          {selectedStats ? `${selectedStats.ft.pct}%` : '—'}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+ 
+  
   ) 
 :gameStatsToggleMode === 'Lineouts' ? (
   trackingLineout || awayLineoutPlayers.length > 0 ? (
