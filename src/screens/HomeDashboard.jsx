@@ -328,7 +328,12 @@ const handleConfirmCompleteGame = async () => {
   
     navigate("/startgame", {
       state: {
-        lineout: selectedLineout ?? null,
+        // lineout: selectedLineout ?? null,
+          lineoutRef: selectedLineout
+   ? selectedLineoutId?.startsWith("cloud-")
+     ? { source: 'cloud', id: String(selectedLineout.id) }
+       : { source: 'local', id: Number(selectedLineout.id) }
+    : null,
         teamName: teamName || "Home",
       },
     });
@@ -530,11 +535,11 @@ const handleConfirmCompleteGame = async () => {
   
       if (user && typeof editingLineoutId === "string") {
         // ✏️ Update existing cloud lineout
-        const existingDoc = doc(firestore, "users", user.uid, "lineouts", editingLineoutId);
+        const existingDoc = firestoreDoc(firestore, "users", user.uid, "lineouts", editingLineoutId);
         await setDoc(existingDoc, { name: lineoutName, players });
       } else if (user && !editingLineoutId) {
         // ➕ Create new cloud lineout
-        const newDoc = doc(collection(firestore, "users", user.uid, "lineouts"));
+        const newDoc = firestoreDoc(collection(firestore, "users", user.uid, "lineouts"));
         await setDoc(newDoc, { name: lineoutName, players });
       } else {
         // 🗃 Save/update locally

@@ -1656,15 +1656,14 @@ const handleTeamClick = (passedteamName) => {
       <div className="w-full bg-secondary-bg/30 rounded-lg overflow-hidden">
       <div className="w-full bg-secondary-bg/30 rounded-lg overflow-hidden">
       <div className="relative">
-      <div className="bg-gradient-to-t from-primary-cta/10 via-primary-cta/5 to-transparent 
-       border-primary-cta rounded-lg">
+      <div className="bg-white/[0.02] hover:bg-white/[0.05] border-l-2 border-l-blue-500 rounded-r-xl transition-all duration-300">
   <button               
     onClick={() => setShowStatsModal(!showStatsModal)}               
-    className="flex items-center px-4 py-3 w-full justify-between hover:bg-primary-cta/10 transition-all duration-200 group"          
+    className="flex items-center px-4 py-3 w-full justify-between hover:bg-blue-500/10 transition-all duration-200 group"          
   >              
     <div className="flex items-center space-x-3">       
-      <div className="bg-primary-cta/20 p-2 rounded-lg">         
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-primary-cta">           
+      <div className="bg-blue-500/20 p-2 rounded-lg">         
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-blue-500">           
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 9C9.75 8.379 10.254 7.875 10.875 7.875h2.25C13.746 7.875 14.25 8.38 14.25 9v10.125c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 9.75 19.125V9ZM16.5 4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.875Z" />         
         </svg>       
       </div>       
@@ -1679,7 +1678,7 @@ const handleTeamClick = (passedteamName) => {
       viewBox="0 0 24 24"                   
       strokeWidth="2"                   
       stroke="currentColor"                   
-      className={`w-5 h-5 text-primary-cta transition-transform duration-300 ease-in-out group-hover:scale-110 ${showStatsModal ? "rotate-180" : ""}`}              
+      className={`w-5 h-5 text-blue-500 transition-transform duration-300 ease-in-out group-hover:scale-110 ${showStatsModal ? "rotate-180" : ""}`}              
     >                  
       <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />              
     </svg>   

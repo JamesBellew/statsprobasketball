@@ -431,7 +431,7 @@ navigate("/")
               
                       {/* GROUP pill */}
                       {groupLabel && (
-                        <div className="absolute right-3 top-3 z-40">
+                        <div className="absolute right-2 top-2 z-40">
                           <span
                             title={groupLabel}
                             className="inline-flex items-center gap-1.5 text-[10px] font-medium leading-none text-white/90 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 max-w-[160px] truncate shadow-lg"
@@ -471,7 +471,7 @@ navigate("/")
                               </div>
                             </div>
                             <div className="text-center min-w-0">
-                              <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[90px]" title={awayTeam}>
+                              <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[120px]" title={awayTeam}>
                                 {awayTeam}
                               </p>
                               <p className="text-gray-400 text-xs mt-0.5">Away</p>
@@ -479,23 +479,28 @@ navigate("/")
                           </div>
               
                           {/* Score */}
-                          <div className="flex-1  min-w-0 text-center mx-0 lg:mx-2">
-                            <div className="relative inline-block">
-                              <div
-                                className="absolute inset-0 rounded-lg opacity-20 blur-md"
-                                style={{ background: `linear-gradient(90deg, ${awayColor}40, ${homeColor}40)` }}
-                              />
-                              <p className="relative text-2xl lg:text-xl font-bold text-white tracking-tight px-4 lg:px-2 py-1 whitespace-nowrap">
-                                {awayScore} - {homeScore}
-                              </p>
-                            </div>
-                            <div className="mt-2 inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm px-3 lg:px-2 py-1 rounded-full border border-white/10">
-                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                              <p className="text-xs font-medium text-gray-200">
-                                {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
-                              </p>
-                            </div>
-                          </div>
+                       {/* Score */}
+<div className="flex-1 min-w-0 mx-0 lg:mx-2 flex flex-col items-center">
+  {/* score text */}
+  <div className="relative inline-block mx-auto">
+    <div
+      className="absolute inset-0 rounded-lg opacity-20 blur-md"
+      style={{ background: `linear-gradient(90deg, ${awayColor}40, ${homeColor}40)` }}
+    />
+    <p className="relative text-2xl lg:text-xl font-bold text-white tracking-tight px-4 lg:px-2 py-1 whitespace-nowrap">
+      {awayScore} - {homeScore}
+    </p>
+  </div>
+
+  {/* period pill */}
+  <div className="mt-2 inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm px-3 lg:px-2 py-1 rounded-full border border-white/10 mx-auto">
+    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+    <p className="text-xs font-medium text-gray-200">
+      {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
+    </p>
+  </div>
+</div>
+
               
                           {/* Home */}
                           <div className="w-24 lg:w-20 xl:w-20 shrink-0 min-w-0 flex flex-col items-center">
@@ -521,7 +526,7 @@ navigate("/")
                               </div>
                             </div>
                             <div className="text-center min-w-0">
-                              <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[90px]" title={homeTeam}>
+                              <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[120px]" title={homeTeam}>
                                 {homeTeam}
                               </p>
                               <p className="text-gray-400 text-xs mt-0.5">Home</p>

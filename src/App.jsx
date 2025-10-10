@@ -157,7 +157,7 @@ const handleCloseMobileMenu = () => {
 };
 
   return (
-    <div className="bg-[url('/assets/bg-pattern.svg')]   bg-repeat bg-[length:150px_150px]">
+    <div className="bg-[url('/assets/bg-pattern.svg')] bg-secondary-bg  bg-repeat bg-[length:150px_150px]">
     <Router>
       {/* <MobileBlocker/> */}
       <Routes>
