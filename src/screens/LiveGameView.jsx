@@ -1016,188 +1016,244 @@ const handleTeamClick = (passedteamName) => {
 </>
 
   ) :gameStatsToggleMode === 'Player' ? (
-    <div className="w-full h-auto min-h-[20vh] ">
-      {/* header */}
-      <div className="flex justify-center items-center w-full gap-4">
-        <p
-          style={{ borderBottomColor: gameData?.homeTeamColor || '#8B5CF6' }}
-          className="bg-secondary-bg w-auto text-center border-b-2"
+    <div className="w-full h-auto min-h-[20vh]">
+    {/* header */}
+    <div className="flex justify-center items-center w-full gap-4">
+      <p
+        style={{ borderBottomColor: gameData?.homeTeamColor || '#8B5CF6' }}
+        className="bg-secondary-bg w-auto text-center border-b-2"
+      >
+        {homeTeamName || 'Home'}
+      </p>
+
+      <div className="relative group">
+        <button
+          type="button"
+          className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center px-2 py-2"
         >
-          {homeTeamName || 'Home'}
-        </p>
-  
-        <div className="relative group">
-          <button
-            type="button"
-            className="bg-secondary-bg rounded-s-lg w-auto line-through text-gray-400 text-center px-2 py-2"
-          >
-            {awayTeamName || 'Away'}
-          </button>
-          <div className="absolute top-2/2 w-auto h-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
-            Release 2.0
-          </div>
+          {awayTeamName || 'Away'}
+        </button>
+        <div className="absolute top-2/2 w-auto h-auto -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs rounded-s-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50">
+          Release 2.0
         </div>
       </div>
-  
-      {/* player strip */}
-      <div className="flex overflow-x-auto space-x-3 px-2 py-2">
-        {(() => {
-          const homePlayerScores = {};
-          gameData?.gameActions?.forEach((action) => {
-            if (action.type === 'score' && action.team === 'home') {
-              const playerId = action.playerNumber || 'Unknown';
-              const playerName = action.playerName || playerId;
-              if (!homePlayerScores[playerId]) {
-                homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
-              }
-              homePlayerScores[playerId].points += action.points || 0;
-            }
-          });
-  
-          const sorted = Object.values(homePlayerScores).sort((a, b) => b.points - a.points);
-  
-          if (sorted.length === 0) {
-            return <div className="text-white/80 text-center w-full py-4">No player scores yet.</div>;
-          }
-  
-          return sorted.map((player) => {
-            const isSelected =
-              selectedPlayerCard &&
-              String(selectedPlayerCard.number) === String(player.number) &&
-              selectedPlayerCard.name === player.name;
-  
-            return (
-              <button
-                type="button"
-                key={`${player.number}-${player.name}`}
-                onClick={() => handlePlayerCardClick(player)}
-                aria-pressed={isSelected}
-                className={`min-w-[100px] bg-secondary-bg rounded-xl p-2 flex flex-col items-center shadow-md focus:outline-none transition-transform duration-150 active:scale-95 ${
-                  isSelected ? 'ring-2 ring-white/40' : 'ring-0'
-                }`}
-              >
-                <div
-                  style={{
-                    borderColor: gameData?.homeTeamColor || '#8B5CF6',
-                    backgroundImage: `url(${jersey})`,
-                    backgroundSize: '90%',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                  }}
-                  className="w-12 h-12 border bg-white/10 rounded-full flex items-center justify-center text-white text-md font-semibold"
-                >
-                  {player.number}
-                </div>
-                <div className="mt-2 text-gray-400 text-sm text-center truncate">{player.name}</div>
-                <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
-              </button>
-            );
-          });
-        })()}
-      </div>
-  
-      {/* selected player panel (single instance) */}
-     {/* selected player panel (compact) */}
-<div
-  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-    selectedPlayerCard ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
-  }`}
->
-  <div className="mx-2 mb-3 rounded-2xl  bg-secondary-bg/80 px-3 py-2 backdrop-blur">
-    {/* header row */}
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2 text-xs">
-        <span className="inline-flex items-center gap-2">
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
-          />
-          {/* <span className="uppercase tracking-wider text-gray-400">Selected</span> */}
-        </span>
-
-        {selectedPlayerCard && (
-          <span className="text-white font-semibold">
-            {selectedPlayerCard.name}{' '}
-            <span className="text-gray-400">#{selectedPlayerCard.number}</span>
-          </span>
-        )}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setSelectedPlayerCard(null)}
-        className="text-xs px-2 py-1 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10"
-      >
-        Clear
-      </button>
     </div>
 
-    {/* tiles */}
-    <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-      {/* FG */}
-      <div className="rounded-xl bg-white/5 p-2">
-        <div className="text-[10px] text-gray-400">FG</div>
-        <div className="text-sm font-semibold">
-          {selectedStats ? `${selectedStats.fg.made}/${selectedStats.fg.att}` : '— / —'}
-        </div>
-        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${selectedStats?.fg?.pct ?? 0}%`,
-              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
-            }}
-          />
-        </div>
-        <div className="mt-1 text-[10px] text-gray-400">
-          {selectedStats ? `${selectedStats.fg.pct}%` : '—'}
-        </div>
-      </div>
+    {/* player strip */}
+    <div className="flex overflow-x-auto space-x-3 px-3 py-3">
+      {(() => {
+        const homePlayerScores = {};
+        gameData?.gameActions?.forEach((action) => {
+          if (action.type === 'score' && action.team === 'home') {
+            const playerId = action.playerNumber || 'Unknown';
+            const playerName = action.playerName || playerId;
+            if (!homePlayerScores[playerId]) {
+              homePlayerScores[playerId] = { number: playerId, name: playerName, points: 0 };
+            }
+            homePlayerScores[playerId].points += action.points || 0;
+          }
+        });
 
-      {/* 3PT */}
-      <div className="rounded-xl bg-white/5 p-2">
-        <div className="text-[10px] text-gray-400">3PT</div>
-        <div className="text-sm font-semibold">
-          {selectedStats ? `${selectedStats.tp.made}/${selectedStats.tp.att}` : '— / —'}
-        </div>
-        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${selectedStats?.tp?.pct ?? 0}%`,
-              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
-            }}
-          />
-        </div>
-        <div className="mt-1 text-[10px] text-gray-400">
-          {selectedStats ? `${selectedStats.tp.pct}%` : '—'}
-        </div>
-      </div>
+        const sorted = Object.values(homePlayerScores).sort((a, b) => b.points - a.points);
 
-      {/* FT */}
-      <div className="rounded-xl bg-white/5 p-2">
-        <div className="text-[10px] text-gray-400">FT</div>
-        <div className="text-sm font-semibold">
-          {selectedStats ? `${selectedStats.ft.made}/${selectedStats.ft.att}` : '— / —'}
+        if (sorted.length === 0) {
+          return <div className="text-white/80 text-center w-full py-4">No player scores yet.</div>;
+        }
+
+        return sorted.map((player) => {
+          const isSelected =
+            selectedPlayerCard &&
+            String(selectedPlayerCard.number) === String(player.number) &&
+            selectedPlayerCard.name === player.name;
+
+          return (
+            <button
+              type="button"
+              key={`${player.number}-${player.name}`}
+              onClick={() => handlePlayerCardClick(player)}
+              aria-pressed={isSelected}
+              className={`min-w-[110px] bg-secondary-bg rounded-xl p-2 flex flex-col items-center shadow-md focus:outline-none transition-transform duration-150 active:scale-95 ${
+                isSelected ? 'ring-2 ring-white/40' : 'ring-0'
+              }`}
+            >
+              <div
+                style={{
+                  borderColor: gameData?.homeTeamColor || '#8B5CF6',
+                  backgroundImage: `url(${jersey})`,
+                  backgroundSize: '90%',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                }}
+                className="w-9 h-9 border bg-white/10 rounded-full flex items-center justify-center text-white text-sm font-semibold"
+              >
+                {player.number}
+              </div>
+              <div className="mt-1 text-gray-300 text-xs text-center truncate max-w-[100px]">{player.name}</div>
+              <div className="mt-1 text-white text-base font-semibold">{player.points} pts</div>
+            </button>
+          );
+        });
+      })()}
+    </div>
+
+    {/* selected player panel – airier layout, compact info */}
+    <div
+      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        selectedPlayerCard ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'
+      }`}
+    >
+      {selectedPlayerCard && (() => {
+        // --- compute extras for the selected player (AST, REB, STL, BLK, TOV) ---
+        const matchesPlayer = (a) => {
+          const aNum = a?.playerNumber != null ? String(a.playerNumber) : null;
+          const pNum = selectedPlayerCard?.number != null ? String(selectedPlayerCard.number) : null;
+          if (aNum && pNum && aNum === pNum) return true;
+          const aName = (a?.playerName || '').trim().toLowerCase();
+          const pName = (selectedPlayerCard?.name || '').trim().toLowerCase();
+          return aName && pName && aName === pName;
+        };
+
+        let ast = 0, reb = 0, stl = 0, blk = 0, tov = 0;
+        (gameData?.gameActions || []).forEach((a) => {
+          if (!a || a.team !== 'home' || !matchesPlayer(a)) return;
+          const label = String(a.actionType || a.actionName || '').toLowerCase();
+          if (label.includes('assist') || label === 'ast') ast += 1;
+          if (label.includes('rebound') || label === 'reb') reb += 1;     // counts all rebounds
+          if (label.includes('steal')) stl += 1;
+          if (label.includes('block')) blk += 1;
+          if (label.includes('t/o') || label.includes('turnover') || label === 'tov') tov += 1;
+        });
+
+        const chip = (v, t) => (
+          <div className="rounded-xl bg-white/5 px-1 py-1 text-center">
+            <div className="text-xs text-white font-semibold leading-none">{v}</div>
+            <div className="text-[10px] text-gray-400 leading-none mt-1">{t}</div>
+          </div>
+        );
+
+        return (
+          <div className="mx-1 mb-1 rounded-2xl bg-secondary-bg/80 px-1 py-2 backdrop-blur">
+            {/* header */}
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1 text-xs">
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: gameData?.homeTeamColor || '#8B5CF6' }}
+                  />
+                </span>
+                <span className="text-white font-semibold">
+                  {selectedPlayerCard.name}{' '}
+                  <span className="text-gray-400">#{selectedPlayerCard.number}</span>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedPlayerCard(null)}
+                className="text-xs px-2 py-1 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10"
+              >
+                Clear
+              </button>
+            </div>
+
+            {/* content */}
+         {/* content */}
+<div className="mt-3 grid grid-cols-[1fr,1.5fr]  gap-2 w-full">
+  {/* LEFT: FG + 3PT (compact) */}
+  <div className="rounded-xl bg-white/5 p-2">
+    {[
+      { key: 'fg', label: 'FG' },
+      { key: 'tp', label: '3PT' },
+    ].map(({ key, label }) => {
+      const made = selectedStats?.[key]?.made ?? 0;
+      const att  = selectedStats?.[key]?.att  ?? 0;
+      const pct  = selectedStats?.[key]?.pct  ?? 0;
+
+      return (
+        <div key={key} className="mb-2 last:mb-0">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] leading-none text-gray-300">{label}</div>
+            <div className="text-[10px] leading-none text-gray-400">{made}/{att}</div>
+          </div>
+          <div className="mt-1 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${pct}%`,
+                backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
+              }}
+            />
+          </div>
+          <div className="mt-0.5 text-[9px] leading-none text-gray-400">
+            {att > 0 ? `${pct}%` : '—'}
+          </div>
         </div>
-        <div className="mt-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${selectedStats?.ft?.pct ?? 0}%`,
-              backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
-            }}
-          />
+      );
+    })}
+  </div>
+
+  {/* RIGHT: chips + BIG FT (2-row span) */}
+  <div className="grid grid-cols-[1fr,1fr,1fr,1.25fr]  grid-rows-2 gap-1.5 items-stretch h-full w-full">
+    {/* Row 1 chips */}
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
+      <div className="text-xs text-white font-semibold leading-none">{ast}</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">AST</div>
+    </div>
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
+      <div className="text-xs text-white font-semibold leading-none">{reb}</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">REB</div>
+    </div>
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
+      <div className="text-xs text-white font-semibold leading-none">{stl}</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">STL</div>
+    </div>
+
+    {/* FT (wider column, spans two rows) */}
+    {(() => {
+      const ftMade = selectedStats?.ft?.made ?? 0;
+      const ftAtt  = selectedStats?.ft?.att  ?? 0;
+      const ftPct  = selectedStats?.ft?.pct  ?? 0;
+      return (
+        <div className="col-[4/5] row-span-2 rounded-xl bg-white/5 px-3 py-3 flex flex-col justify-center items-center">
+          <div className="text-[10px] leading-none text-gray-300">FT</div>
+          <div className="mt-1 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${ftPct}%`,
+                backgroundColor: gameData?.homeTeamColor || '#8B5CF6',
+              }}
+            />
+          </div>
+          <div className="mt-1 text-[10px] leading-none text-gray-400">
+            {ftMade}/{ftAtt}{ftAtt > 0 ? `  ${ftPct}%` : ''}
+          </div>
         </div>
-        <div className="mt-1 text-[10px] text-gray-400">
-          {selectedStats ? `${selectedStats.ft.pct}%` : '—'}
-        </div>
-      </div>
+      );
+    })()}
+
+    {/* Row 2 chips */}
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
+      <div className="text-xs text-white font-semibold leading-none">{blk}</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">BLK</div>
+    </div>
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
+      <div className="text-xs text-white font-semibold leading-none">{tov}</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">TOV</div>
+    </div>
+    <div className="rounded-xl bg-white/5 px-2 py-2 text-center opacity-60">
+      <div className="text-xs text-white font-semibold leading-none">—</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">MIN</div>
     </div>
   </div>
 </div>
 
+          </div>
+        );
+      })()}
     </div>
+  </div>
  
   
   ) 
