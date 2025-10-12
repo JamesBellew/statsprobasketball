@@ -366,6 +366,44 @@ console.log('this is the gamedata object', gameData);
 //   }
   
 //   },[])
+const decorateWithScoresAndMilestones = (actions, { step = 10, mode = "leader" } = {}) => {
+  // assume actions are already chronological (oldest → newest)
+  let h = 0, a = 0;
+  let prevLeader = null;
+
+  const crossed = (prev, next) => Math.floor(prev / step) < Math.floor(next / step);
+
+  return actions.map((act) => {
+    const out = { ...act, _postHome: h, _postAway: a, _milestone: false, _milestoneText: "" };
+
+    const isScore = !!act.points && (act.type?.toLowerCase() === "score" || true);
+    if (!isScore) return out;
+
+    const prevH = h, prevA = a;
+    if (act.team === "home") h += act.points || 0; else a += act.points || 0;
+
+    // determine leader before & after
+    const wasLeader = prevH === prevA ? prevLeader : (prevH > prevA ? "home" : "away");
+    const nowLeader = h === a ? wasLeader : (h > a ? "home" : "away");
+    prevLeader = nowLeader;
+
+    let milestone = false;
+    if (mode === "each") {
+      if (act.team === "home" && crossed(prevH, h)) milestone = true;
+      if (act.team === "away" && crossed(prevA, a)) milestone = true;
+    } else { // "leader"
+      const prevLeaderScore = wasLeader === "home" ? prevH : wasLeader === "away" ? prevA : Math.max(prevH, prevA);
+      const nowLeaderScore  = nowLeader  === "home" ? h    : nowLeader  === "away" ? a    : Math.max(h, a);
+      if (crossed(prevLeaderScore, nowLeaderScore)) milestone = true;
+    }
+
+    out._postHome = h;
+    out._postAway = a;
+    out._milestone = milestone;
+    out._milestoneText = `${h} - ${a}`;
+    return out;
+  });
+};
 
 // Auto-show stats modal if there are few game actions
 useEffect(() => {
@@ -1240,7 +1278,7 @@ const handleTeamClick = (passedteamName) => {
     </div>
     <div className="rounded-xl bg-white/5 px-2 py-2 text-center">
       <div className="text-xs text-white font-semibold leading-none">{tov}</div>
-      <div className="text-[10px] text-gray-400 leading-none mt-1">TOV</div>
+      <div className="text-[10px] text-gray-400 leading-none mt-1">TO</div>
     </div>
     <div className="rounded-xl bg-white/5 px-2 py-2 text-center opacity-60">
       <div className="text-xs text-white font-semibold leading-none">—</div>
@@ -1755,16 +1793,28 @@ const handleTeamClick = (passedteamName) => {
   <div className="h-[65vh] mt-5 overflow-auto w-full px-4">
     <ul className="timeline timeline-vertical">
       {(() => {
-        // Combine game actions with local substitutions
-        const allActions = [
+        // 1) Combine game actions with local substitutions
+        const allActionsRaw = [
           ...(gameData?.gameActions || []),
           ...localSubstitutions
         ];
 
-        return allActions.length > 0 && (
+        // 2) Ensure chronological order (oldest -> newest)
+        // If you have timestamps, sort them here. Otherwise we assume they are already chronological.
+        const allActionsChrono = [...allActionsRaw];
+        // Example (uncomment if you have millis):
+        // allActionsChrono.sort((a,b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+
+        // 3) Decorate with running scores + milestone flags
+        const decorated = decorateWithScoresAndMilestones(allActionsChrono, {
+          step: 10,
+          mode: "leader" // change to "each" to trigger per team independently
+        });
+
+        return decorated.length > 0 && (
           <div className="h-full overflow-auto w-full px-4">
             <ul className="timeline timeline-vertical w-full max-w-2xl mx-auto">
-              {[...allActions].reverse().map((action, index, array) => {
+              {[...decorated].reverse().map((action, index, array) => {
                 const isHome = action.team === "home";
                 const nameText = action.playerName || "";
                 const playerText = action.playerNumber ? `(${action.playerNumber})` : "";
@@ -1787,7 +1837,6 @@ const handleTeamClick = (passedteamName) => {
                 const isFT = displayType?.includes("free throw");
 
                 const shouldShow = isScore || isMiss || isBlock || isTO || isSteal || isFT || action.type === "substitution";
-
                 if (!shouldShow) return null;
 
                 // Substitution entry for home team
@@ -1798,7 +1847,6 @@ const handleTeamClick = (passedteamName) => {
                         style={{ borderRightColor: gameData?.homeTeamColor || '#8B5CF6' }}
                         className="timeline-start border-r-2 timeline-box w-32 bg-secondary-bg border-gray-600 py-3 text-white border shadow-lg rounded-xl flex flex-col px-2 py-2 relative"
                       >
-                  
                         <div className="flex flex-col items-start ms-1 gap-0.5">
                           <div className="flex items-center gap-1 text-xs text-gray-400 font-semibold">
                             <svg className="w-3 h-3 text-primary-red" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -1817,10 +1865,9 @@ const handleTeamClick = (passedteamName) => {
                         </div>
                       </div>
                       <div className="timeline-middle">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-</svg>
-
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
                       </div>
                       <hr className="bg-gray-400/40" />
                     </li>
@@ -1845,7 +1892,10 @@ const handleTeamClick = (passedteamName) => {
                       {isScore ? (
                         <>
                           {isHome ? (
-                            <div style={{borderLeftColor: gameData?.homeTeamColor || '#8B5CF6'}} className="timeline-start border-l-2  timeline-box bg-secondary-bg text-white border border-gray-700 w-36">
+                            <div
+                              style={{ borderLeftColor: gameData?.homeTeamColor || '#8B5CF6' }}
+                              className="timeline-start border-l-2 timeline-box bg-secondary-bg text-white border border-gray-700 w-36"
+                            >
                               {(timeLabel || clock) && (
                                 <div className="flex justify-between text-xs text-gray-400 mb-1">
                                   <span>{timeLabel}</span>
@@ -1856,16 +1906,31 @@ const handleTeamClick = (passedteamName) => {
                                 <p className="text-sm font-semibold text-white">
                                   <span className="text-gray-400">{playerText}</span>{nameText}
                                 </p>
-                                <p className="text-md font-bold " style={{color: gameData?.homeTeamColor || '#8B5CF6'}}>+{action.points}</p>
+                                <p className="text-md font-bold" style={{ color: gameData?.homeTeamColor || '#8B5CF6' }}>+{action.points}</p>
                               </div>
                             </div>
                           ) : (
-                            <div 
-                              style={{borderRightColor: gameData?.awayTeamColor || '#0b63fb'}} className="timeline-end w-36 border-r-2  timeline-box bg-secondary-bg text-white border border-gray-700">
+                            <div
+                              style={{ borderRightColor: gameData?.awayTeamColor || '#0b63fb' }}
+                              className="timeline-end w-36 border-r-2 timeline-box bg-secondary-bg text-white border border-gray-700"
+                            >
                               <p className="text-xs text-gray-400 mb-1">{timeLabel}</p>
                               <p className="font-semibold">
                                 {playerText} {nameText} + {action.points}
                               </p>
+                            </div>
+                          )}
+
+                          {/* 🔵 Milestone pill: show when helper says we crossed a 10-point step */}
+                          {action._milestone && (
+                            <div className="timeline-middle mt-1">
+                              <div className="px-2 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] leading-none shadow-sm backdrop-blur-sm">
+                                <span className="font-semibold" style={{ color: gameData?.homeTeamColor || '#8B5CF6' }}>
+                                  {action._postHome}
+                                </span>
+                                <span className="mx-1 text-white/50">-</span>
+                                <span className="text-white/70">{action._postAway}</span>
+                              </div>
                             </div>
                           )}
                         </>
@@ -1880,6 +1945,8 @@ const handleTeamClick = (passedteamName) => {
                           </p>
                         </div>
                       )}
+
+                      {/* keep the small dash icon in the center line */}
                       <div className="timeline-middle">
                         <svg xmlns="http://www.w3.org/2000/svg" className="size-4 text-white/50 bg-secondary-bg rounded-full" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
@@ -1897,6 +1964,7 @@ const handleTeamClick = (passedteamName) => {
     </ul>
   </div>
 )}
+
     </div>
   );
 }
