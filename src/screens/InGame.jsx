@@ -96,7 +96,8 @@ const [liveBroadcastGameFinished,setLiveBroadcastGameFinished]= useState(false);
   const [opponentLogo, setOpponentLogo] = useState(savedGame?.opponentLogo || null);
   const [minutesTracked, utesTracked] = useState(savedGame?.minutesTracked || null);
 const [selectedVenue, setSelectedVenue] = useState(savedGame?.selectedVenue || "nahh");
-const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
+//  const passedLineout = savedGame && savedGame.lineout ? savedGame.lineout : null;
+const [homeLineout, setHomeLineout] = useState(savedGame?.lineout || null);
 const [currentGameId, setCurrentGameId] = useState(null);
 const [dropdownOpen, setDropdownOpen] = useState(false);
 const [gameStatsExpanded,setGameStatsExpanded] = useState(false);
@@ -155,6 +156,16 @@ const broadcastUpdatesText=[
   "🔥 2nd OT 🔥",
   "🔥 3rd OT 🔥",
 ]
+const handleSaveHomeLineout = (data) => {
+  setHomeLineout(data);
+  setAlertMessage("Home lineout saved!");
+  setTimeout(() => setAlertMessage(""), 3000);
+
+  // optional but handy so Firestore reflects the change immediately
+  setTimeout(() => {
+    handleSaveGame();
+  }, 500);
+};
 
 
 const locationGameState = location.state || {};
@@ -690,7 +701,8 @@ const updateLiveBroadcast = async () => {
       },
   
       awayLineout: awayLineout,
-      lineout: passedLineout,
+      // lineout: passedLineout,
+      lineout: homeLineout,       
       onCourtPlayers: onCourtPlayers,
       stats: {
         fieldGoalPct: fgPercentage,
@@ -1138,7 +1150,8 @@ const handleSaveGame = async () => {
     awayLineout: awayLineout,  
     opponentActions,
     leadChanges,
-    lineout: savedGame?.lineout || passedLineout,
+    // lineout: savedGame?.lineout || passedLineout,
+    lineout: homeLineout,  
     minutesTracked,
     trackingMinutes,
     trackingPlayers,
@@ -1208,7 +1221,8 @@ useEffect(() => {
     console.log('🙈🙈🙈🙈🙈 WE RE IN THE LOAD FUNCTION🙈🙈🙈🙈🙈🙈');
     if (savedGame && savedGame.id) {
       console.log('🙈🙈🙈🙈🙈🙈 WE ARE IN THE SAVED GAME LOOP');
-      
+      setHomeLineout(savedGame.lineout || null);
+
       setCurrentGameId(savedGame.id);
       setOpponentActions(savedGame.opponentActions || []);
       setleadChanges(savedGame.leadChanges || []);
@@ -1321,7 +1335,7 @@ const handleCourtClick = (e) => {
     : {};
 
   // Store pending action if player modal is needed
-  if (passedLineout) {
+  if (homeLineout) {
     setPendingAction({
       actionName: actionSelected,
       quarter: currentQuater,
@@ -1953,16 +1967,23 @@ const handleTogglePlayer = (playerNumber) => {
 };
 
 
-useEffect(() => {
-  if (passedLineout && passedLineout.players) {
-    const defaultOnCourt = passedLineout.players
-      .slice(0, 5)
-      .map(player => player.number);
+// useEffect(() => {
+//   if (passedLineout && passedLineout.players) {
+//     const defaultOnCourt = passedLineout.players
+//       .slice(0, 5)
+//       .map(player => player.number);
 
+//     setOnCourtPlayers(defaultOnCourt);
+//     onCourtPlayersRef.current = defaultOnCourt; // ✅ Sync ref
+//   }
+// }, [passedLineout]);
+useEffect(() => {
+  if (homeLineout?.players) {
+    const defaultOnCourt = homeLineout.players.slice(0, 5).map(p => p.number);
     setOnCourtPlayers(defaultOnCourt);
-    onCourtPlayersRef.current = defaultOnCourt; // ✅ Sync ref
+    onCourtPlayersRef.current = defaultOnCourt;
   }
-}, [passedLineout]);
+}, [homeLineout]);
 
 function getCurrentRun(actions) {
   const minRunPoints = 6; // Start tracking runs only after 6 points
@@ -2213,7 +2234,7 @@ liveBroadcastGameFinished={liveBroadcastGameFinished}
   currentGameActionFilter={currentGameActionFilter}
   gameActions={gameActions}
   filteredActions={filteredActions}
-  passedLineout={passedLineout}
+  passedLineout={homeLineout}
   handleFilterSelection={handleFilterSelection}
   setCurrentGameActionFilter={setCurrentGameActionFilter}
 />
@@ -2367,7 +2388,7 @@ liveBroadcastGameFinished={liveBroadcastGameFinished}
   showPlayerModal={showPlayerModal}
   setShowPlayerModal={setShowPlayerModal}
   setPendingAction={setPendingAction}
-  passedLineout={passedLineout}
+  passedLineout={homeLineout}
   onCourtPlayers={onCourtPlayers}
   handlePlayerSelection={handlePlayerSelection}
   pendingAction={pendingAction}
@@ -2689,7 +2710,7 @@ console.log("Final Selected Player Details:", playerDetails);
 <ActionButtons
   savedGame={savedGame}
   actions={actions}
-  passedLineout={passedLineout}
+  passedLineout={homeLineout}
   currentQuater={currentQuater}
   setPendingAction={setPendingAction}
   setShowPlayerModal={setShowPlayerModal}
@@ -2702,7 +2723,7 @@ console.log("Final Selected Player Details:", playerDetails);
 
 
 <BottomNav
-passedLineout={passedLineout}
+passedLineout={homeLineout}
   currentQuater={currentQuater}
   minutesTracked={minutesTracked}
   handlePreviousPeriodClick={handlePreviousPeriodClick}
@@ -2727,12 +2748,14 @@ passedLineout={passedLineout}
       <LineoutModal 
   showLineoutModal={showLineoutModal}
   setShowLineoutModal={setShowLineoutModal}
-  passedLineout={passedLineout}
+  passedLineout={homeLineout}            // <- use state, not the const
   onCourtPlayers={onCourtPlayers}
   handleTogglePlayer={handleTogglePlayer}
-  awayLineout={awayLineout}           // ADD THIS LINE
-  onSaveAwayLineout={handleSaveAwayLineout}  // ADD THIS LINE
+  awayLineout={awayLineout}
+  onSaveAwayLineout={handleSaveAwayLineout}
+  onSaveHomeLineout={handleSaveHomeLineout}   // <- ADD THIS
 />
+
 
 
 <ExitModal
