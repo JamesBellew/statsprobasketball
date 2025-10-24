@@ -49,6 +49,37 @@ export default function StartGame() {
   // PREVIEW: local toggle
   const [showPreview, setShowPreview] = useState(false);
 
+  // ---------- NEW: Pre-game Card toggle + data ----------
+  const [showPreGameCard, setShowPreGameCard] = useState(false);
+
+  const [preGame, setPreGame] = useState({
+    home: {
+      ppg: "", papg: "", diff: "",
+      record: { wins: "", losses: "" },
+      form: ["", "", "", "", ""],      // 5 items: "W" | "L" | ""
+      h2hWins: ""                       // home team wins vs opponent
+    },
+    away: {
+      ppg: "", papg: "", diff: "",
+      record: { wins: "", losses: "" },
+      form: ["", "", "", "", ""],
+      h2hWins: ""                       // away team wins vs opponent
+    },
+    totalGames: ""                      // optional total H2H games
+  });
+
+  // Small deep-set helper
+  const setPre = (path, value) =>
+    setPreGame(prev => {
+      // robust deep clone (avoids structuredClone availability issues)
+      const next = JSON.parse(JSON.stringify(prev));
+      const keys = path.split(".");
+      let ref = next;
+      for (let i = 0; i < keys.length - 1; i++) ref = ref[keys[i]];
+      ref[keys[keys.length - 1]] = value;
+      return next;
+    });
+
   const isOpponentValid =
     (selectedOpponentId && selectedOpponentName) || customOpponent.trim() !== "";
 
@@ -254,6 +285,7 @@ export default function StartGame() {
       leagueName = customLeague.trim();
     }
 
+    // ---- NEW: include Pre-game Card data in Firestore broadcast (optional) ----
     if (broadcastToggle) {
       await setDoc(doc(firestoreDb, "liveGames", slug), {
         homeTeamName: passedTeamName,
@@ -266,9 +298,12 @@ export default function StartGame() {
         leagueId,
         leagueName,
         venue: selectedVenue,
+        preGameCardEnabled: showPreGameCard,
+        preGameCard: showPreGameCard ? preGame : null,
       });
     }
 
+    // ---- pass everything to InGame route ----
     const gameState = {
       opponentName: opponentNameFinal,
       selectedVenue,
@@ -278,11 +313,15 @@ export default function StartGame() {
       minutesTracked,
       passedTeamName,
       broadcast: broadcastToggle,
+      preGameCardEnabled: showPreGameCard,
+      preGameCard: showPreGameCard ? preGame : null,
       slug,
       awayTeamColor,
       leagueId,
       leagueName,
       opponentGroup: selectedGroup,
+      preGameCardEnabled: showPreGameCard,
+      preGameCard: showPreGameCard ? preGame : null,
     };
 
     navigate("/ingame", { state: gameState });
@@ -331,11 +370,44 @@ export default function StartGame() {
   const homeName = isHome ? passedTeamName : opponentResolved || "Home Team";
   const awayName = isHome ? opponentResolved || "Opponent" : passedTeamName;
 
-  const homeLogo = isHome ? null : opponentLogo; // opponent logo only available when *they* are home
+  const homeLogo = isHome ? null : opponentLogo; // opponent logo when they are home
   const awayLogo = isHome ? opponentLogo : null;
 
   const homeColor = isHome ? teamColor : awayTeamColor;
   const awayColor = isHome ? awayTeamColor : teamColor;
+
+  // ---------- Small WL chip + Recent Form row ----------
+  const WLChip = ({ value, onToggle }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`h-7 w-7 text-[11px] font-semibold rounded-md border transition
+        ${value === "W"
+          ? "bg-green-500/15 text-green-400 border-green-500/30"
+          : value === "L"
+          ? "bg-red-500/15 text-red-400 border-red-500/30"
+          : "bg-white/5 text-gray-300 border-white/10"}`}
+      title="Toggle W/L"
+    >
+      {value || "·"}
+    </button>
+  );
+
+  const FormRow = ({ teamKey }) => (
+    <div className="flex items-center gap-2">
+      {[0,1,2,3,4].map(i => (
+        <WLChip
+          key={i}
+          value={preGame[teamKey].form[i]}
+          onToggle={() => {
+            const next = [...preGame[teamKey].form];
+            next[i] = next[i] === "W" ? "L" : next[i] === "L" ? "" : "W";
+            setPre(`${teamKey}.form`, next);
+          }}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-900 flex items-center justify-center py-8 px-2">
@@ -653,6 +725,126 @@ export default function StartGame() {
               </div>
             )}
           </div>
+
+          {/* ---------- NEW: Pre-game Card toggle + fields ---------- */}
+          <div className="bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3 mt-1">
+            <span className="text-sm text-gray-200 font-medium">Pre-game Card</span>
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPreGameCard}
+                onChange={(e) => setShowPreGameCard(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all" />
+            </label>
+          </div>
+
+          <div className={`overflow-hidden transition-all duration-300 ease-out
+            ${showPreGameCard ? "max-h-[1200px] opacity-100 mt-1" : "max-h-0 opacity-0"}`}>
+
+            {(["home","away"]).map((teamKey) => (
+              <div key={teamKey} className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-white">
+                    {teamKey === "home" ? (homeName || "Home") : (awayName || "Away")}
+                  </h3>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wide">
+                    {teamKey === "home" ? "HOME" : "AWAY"}
+                  </span>
+                </div>
+
+                {/* PPG / PAPG / DIFF */}
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { k: "ppg", label: "Points / Game" },
+                    { k: "papg", label: "Points Allowed" },
+                    { k: "diff", label: "Point Diff." },
+                  ].map(({ k, label }) => (
+                    <div key={k} className="flex flex-col">
+                      <label className="text-[11px] text-gray-400 mb-1">{label}</label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                        value={preGame[teamKey][k]}
+                        onChange={e => setPre(`${teamKey}.${k}`, e.target.value)}
+                        placeholder="—"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent Form */}
+                <div className="mt-4">
+                  <label className="text-[11px] text-gray-400 mb-1 block">Recent Form (last 5)</label>
+                  <FormRow teamKey={teamKey} />
+                </div>
+
+                {/* Record W-L */}
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1">Wins</label>
+                    <input
+                      type="number"
+                      className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                      value={preGame[teamKey].record.wins}
+                      onChange={e => setPre(`${teamKey}.record.wins`, e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-400 mb-1">Losses</label>
+                    <input
+                      type="number"
+                      className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                      value={preGame[teamKey].record.losses}
+                      onChange={e => setPre(`${teamKey}.record.losses`, e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Head-to-Head */}
+            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-white mb-3">Head-to-Head</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[11px] text-gray-400 mb-1">Total Games (opt.)</label>
+                  <input
+                    type="number"
+                    className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                    value={preGame.totalGames}
+                    onChange={e => setPre("totalGames", e.target.value)}
+                    placeholder="e.g. 6"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-gray-400 mb-1">{homeName || "Home"} Wins</label>
+                  <input
+                    type="number"
+                    className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                    value={preGame.home.h2hWins}
+                    onChange={e => setPre("home.h2hWins", e.target.value)}
+                    placeholder="e.g. 3"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-gray-400 mb-1">{awayName || "Away"} Wins</label>
+                  <input
+                    type="number"
+                    className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+                    value={preGame.away.h2hWins}
+                    onChange={e => setPre("away.h2hWins", e.target.value)}
+                    placeholder="e.g. 3"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ---------- END Pre-game Card section ---------- */}
 
           {/* Lineout selection */}
           {playerStatsEnabled && (

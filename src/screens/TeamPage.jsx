@@ -63,7 +63,13 @@ const RecentResults = ({ teamName }) => {
 };
 
 // ---------------- Team Live Games (grouped + live card) ----------------
-const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange }) => {
+const TeamLiveGames = ({
+   teamName,
+    selectedFilter = "All Teams",     // group filter
+   selectedLeague = "All Leagues",    // NEW
+   onGroupsChange,
+   onLeaguesChange,                   // NEW
+  }) => {
   const navigate = useNavigate();
   const [liveGames, setLiveGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +155,7 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
   const renderDefaultCard = (game) => {
     const homeScore = game.score?.home ?? 0;
     const awayScore = game.score?.away ?? 0;
-
+const league = game.league?.name;
     let homeTeam, homeLogo, homeColor, awayTeam, awayLogo, awayColor;
     if (game.homeTeamName === teamName) {
       homeTeam  = game.homeTeamName;
@@ -205,7 +211,8 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
 </svg>
 
 
-                            <span className="truncate">{game.scheduledStart.date}</span>
+                  
+                            <span className="truncate">{league}</span>
                           </span>
           )}
           {game.opponentGroup && (
@@ -256,7 +263,11 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
               </div>
             </div>
           </div>
+          <div className=' w-full absolut h-1 bottom-2 text-center flex items-center'>
 
+     
+          <span className="truncate text-xs text-center text-gray-400 mx-auto font-light">{game.scheduledStart.date}</span>
+          </div>
           {/* Bottom accent */}
           <div
             className="absolute bottom-0 left-0 w-full h-1 rounded-b-xl"
@@ -265,6 +276,7 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
             }}
           />
         </div>
+   
       </div>
     );
   };
@@ -274,7 +286,7 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
     const awayScore = game.score?.away ?? 0;
     const currentQ = game.quarter ?? 1;
     const groupLabel = game.opponentGroup ?? "";
-
+const league = game.league?.name;
     let homeTeam, homeLogo, homeColor, awayTeam, awayLogo, awayColor;
     if (game.homeTeamName === teamName) {
       homeTeam  = game.homeTeamName;
@@ -371,6 +383,7 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
                       {/* GROUP pill */}
                       {groupLabel && (
                         <div className="absolute right-2 top-2 z-40">
+                     
                           <span
                             title={groupLabel}
                             className="inline-flex items-center gap-1.5 text-[10px] font-medium leading-none text-white/90 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 max-w-[160px] truncate shadow-lg"
@@ -378,7 +391,10 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
                             </svg>
+                     
                             <span className="truncate">{groupLabel}</span>
+                 
+             
                           </span>
                         </div>
                       )}
@@ -434,6 +450,7 @@ const TeamLiveGames = ({ teamName, selectedFilter = "All Teams", onGroupsChange 
                                 {currentQ > 4 ? `OT ${currentQ - 4}` : `Q${currentQ}`}
                               </p>
                             </div>
+                            
                           </div>
               
                           {/* Home */}
@@ -529,7 +546,7 @@ function TeamPage() {
     "Veterans",
     "Development Squad",
   ];
-  const [teamGroups, setTeamGroups] = useState([]);
+  const [teamGroups, setTeamGroups] = useState([]);1
   const [availableGroups, setAvailableGroups] = useState([]);
 
   const [selectedFilter, setSelectedFilter] = useState("All Teams");

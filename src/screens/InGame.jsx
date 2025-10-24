@@ -138,6 +138,13 @@ const [selectedDate, setSelectedDate] = useState(defaultDate);
 const [selectedTime, setSelectedTime] = useState(defaultTime);
 const [isMobile, setIsMobile] = useState(false);
 const [awayLineout, setAwayLineout] = useState(savedGame?.awayLineout || null);
+// --- Pre-game Card (optional) ---
+const [preGameCardEnabled, setPreGameCardEnabled] = useState(
+  savedGame?.preGameCardEnabled ?? location.state?.preGameCardEnabled ?? false
+);
+const [preGameCard, setPreGameCard] = useState(
+  savedGame?.preGameCard ?? location.state?.preGameCard ?? null
+);
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
   2: { minutes: 10, seconds: 0 },
@@ -699,7 +706,8 @@ const updateLiveBroadcast = async () => {
         date: selectedDate,
         time: selectedTime
       },
-  
+      preGameCardEnabled,
+      preGameCard: preGameCardEnabled ? preGameCard : null,
       awayLineout: awayLineout,
       // lineout: passedLineout,
       lineout: homeLineout,       
@@ -1159,7 +1167,8 @@ const handleSaveGame = async () => {
     playerMinutes,
     quarterTimes,
     timestamp: new Date().toISOString(),
-  
+    preGameCardEnabled,
+    preGameCard,
     opponentLogo,
     score: {
       home: teamScore,
@@ -1222,6 +1231,9 @@ useEffect(() => {
     if (savedGame && savedGame.id) {
       console.log('🙈🙈🙈🙈🙈🙈 WE ARE IN THE SAVED GAME LOOP');
       setHomeLineout(savedGame.lineout || null);
+// inside loadFinishedFlagIfNeeded() after you set other savedGame fields
+setPreGameCardEnabled(Boolean(savedGame?.preGameCardEnabled));
+setPreGameCard(savedGame?.preGameCard || null);
 
       setCurrentGameId(savedGame.id);
       setOpponentActions(savedGame.opponentActions || []);

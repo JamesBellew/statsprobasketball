@@ -8,6 +8,9 @@ import { useLocation } from 'react-router-dom';
 import opponentJersey from '../assets/jersey.webp'
 import { useNavigate } from "react-router-dom";
 import jersey from '../assets/jersey2.png'
+import InGameScoreSheet from "./LiveGameComponents/InGameScoreSheet";
+import { PreGameCard } from "./LiveGameComponents/PreGameCard";
+
 
 export default function LiveGameView() {
   const { slug } = useParams();
@@ -19,7 +22,8 @@ export default function LiveGameView() {
   const [broadcastUpdate, setBroadcastUpdate] = useState(null);
   const [gameFinsihedFlag, setGameFinsihedFlag] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
-  const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
+  // const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
+  const [gameStatsToggleMode,setGameStatsToggleMode]= useState(null);
   const navigate = useNavigate();
   const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
   const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
@@ -30,7 +34,10 @@ export default function LiveGameView() {
   const [awayLineoutPlayers, setAwayLineoutPlayers] = useState([]);
   const [localSubstitutions, setLocalSubstitutions] = useState([]);
   const [selectedPlayerCard, setSelectedPlayerCard] = useState(null);  
-                
+  // at top of component:
+const [showPreGameCard, setShowPreGameCard] = useState(false);
+
+  const SUB_TTL_MS = 7500;
   // pop when score changes
 const [homePop, setHomePop] = useState(false);
 const [awayPop, setAwayPop] = useState(false);
@@ -405,15 +412,176 @@ const decorateWithScoresAndMilestones = (actions, { step = 10, mode = "leader" }
   });
 };
 
+
 // Auto-show stats modal if there are few game actions
 useEffect(() => {
-  if (gameData?.gameActions?.length < 2) {
+  if (gameData?.gameActions?.length < 2 && !showPreGameCard)  {
     setGameStatsToggleMode("Stats")
     setShowStatsModal(true);
     
   }
 }, [gameData?.gameActions?.length]);
 
+// --- Scoresheet helpers ---
+const normalize = (s) => (s || "").trim().toLowerCase();
+const sameNumber = (a, b) =>
+  a != null && b != null && String(a) === String(b);
+
+// Match an action to a player (prefer number, fallback to name)
+const matchesPlayer = (action, player) => {
+  const aNum = action?.playerNumber;
+  const pNum = player?.number;
+
+  if (sameNumber(aNum, pNum)) return true;
+
+  const aName = normalize(action?.playerName);
+  const pName = normalize(player?.name);
+  return aName && pName && aName === pName;
+};
+
+// Build compact rows from gameData for HOME team
+const buildHomeScoresheetRows = (gameData) => {
+  const players = gameData?.lineout?.players ?? [];
+  const actions = gameData?.gameActions ?? [];
+
+  // accumulator by jerseyNumber (string)
+  const acc = new Map();
+
+  // seed with all lineout players so bench shows as 0-rows too
+  players.forEach((p) => {
+    acc.set(String(p.number), {
+      number: p.number,
+      name: p.name,
+      pts: 0,
+      mins: 0,          // Optional: wire up later from your on/off court timing
+      ast: 0,
+      reb: 0,           // counts all rebounds (off/def combined)
+      to: 0,
+      stl: 0,
+      blk: 0,
+    });
+  });
+
+  actions.forEach((a) => {
+    if (!a || a.team !== "home") return;
+
+    // find the target player (by number first, otherwise by name)
+    let key = null;
+    if (a.playerNumber != null && acc.has(String(a.playerNumber))) {
+      key = String(a.playerNumber);
+    } else if (a.playerName) {
+      // try to find by name in the seeded players
+      const hit = players.find((p) => matchesPlayer(a, p));
+      if (hit) key = String(hit.number);
+    }
+    if (!key) return; // skip if we can't confidently match
+
+    const row = acc.get(key);
+    const label = normalize(a.actionType || a.actionName);
+
+    // scoring
+    if (a.type === "score") {
+      if (a.points === 1) row.pts += 1;
+      if (a.points === 2) row.pts += 2;
+      if (a.points === 3) row.pts += 3;
+    }
+
+    // counters from action labels
+    if (label) {
+      if (label.includes("assist") || label === "ast") row.ast += 1;
+      if (label.includes("rebound") || label === "reb") row.reb += 1;
+      if (label.includes("steal")) row.stl += 1;
+      if (label.includes("block")) row.blk += 1;
+      if (label.includes("t/o") || label.includes("turnover") || label === "tov")
+        row.to += 1;
+    }
+  });
+
+  // return rows sorted by jersey number asc
+  return Array.from(acc.values()).sort(
+    (a, b) => Number(a.number) - Number(b.number)
+  );
+};
+// Compact rows for the sheet (HOME team only for now)
+const scoresheetRows = useMemo(() => buildHomeScoresheetRows(gameData), [gameData]);
+
+// mm:ss clock string from your live clock doc
+const sheetClock = useMemo(() => {
+  const m = gameClock?.minutesLeft;
+  const s = gameClock?.secondsLeft;
+  if (typeof m !== "number" || typeof s !== "number") return "--:--";
+  return `${String(m).padStart(1, "0")}:${String(s).padStart(2, "0")}`;
+}, [gameClock?.minutesLeft, gameClock?.secondsLeft]);
+
+useEffect(() => {
+  if (!localSubstitutions.length) return;
+
+  // set a timer per substitution so each disappears ~5s after its timestamp
+  const timers = localSubstitutions.map((sub) => {
+    const age = Date.now() - (sub.timestamp || 0);
+    const remaining = Math.max(0, SUB_TTL_MS - age);
+
+    return setTimeout(() => {
+      setLocalSubstitutions((prev) =>
+        prev.filter((s) => s.timestamp !== sub.timestamp)
+      );
+    }, remaining);
+  });
+
+
+  return () => timers.forEach(clearTimeout);
+}, [localSubstitutions]);
+
+// Only the actions that actually appear on the timeline
+const timelineActions = useMemo(() => {
+  const base = [
+    ...(gameData?.gameActions || []),
+    ...localSubstitutions, // you already show these on the timeline
+  ];
+
+  // If you have timestamps, you can sort here:
+  // base.sort((a,b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
+
+  return base.filter((action) => {
+    if (!action) return false;
+    if (action.type === "substitution") return true; // you render these
+
+    const label = String(action.actionType || action.actionName || "").toLowerCase();
+    const t = String(action.type || "").toLowerCase();
+
+    const isScore = Number.isFinite(action.points);
+    const isMiss  = t.includes("miss") || label.includes(" miss");
+    const isBlock = t.includes("block") || label.includes("block");
+    const isTO    = t.includes("turnover") || label.includes("t/o");
+    const isSteal = t.includes("steal");
+    const isFT    = label.includes("free throw") || label.includes("ft ");
+
+    return isScore || isMiss || isBlock || isTO || isSteal || isFT;
+  });
+}, [gameData?.gameActions, localSubstitutions]);
+// after timelineActions useMemo (or anywhere after it exists)
+useEffect(() => {
+  setShowPreGameCard(timelineActions.length === 0);
+}, [timelineActions.length]);
+
+
+// one place to handle the interaction
+const toggleStatsModal = () => {
+  setShowStatsModal(prev => {
+    const next = !prev;            // are we opening it now?
+    if (next && showPreGameCard) { // if opening AND pregame is open → close pregame
+      setShowPreGameCard(false);
+    }
+    return next;
+  });
+};
+
+const hasPreGame = !!(
+  // explicit prop takes priority if you use one
+  // preGameCardProp ??
+  // otherwise require the flag AND the object on the live game
+  (gameData?.preGameCardEnabled )
+);
   if (loading) {
     return (
       <div className="bg-primary-bg text-white min-h-screen flex items-center justify-center">
@@ -425,7 +593,7 @@ useEffect(() => {
     ); 
   }
   
-  if (!gameData) return <div className="min-h-screen bg-primary-bg flex items-center justify-center px-4">
+  if (!gameData) return <div className="min-h-screen h-auto  bg-primary-bg flex items-center justify-center px-4">
   <div className="max-w-md w-full text-center">
     {/* Animated Basketball Icon */}
     <div className="relative mb-8">
@@ -541,11 +709,11 @@ const handleTeamClick = (passedteamName) => {
 };
   return (
     
-    <div className={`${showStatsModal ? "h-auto" : "h-screen"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
+    <div className={`${showStatsModal ? "h-auto" : "h-auto"} bg-secondary-bg relative  text-white flex flex-col bg-[url('/assets/bg-pattern.svg')]
      min-h-screen bg-repeat bg-[length:150px_150px]`}>
-      {groupName &&
+      {/* {groupName &&
 <span class="bg-primary-cta/20 absolute right-2 bottom-2 text-gray-300 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm  ">{groupName}</span>
-}
+} */}
       <header className="bg-primary-bg shadow w-full px-2 z-50">
         <div className="container mx-auto">
           <div className="flex cursor-pointer justify-between items-center py-4 mx-auto">
@@ -964,91 +1132,80 @@ const handleTeamClick = (passedteamName) => {
         </div>
 
         {/* Timeline */}
-        <div className="timeline flex overflow-x-auto ml-4 w-11/12 space-x-3 relative px-2">
-          {leadChanges.map((lead, index) => {
-            const isLatest = lead === latestLeadChange;
-            const isHomeTeamLead = lead.team === homeTeam;
-            const isDraw = lead.team === "Draw";
-            const prevLead = leadChanges[index - 1];
-            const isNewQuarter = !prevLead || prevLead.q !== lead.q;
+     {/* Timeline */}
+<div className="timeline flex overflow-x-auto ml-4 w-11/12 space-x-3 relative px-2">
+  {([...leadChanges] || []).reverse().map((lead, index, arr) => {
+    const isLatest = index === 0;                // newest is first (leftmost)
+    const prevLead = arr[index - 1];             // previous in the *reversed* order
+    const isNewQuarter = !prevLead || prevLead.q !== lead.q;
 
-            return (
-              <div key={index} className="flex-shrink-0 relative flex flex-col items-center h-full">
-                {/* Quarter indicator - only show when quarter changes */}
-                {isNewQuarter && (
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                    <span 
-                      className="text-xs px-2 py-1 rounded-full text-white font-medium"
-                      style={{ backgroundColor: getQuarterColor(lead.q) }}
-                    >
-                      Q{lead.q}
-                    </span>
-                  </div>
-                )}
+    const isHomeTeamLead = lead.team !== homeTeam;   // (keep your flipped logic)
+    const isDraw = lead.team === "Draw";
 
-                {/* Top Score Box (Home team lead) */}
-                <div className="h-10 flex items-end">
-                  {isHomeTeamLead && (
-                    <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                      isLatest ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
-                    }`}>
-                      {lead.score}
-                    </div>
-                  )}
-                </div>
+    return (
+      <div key={index} className="flex-shrink-0 relative flex flex-col items-center h-full">
+        {isNewQuarter && (
+          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+            <span
+              className="text-xs px-2 py-1 rounded-full text-white font-medium"
+              style={{ backgroundColor: getQuarterColor(lead.q) }}
+            >
+              Q{lead.q}
+            </span>
+          </div>
+        )}
 
-                {/* Middle Icon */}
-                <div 
-  className="relative bg-gray-800 p-2 rounded-full border-none flex items-center my-1"
-  style={{ 
-    color: isHomeTeamLead 
-      ? (gameData?.homeTeamColor || '#8B5CF6') 
-      : isDraw 
-        ? '#6B7280' 
-        : (gameData?.awayTeamColor || '#EF4444')
-  }}
->
-                  {isHomeTeamLead ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                  ) : isDraw ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 9h16.5m-16.5 6.75h16.5" />
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
-                    </svg>
-                  )}
-                  
-                  {/* Connecting line */}
-                  {index !== leadChanges.length - 1 && (
-                    <div className="absolute top-1/2 left-full w-6 h-0.5 bg-gray-800"></div>
-                  )}
-
-                  {/* Draw score overlay */}
-                  {isDraw && (
-                    <div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
-                      {lead.score}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom Score Box (Away team lead) */}
-                <div className="h-10 flex items-start">
-                  {!isHomeTeamLead && !isDraw && (
-                    <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                      isLatest ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300"
-                    }`}>
-                      {lead.score}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        {/* Top (home lead) */}
+        <div className="h-10 flex items-end">
+          {isHomeTeamLead && (
+            <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+              isLatest ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-300"
+            }`}>
+              {lead.score}
+            </div>
+          )}
         </div>
+
+        {/* Middle icon */}
+        <div
+          className="relative bg-gray-800 p-2 rounded-full border-none flex items-center my-1"
+          style={{
+            color: isHomeTeamLead
+              ? (gameData?.homeTeamColor || '#8B5CF6')
+              : isDraw
+                ? '#6B7280'
+                : (gameData?.awayTeamColor || '#EF4444')
+          }}
+        >
+          {/* …icon svg stays the same… */}
+
+          {/* connector to the next (older) item to the RIGHT */}
+          {index !== arr.length - 1 && (
+            <div className="absolute top-1/2 left-full w-6 h-0.5 bg-gray-800"></div>
+          )}
+
+          {isDraw && (
+            <div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs whitespace-nowrap">
+              {lead.score}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom (away lead) */}
+        <div className="h-10 flex items-start">
+          {!isHomeTeamLead && !isDraw && (
+            <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
+              isLatest ? "bg-red-600 text-white" : "bg-gray-800 text-gray-300"
+            }`}>
+              {lead.score}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
       </div>
     </div>
 </>
@@ -1751,10 +1908,10 @@ const handleTeamClick = (passedteamName) => {
       <div className="w-full bg-secondary-bg/30 rounded-lg overflow-hidden">
       <div className="relative">
       <div className="bg-white/[0.02] hover:bg-white/[0.05] border-l-2 border-l-blue-500 rounded-r-xl transition-all duration-300">
-  <button               
-    onClick={() => setShowStatsModal(!showStatsModal)}               
-    className="flex items-center px-4 py-3 w-full justify-between hover:bg-blue-500/10 transition-all duration-200 group"          
-  >              
+      <button
+  onClick={toggleStatsModal}
+  className="flex items-center px-4 py-3 w-full justify-between hover:bg-blue-500/10 transition-all duration-200 group"
+>            
     <div className="flex items-center space-x-3">       
       <div className="bg-blue-500/20 p-2 rounded-lg">         
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5 text-blue-500">           
@@ -1789,7 +1946,21 @@ const handleTeamClick = (passedteamName) => {
     </div>
       </div>
 
-      {gameData?.gameActions?.length > 0 && (
+      {/* {gameData?.gameActions?.length > 0 && ( */}
+      {showPreGameCard ? (
+  <div className="mt-5 px-4 flex justify-center">
+{gameData && (
+  <PreGameCard
+  liveGame={gameData}               // important
+  preGameCard={gameData?.preGameCard}  // optional; if you pass it, it’s used
+  colors={{ home: gameData?.homeTeamColor, away: gameData?.awayTeamColor }}
+  logos={{ home: gameData?.logos?.home, away: gameData?.logos?.away }}
+/>
+
+)}
+
+  </div>
+) : (
   <div className="h-[65vh] mt-5 overflow-auto w-full px-4">
     <ul className="timeline timeline-vertical">
       {(() => {
@@ -1963,7 +2134,50 @@ const handleTeamClick = (passedteamName) => {
       })()}
     </ul>
   </div>
-)}
+)
+}
+{hasPreGame &&
+
+<button
+onClick={() => setShowPreGameCard(v => !v)}
+// or use toggle: () => setShowPreGameCard(v => !v)
+  className={`
+    fixed bottom-4 right-4 z-10
+    h-12 w-12 rounded-full
+    bg-primary-cta hover:bg-primary-cta/90
+    text-white shadow-lg shadow-black/30
+    flex items-center justify-center
+    transition-transform active:scale-95
+  `}
+  aria-label={showPreGameCard ? "Hide pregame card" : "Show pregame card"}
+  title={showPreGameCard ? "Hide pregame card" : "Show pregame card"}
+>
+  {/* X when open, info icon when closed */}
+  {showPreGameCard ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+    </svg>
+  )}
+</button>
+}
+
+{/* )} */}
+<InGameScoreSheet
+  homeScore={gameData?.score?.home ?? 0}
+  awayScore={gameData?.score?.away ?? 0}
+  quarter={gameData?.quarter ?? 1}
+  clock={sheetClock}
+  colors={{home:gameData.homeTeamColor,away:gameData.awayTeamColor}}
+  logos={{home:gameData?.logos?.home, away:gameData?.logos?.away}}
+  
+  homeTeamName={homeTeamName || "Home"}
+  awayTeamName={awayTeamName || "Away"}
+  rows={scoresheetRows}
+/>
 
     </div>
   );

@@ -677,7 +677,7 @@ navigate("/")
               <span className="text-gray-200 text-sm font-medium">{homeTeam}</span>
 
               <div
-                className="relative w-14 h-14 rounded-full p-0.5"
+                className="relative w-14 h-12 rounded-full p-0.5"
                 style={{ backgroundColor: homeColor || "#8B5CF6" }}
               >
                 <img
