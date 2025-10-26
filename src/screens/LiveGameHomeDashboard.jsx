@@ -734,100 +734,207 @@ navigate("/")
       const awayTeam  = isVenueHome ? game.teamNames?.away : game.teamNames?.home;
       const awayLogo  = isVenueHome ? game?.logos?.away      : game?.logos?.home;
       const awayColor = isVenueHome ? game.awayTeamColor     : game.homeTeamColor;
-
+const league = game.leagueName || "2025";
       const groupLabel = game.opponentGroup || game.teamGroup || game.group || "";
       const dateOnly   = game.scheduledStart?.date || "";
       const safeAwayLogo = safeLogo(awayLogo);
       const safeHomeLogo = safeLogo(homeLogo);
       return (
         <div
-          key={game.id}
-          onClick={() => handleLiveGameClick(game.link, false)}
-          className="relative rounded-lg p-4 pt-8 bg-gray-800/25 hover:bg-gray-800/35 transition-colors border border-gray-700/30"
+        key={game.id}
+        onClick={() => handleLiveGameClick(game.link, false)}
+        className="group block cursor-pointer min-w-0 rounded-2xl overflow-hidden"
+      >
+        {/* card shell (same vibe as live card) */}
+        <div
+          className="relative rounded-2xl transition-all duration-300
+                     lg:transform-gpu lg:will-change-transform lg:origin-center
+                     lg:group-hover:-translate-y-0.5 lg:group-hover:shadow-2xl lg:group-hover:shadow-purple-500/10"
         >
-          {/* FINAL (top-left) */}
-          <div className="absolute top-2 left-2">
-            <span className="bg-gray-600/70 text-white text-[10px] font-semibold px-2 py-[2px] rounded-sm">
-              FINAL
-            </span>
-          </div>
-
-          {/* GROUP (top-right) */}
-          {groupLabel && (
-            <div className="absolute top-2 right-2">
-              <span
-                title={groupLabel}
-                className="inline-flex items-center gap-1 text-[10px] text-gray-100 bg-white/5 px-2 py-[2px] rounded-full max-w-[160px] truncate"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
-                </svg>
-                <span className="truncate">{groupLabel}</span>
-              </span>
-            </div>
-          )}
-
-          {/* Teams row */}
-          <div className="flex items-center justify-between">
-            {/* Away */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div
-                className="w-10 h-10 rounded-full p-0.5 shrink-0"
-                style={{ backgroundColor: awayColor || '#0b63fb' }}
-              >
-                <img
-                  src={safeAwayLogo}
-                  alt="away logo"
-                  className="w-full h-full rounded-full bg-white p-0.5"
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-gray-200 text-xs font-medium truncate">{awayTeam}</p>
-                <p className="text-[11px] text-gray-400">Away</p>
-              </div>
-            </div>
-
-            {/* Score */}
-            <div className="mx-4 text-center">
-              <p className="text-xl font-semibold text-white leading-6">
-                {awayScore} - {homeScore}
-              </p>
-            </div>
-
-            {/* Home */}
-            <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
-              <div className="min-w-0 text-right">
-                <p className="text-gray-200 text-xs font-medium truncate">{homeTeam}</p>
-                <p className="text-[11px] text-gray-400">Home</p>
-              </div>
-              <div
-                className="w-11 h-11 rounded-full p-0.5 shrink-0"
-                style={{ backgroundColor: homeColor || '#8B5CF6' }}
-              >
-                <img
-                  src={safeHomeLogo}
-                  alt="home logo"
-                  className="w-full h-full rounded-full bg-white p-0.5"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Date (bottom center) */}
-          {dateOnly && (
-            <div className="mt-3 flex justify-center">
-              <span className="text-xs text-gray-400">{dateOnly}</span>
-            </div>
-          )}
-
-          {/* Subtle accent line */}
+          {/* Base gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+      
+          {/* Team color radial glows */}
           <div
-            className="absolute bottom-0 left-0 w-full h-1 rounded-b-lg opacity-60"
+            className="absolute inset-0 opacity-30 transition-opacity duration-300 group-hover:opacity-50"
+            style={{
+              background: `radial-gradient(circle at 20% 50%, ${awayColor}15 0%, transparent 50%),
+                           radial-gradient(circle at 80% 50%, ${homeColor}15 0%, transparent 50%)`,
+            }}
+          />
+      
+          {/* Dot texture */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
+      
+          {/* Edge accents */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 opacity-60"
+            style={{
+              background: `linear-gradient(to bottom, transparent, ${awayColor} 30%, ${awayColor} 70%, transparent)`,
+              boxShadow: `2px 0 12px ${awayColor}60`,
+            }}
+          />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 opacity-60"
+            style={{
+              background: `linear-gradient(to bottom, transparent, ${homeColor} 30%, ${homeColor} 70%, transparent)`,
+              boxShadow: `-2px 0 12px ${homeColor}60`,
+            }}
+          />
+      
+          {/* Border overlays */}
+          <div className="absolute inset-0 rounded-2xl border border-white/10 transition-colors duration-300" />
+          <div
+            className="absolute inset-0 rounded-2xl opacity-50"
+            style={{
+              background: `linear-gradient(135deg, ${awayColor}20 0%, transparent 30%, transparent 70%, ${homeColor}20 100%)`,
+              maskImage:
+                "linear-gradient(to bottom, transparent, black 2px, black calc(100% - 2px), transparent)",
+              WebkitMaskImage:
+                "linear-gradient(to bottom, transparent, black 2px, black calc(100% - 2px), transparent)",
+            }}
+          />
+      
+          {/* Content */}
+          <div className="relative backdrop-blur-xl bg-black/20 p-4 lg:p-3 xl:p-2.5">
+            {/* LEAGUE pill (replaces LIVE) */}
+             {league && (
+              <div className="absolute left-0 top-0 z-40">
+                <div className="text-white/90 text-[10px] font-medium px-3 py-1 rounded-br-lg rounded-tl-2xl flex items-center gap-1.5 bg-white/10 border border-white/10 backdrop-blur">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7 4h10l1 4H6l1-4zm-1 6h12l-1.5 9h-9L6 10z" />
+                  </svg>
+                  <span className="truncate max-w-[160px]">{league}</span>
+                </div>
+              </div>
+            )} 
+      
+            {/* GROUP pill (keep) */}
+            {groupLabel && (
+              <div className="absolute right-2 top-2 z-40">
+                <span
+                  title={groupLabel}
+                  className="inline-flex items-center gap-1.5 text-[10px] font-medium leading-none text-white/90 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 max-w-[160px] truncate shadow-lg"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm-7.5 9a7.5 7.5 0 0115 0H4.5z" />
+                  </svg>
+                  <span className="truncate">{groupLabel}</span>
+                </span>
+              </div>
+            )}
+      
+            {/* Teams + Score */}
+            <div className="pt-8 lg:pt-7 xl:pt-6">
+              <div className="flex items-center justify-between px-2 lg:px-1 gap-2 lg:gap-1.5">
+                {/* Away */}
+                <div className="w-24 lg:w-20 xl:w-20 shrink-0 min-w-0 flex flex-col items-center">
+                  <div className="relative mb-2">
+                    <div className="relative w-12 h-12 lg:w-10 lg:h-10">
+                      <div
+                        className="absolute -inset-2 rounded-full opacity-30 blur-xl"
+                        style={{ background: `radial-gradient(circle, ${awayColor}, transparent 70%)` }}
+                      />
+                      <div
+                        className="absolute inset-0 rounded-full"
+                        style={{ boxShadow: `0 0 0 2px transparent, 0 0 0 4px ${awayColor}40` }}
+                      />
+                      <img
+                        src={safeAwayLogo || "/placeholder.svg"}
+                        alt={`${awayTeam} logo`}
+                        className="relative w-12 h-12 lg:w-10 lg:h-10 rounded-full bg-white p-1 shadow-xl"
+                      />
+                      <div
+                        className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 shadow-lg"
+                        style={{ backgroundColor: awayColor }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center min-w-0">
+                    <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[120px]" title={awayTeam}>
+                      {awayTeam}
+                    </p>
+                    <p className="text-gray-400 text-xs mt-0.5">Away</p>
+                  </div>
+                </div>
+      
+                {/* Score + FT */}
+                <div className="flex-1 min-w-0 mx-0 lg:mx-2 flex flex-col items-center">
+                  {/* score text */}
+                  <div className="relative inline-block mx-auto">
+                    <div
+                      className="absolute inset-0 rounded-lg opacity-20 blur-md"
+                      style={{ background: `linear-gradient(90deg, ${awayColor}40, ${homeColor}40)` }}
+                    />
+                    <p className="relative text-2xl lg:text-xl font-bold text-white tracking-tight px-4 lg:px-2 py-1 whitespace-nowrap">
+                      {awayScore} - {homeScore}
+                    </p>
+                  </div>
+      
+                  {/* FT pill */}
+                  <div className="mt-2 inline-flex items-center  bg-primary-bg backdrop-blur-sm px-3 lg:px-2 py-1 rounded-full border border-white/10 mx-auto">
+                    <div className=" rounded-full" />
+                    <p className="text-xs font-medium text-gray-200">FT</p>
+                  </div>
+      
+                  {/* date */}
+                  {dateOnly && (
+                    <div className="mt-2">
+                      <span className="text-[11px] text-gray-400">{dateOnly}</span>
+                    </div>
+                  )}
+                </div>
+      
+                {/* Home */}
+                <div className="w-24 lg:w-20 xl:w-20 shrink-0 min-w-0 flex flex-col items-center">
+                  <div className="relative mb-2">
+                    <div className="relative w-12 h-12 lg:w-10 lg:h-10">
+                      <div
+                        className="absolute -inset-2 rounded-full opacity-30 blur-xl"
+                        style={{ background: `radial-gradient(circle, ${homeColor}, transparent 70%)` }}
+                      />
+                      <div
+                        className="absolute inset-0 rounded-full"
+                        style={{ boxShadow: `0 0 0 2px transparent, 0 0 0 4px ${homeColor}40` }}
+                      />
+                      <img
+                        src={safeHomeLogo || "/placeholder.svg"}
+                        alt={`${homeTeam} logo`}
+                        className="relative w-12 h-12 lg:w-10 lg:h-10 rounded-full bg-white p-1 shadow-xl"
+                      />
+                      <div
+                        className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 shadow-lg"
+                        style={{ backgroundColor: homeColor }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center min-w-0">
+                    <p className="text-white font-semibold text-xs truncate max-w-[100px] lg:max-w-[120px]" title={homeTeam}>
+                      {homeTeam}
+                    </p>
+                    <p className="text-gray-400 text-xs mt-0.5">Home</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>{/* /content */}
+      
+          {/* Bottom accent line */}
+          <div
+            className="absolute bottom-0 left-0 w-full h-1 rounded-b-2xl opacity-60"
             style={{
               background: `linear-gradient(to right, ${awayColor || '#0b63fb'} 0%, ${awayColor || '#0b63fb'} 50%, ${homeColor || '#8B5CF6'} 50%, ${homeColor || '#8B5CF6'} 100%)`,
             }}
           />
         </div>
+      </div>
+      
       );
     })}
   </div>
