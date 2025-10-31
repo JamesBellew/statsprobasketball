@@ -6,7 +6,13 @@ import { firestore } from '../firebase'; // Adjust path as needed
 import jerseyPlaceholder from '../assets/logo.jpg'; // Adjust path as needed
 
 // ------- Recent Results (WWWL circles) -------
-const RecentResults = ({ teamName }) => {
+// ------- Recent Results (WWWL circles, filter-aware) -------
+const RecentResults = ({
+  teamName,
+  selectedLeague = "All Leagues",
+  selectedGroup = "All Groups",
+  limit = 5, // show last 5 by default
+}) => {
   const [results, setResults] = useState([]);
 
   useEffect(() => {
@@ -17,32 +23,49 @@ const RecentResults = ({ teamName }) => {
         const filtered = [];
 
         snapshot.forEach((doc) => {
-          const game = { id: doc.id, ...doc.data() };
+          const g = { id: doc.id, ...doc.data() };
 
-          const isTeamHome = game.homeTeamName === teamName;
-          const isTeamAway = game.teamNames?.away === teamName;
+          const isHome = g.homeTeamName === teamName;
+          const isAway = g.teamNames?.away === teamName;
+          if (!(isHome || isAway)) return; // not this team
 
-          // Only consider finished games
-          if (game.gameState === true && (isTeamHome || isTeamAway)) {
-            const teamScore = isTeamHome ? game.score?.home : game.score?.away;
-            const oppScore  = isTeamHome ? game.score?.away : game.score?.home;
+          // Apply filters
+          const leagueName = g.league?.name || g.league;
+          const inLeague =
+            selectedLeague === "All Leagues" || leagueName === selectedLeague;
+          const inGroup =
+            selectedGroup === "All Groups" || g.opponentGroup === selectedGroup;
+          if (!(inLeague && inGroup)) return;
+
+          // Only finished games
+          if (g.gameState === true) {
+            const teamScore = isHome ? g.score?.home : g.score?.away;
+            const oppScore  = isHome ? g.score?.away : g.score?.home;
+
+            // robust createdAt extraction (number or Firestore Timestamp)
+            const createdAtMs = g.createdAt?.toMillis
+              ? g.createdAt.toMillis()
+              : (typeof g.createdAt === "number" ? g.createdAt : 0);
 
             filtered.push({
-              result: teamScore > oppScore ? 'W' : 'L',
-              createdAt: game.createdAt ?? 0
+              result: (teamScore ?? 0) > (oppScore ?? 0) ? "W" : "L",
+              createdAt: createdAtMs,
             });
           }
         });
 
+        // newest first, then take last N
         filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        setResults(filtered.slice(0, 4));
+        setResults(filtered.slice(0, limit));
       } catch (error) {
         console.error("Error fetching recent results:", error);
       }
     };
 
     if (teamName) fetchResults();
-  }, [teamName]);
+  }, [teamName, selectedLeague, selectedGroup, limit]);
+
+  if (results.length === 0) return null;
 
   return (
     <div className="flex flex-row space-x-1 mt-2">
@@ -50,9 +73,9 @@ const RecentResults = ({ teamName }) => {
         <div
           key={index}
           className={`w-4 h-4 rounded-full text-center my-auto flex items-center justify-center font-normal text-[8px] ${
-            item.result === 'W'
-              ? 'bg-white text-primary-cta'
-              : 'bg-black/10 border border-gray-500 text-white'
+            item.result === "W"
+              ? "bg-white text-primary-cta"
+              : "bg-black/10 border border-gray-500 text-white"
           }`}
         >
           <p>{item.result}</p>
@@ -62,13 +85,95 @@ const RecentResults = ({ teamName }) => {
   );
 };
 
+// ------- Team Average (finished games only) -------
+// ------- Team Average (finished games only) -------
+const TeamAverageScore = ({ teamName, selectedLeague = "All Leagues", selectedGroup = "All Groups" }) => {
+  const [avg, setAvg] = useState(null);
+  const [record, setRecord] = useState({ wins: 0, losses: 0 });
+
+  useEffect(() => {
+    const getStats = async () => {
+      try {
+        const gamesRef = collection(firestore, "liveGames");
+        const snapshot = await getDocs(gamesRef);
+
+        let total = 0;
+        let count = 0;
+        let wins = 0;
+        let losses = 0;
+
+        snapshot.forEach((doc) => {
+          const g = { id: doc.id, ...doc.data() };
+
+          const isHome = g.homeTeamName === teamName;
+          const isAway = g.teamNames?.away === teamName;
+          if (!(isHome || isAway)) return;
+
+          // league/group filter
+          const leagueName = g.league?.name || g.league;
+          const inLeague = selectedLeague === "All Leagues" || leagueName === selectedLeague;
+          const inGroup  = selectedGroup === "All Groups" || g.opponentGroup === selectedGroup;
+          if (!(inLeague && inGroup)) return;
+
+          if (g.gameState === true) {
+            const teamScore = isHome ? g.score?.home : g.score?.away;
+            const oppScore  = isHome ? g.score?.away : g.score?.home;
+
+            if (typeof teamScore === "number") {
+              total += teamScore;
+              count += 1;
+            }
+            if (typeof teamScore === "number" && typeof oppScore === "number") {
+              if (teamScore > oppScore) wins++;
+              else losses++;
+            }
+          }
+        });
+
+        setAvg(count ? total / count : null);
+        setRecord({ wins, losses });
+
+      } catch (err) {
+        console.error("Error computing averages & record:", err);
+        setAvg(null);
+        setRecord({ wins: 0, losses: 0 });
+      }
+    };
+
+    if (teamName) getStats();
+  }, [teamName, selectedLeague, selectedGroup]);
+
+  const hasGames = record.wins > 0 || record.losses > 0;
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur px-2.5 py-1 rounded-full border border-white/10">
+        <span className="text-[11px] font-medium text-gray-100">
+          {hasGames ? `${record.wins}-${record.losses}` : `0-0`}
+        </span>
+      </span>
+      <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur px-2.5 py-1 rounded-full border border-white/10">
+        {avg !== null ? (
+          <span className="text-[11px] font-medium text-gray-100">{avg.toFixed(1)} PPG</span>
+        ) : (
+          <span className="text-[11px] text-gray-300">PPG —</span>
+        )}
+      </span>
+    </div>
+  );
+};
+
+
+
+
+
 // ---------------- Team Live Games (grouped + live card) ----------------
-const TeamLiveGames = ({
-   teamName,
-    selectedFilter = "All Teams",     // group filter
-   selectedLeague = "All Leagues",    // NEW
-   onGroupsChange,
-   onLeaguesChange,                   // NEW
+ const TeamLiveGames = ({
+     teamName,
+     selectedFilter = "All Teams",       // legacy (not used now)
+     selectedLeague = "All Leagues",
+     selectedGroup = "All Groups",
+    onGroupsChange,
   }) => {
   const navigate = useNavigate();
   const [liveGames, setLiveGames] = useState([]);
@@ -118,10 +223,15 @@ const TeamLiveGames = ({
   };
 
   // Apply group filter
-  const filteredGames =
-    selectedFilter === "All Teams"
-      ? liveGames
-      : liveGames.filter((g) => g.opponentGroup === selectedFilter);
+    // Apply League + Group filters
+    const filteredGames = liveGames.filter((g) => {
+      const leagueName = g.league?.name || g.league;
+      const inLeague =
+        selectedLeague === "All Leagues" || leagueName === selectedLeague;
+      const inGroup =
+        selectedGroup === "All Groups" || g.opponentGroup === selectedGroup;
+     return inLeague && inGroup;
+    });
 
   // Live if gameState === false
   const liveNow = filteredGames.filter((g) => g.gameState === false);
@@ -533,6 +643,13 @@ function TeamPage() {
   const [teamData, setTeamData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+// new state for league + group filters
+const [selectedLeague, setSelectedLeague] = useState("All Leagues");
+const [availableLeagues, setAvailableLeagues] = useState(["All Leagues"]);
+
+const [selectedGroup, setSelectedGroup] = useState("All Groups");
+const [availableGroupsHero, setAvailableGroupsHero] = useState(["All Groups"]);
+
 
   const TEAM_GROUPS = [
     "All Teams",
@@ -546,7 +663,7 @@ function TeamPage() {
     "Veterans",
     "Development Squad",
   ];
-  const [teamGroups, setTeamGroups] = useState([]);1
+  const [teamGroups, setTeamGroups] = useState([]);
   const [availableGroups, setAvailableGroups] = useState([]);
 
   const [selectedFilter, setSelectedFilter] = useState("All Teams");
@@ -576,6 +693,30 @@ function TeamPage() {
         }
 
         let foundTeam = null;
+        // after foundTeam logic
+if (foundTeam) {
+  const gamesRef = collection(firestore, "liveGames");
+  const gamesSnapshot = await getDocs(gamesRef);
+
+  const leagueSet = new Set();
+  const groupSet = new Set();
+
+  gamesSnapshot.forEach((doc) => {
+    const g = doc.data();
+
+    const isHome = g.homeTeamName === foundTeam.Name;
+    const isAway = g.teamNames?.away === foundTeam.Name;
+
+    if (isHome || isAway) {
+      if (g.league?.name) leagueSet.add(g.league.name);
+      if (g.opponentGroup) groupSet.add(g.opponentGroup);
+    }
+  });
+
+  setAvailableLeagues(["All Leagues", ...leagueSet]);
+  setAvailableGroupsHero(["All Groups", ...groupSet]);
+}
+
         teamsSnapshot.forEach((doc) => {
           const team = doc.data();
           if (team.Name && team.Name.toLowerCase().trim() === teamName?.toLowerCase().trim()) {
@@ -602,6 +743,34 @@ function TeamPage() {
 
     validateTeamFromDatabase();
   }, [teamName]);
+// after your validateTeamFromDatabase effect
+useEffect(() => {
+  const loadLeagueAndGroups = async () => {
+    if (!teamData?.Name) return;
+
+    const gamesRef = collection(firestore, "liveGames");
+    const snap = await getDocs(gamesRef);
+
+    const leagueSet = new Set();
+    const groupSet  = new Set();
+
+    snap.forEach(d => {
+      const g = d.data();
+      const isHome = g.homeTeamName === teamData.Name;
+      const isAway = g.teamNames?.away === teamData.Name;
+      if (!(isHome || isAway)) return;
+
+      const leagueName = g.league?.name || g.league;
+      if (leagueName) leagueSet.add(leagueName);
+      if (g.opponentGroup) groupSet.add(g.opponentGroup);
+    });
+
+    setAvailableLeagues(["All Leagues", ...Array.from(leagueSet)]);
+    setAvailableGroupsHero(["All Groups", ...Array.from(groupSet)]);
+  };
+
+  loadLeagueAndGroups();
+}, [teamData?.Name]);
 
   const handleCloseMobileMenu = () => setIsMobileMenuOpen(false);
   const handleOpenMobileMenu  = () => setIsMobileMenuOpen(true);
@@ -725,10 +894,17 @@ function TeamPage() {
           </div>
         </div>
       </div>
-
+ 
       {/* Hero */}
       <div className="mb-6">
         <div className="relative bg-primary-cta bg-[url('/assets/bg6.svg')] bg-cover bg-[length:550px_550px] overflow-hidden h-auto py-20 p-8 pt-12 rounded-b-2xl">
+        {/* Hero Filters */}
+<div className="mt-3 space-y-2">
+
+
+
+</div>
+
           <div className="flex container mx-auto items-center justify-between h-full">
             <div className="flex-1 z-10">
               <h1 className="text-white text-3xl font-bold mb-2 leading-tight">
@@ -736,9 +912,23 @@ function TeamPage() {
                 {teamData?.Name || teamName}
                 <br />
               </h1>
-
-              <RecentResults teamName={teamData?.Name || teamName} />
               <div className="w-12 mt-4 h-1 bg-white rounded-full"></div>
+               <RecentResults
+   teamName={teamData?.Name || teamName}
+   selectedLeague={selectedLeague}
+  selectedGroup={selectedGroup}
+   limit={5}  // optional; change to 4 if you prefer
+/>
+              {/* - <TeamAverageScore teamName={teamData?.Name || teamName} /> */}
+<TeamAverageScore
+  teamName={teamData?.Name || teamName}
+  selectedLeague={selectedLeague}
+  selectedGroup={selectedGroup}
+/>
+
+{/* <div className="w-12 mt-4 h-1 bg-white rounded-full"></div> */}
+
+         
             </div>
 
             <div className="absolute bg-white/50 rounded-full right-8 top-1/2 transform -translate-y-1/2">
@@ -762,7 +952,48 @@ function TeamPage() {
 
       {/* Filters */}
       <div className="px-4 mb-6 container mx-auto">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+        {/* League pills */}
+<div className="flex items-center text-xs text-gray-300 mb-1">League</div>
+<div className="flex gap-2 overflow-x-auto pb-1 snap-x">
+  {availableLeagues.map((lg) => {
+    const active = selectedLeague === lg;
+    return (
+      <button
+        key={lg}
+        onClick={() => setSelectedLeague(lg)}
+        className={`px-3 py-1 rounded-full text-[11px] snap-start whitespace-nowrap transition-all
+          ${active 
+            ? "bg-white text-black font-medium" 
+            : "bg-white/20 text-white/90"
+          }`}
+      >
+        {lg}
+      </button>
+    );
+  })}
+</div>
+
+{/* Group pills */}
+<div className="flex items-center text-xs text-gray-300 mt-2 mb-1">Team Group</div>
+<div className="flex gap-2 overflow-x-auto pb-1 snap-x">
+  {availableGroupsHero.map((grp) => {
+    const active = selectedGroup === grp;
+    return (
+      <button
+        key={grp}
+        onClick={() => setSelectedGroup(grp)}
+        className={`px-3 py-1 rounded-full text-[11px] snap-start whitespace-nowrap transition-all
+          ${active 
+            ? "bg-white text-black font-medium" 
+            : "bg-white/20 text-white/90"
+          }`}
+      >
+        {grp}
+      </button>
+    );
+  })}
+</div>
+        {/* <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
           <div>
             <h2 className="text-white text-lg font-semibold mb-1">Team Groups</h2>
             <p className="text-gray-400 text-sm">Filter teams by category or search</p>
@@ -799,7 +1030,7 @@ function TeamPage() {
               Filter
             </button>
           </div>
-        </div>
+        </div> */}
 
         <div className={`transition-all duration-300 overflow-hidden ${showFilters ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
           <div className="bg-gray-800/30 rounded-lg p-4 mb-4 border border-gray-700/50">
@@ -850,16 +1081,16 @@ function TeamPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4">
+        {/* <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-400">
             {selectedFilter !== "All Teams" || searchQuery ? (
               <span>Filtered results • {selectedFilter !== "All Teams" ? selectedFilter : "All Teams"}</span>
             ) : (
-              <span>Showing all teams</span>
+              <span>All teams</span>
             )}
           </div>
           <div className="text-sm text-gray-500"></div>
-        </div>
+        </div> */}
       </div>
 
       {/* Matches */}
@@ -867,7 +1098,9 @@ function TeamPage() {
         <h2 className="text-white text-sm font-semibold mb-3 uppercase tracking-wide">Matches</h2>
         <TeamLiveGames
           teamName={teamData?.Name || teamName}
-          selectedFilter={selectedFilter}
+          // selectedFilter={selectedFilter}
+           selectedLeague={selectedLeague}
+selectedGroup={selectedGroup}
           onGroupsChange={setAvailableGroups}
         />
       </div>
