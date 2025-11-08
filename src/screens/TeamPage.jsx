@@ -215,12 +215,26 @@ const TeamAverageScore = ({ teamName, selectedLeague = "All Leagues", selectedGr
   }, [teamName, onGroupsChange]);
 
   const handleLiveGameClick = (gameSlugOrLink) => {
-    const slug = gameSlugOrLink?.includes?.("http")
-      ? new URL(gameSlugOrLink).pathname.split("/").pop()
+    if (!gameSlugOrLink) return;
+  
+    // If it's a full URL, extract slug from it
+    let slug = gameSlugOrLink.includes("http")
+      ? new URL(gameSlugOrLink).pathname
       : gameSlugOrLink;
-    if (!slug) return;
+  
+    // Remove leading/trailing slashes
+    slug = slug.replace(/^\/+|\/+$/g, "");
+  
+    // If already contains /liveGames/, use as is
+    if (slug.startsWith("liveGames/")) {
+      navigate(`/${slug}`);
+      return;
+    }
+  
+    // Otherwise, construct the route
     navigate(`/liveGames/${slug}`);
   };
+  
 
   // Apply group filter
     // Apply League + Group filters
@@ -236,6 +250,13 @@ const TeamAverageScore = ({ teamName, selectedLeague = "All Leagues", selectedGr
   // Live if gameState === false
   const liveNow = filteredGames.filter((g) => g.gameState === false);
   const notLive = filteredGames.filter((g) => g.gameState !== false);
+  // Sort by most recent first
+  notLive.sort((a, b) => {
+    const aDate = new Date(a.scheduledStart?.date).getTime();
+    const bDate = new Date(b.scheduledStart?.date).getTime();
+    return bDate - aDate;
+  });
+  
 
   if (loading) {
     return (
@@ -263,8 +284,9 @@ const TeamAverageScore = ({ teamName, selectedLeague = "All Leagues", selectedGr
 
   // --------- Card renderers ----------
   const renderDefaultCard = (game) => {
-    const homeScore = game.score?.home ?? 0;
-    const awayScore = game.score?.away ?? 0;
+    const score = game.passedScore ?? game.score ?? { home: 0, away: 0 };
+    const homeScore = score.home, awayScore = score.away;
+    
 const league = game.league?.name;
     let homeTeam, homeLogo, homeColor, awayTeam, awayLogo, awayColor;
     if (game.homeTeamName === teamName) {
@@ -392,8 +414,9 @@ const league = game.league?.name;
   };
 
   const renderLiveCard = (game) => {
-    const homeScore = game.score?.home ?? 0;
-    const awayScore = game.score?.away ?? 0;
+    const score = game.passedScore ?? game.score ?? { home: 0, away: 0 };
+    const homeScore = score.home, awayScore = score.away;
+    
     const currentQ = game.quarter ?? 1;
     const groupLabel = game.opponentGroup ?? "";
 const league = game.league?.name;

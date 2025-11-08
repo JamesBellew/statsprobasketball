@@ -41,6 +41,11 @@ export default function StartGame() {
   const [customOpponent, setCustomOpponent] = useState("");
   const [customOpponentMode, setCustomOpponentMode] = useState(false);
 
+  // Past result (no stats) mode
+const [pastResultMode, setPastResultMode] = useState(false);
+const [homeScoreInput, setHomeScoreInput] = useState("");
+const [awayScoreInput, setAwayScoreInput] = useState("");
+
   // Groups (from the user's team)
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState("");
@@ -242,17 +247,17 @@ export default function StartGame() {
   const handleGameStart = async () => {
     let opponentNameFinal = selectedOpponentName;
     if (customOpponent.trim()) opponentNameFinal = customOpponent.trim();
-
+  
     if (!opponentNameFinal) {
       alert("Please select or enter an opponent.");
       return;
     }
-
+  
     if (!selectedLeagueId && !customLeague.trim()) {
       alert("Please select a league or enter a custom league.");
       return;
     }
-
+  
     if (customOpponent.trim() && createCustomOpponent === "yes") {
       try {
         const newTeamRef = doc(collection(firestore, "Teams"));
@@ -267,43 +272,127 @@ export default function StartGame() {
         console.error("Error creating opponent team:", err);
       }
     }
-
+  
     const selectedLineoutData =
       playerStatsEnabled && selectedLineout
         ? lineouts.find((l) => l.id.toString() === selectedLineout.toString()) || null
         : null;
-
+  
     const dateStr = new Date().toISOString().split("T")[0];
     const slug = `${passedTeamName}-vs-${opponentNameFinal}-${dateStr}`
       .toLowerCase()
       .replace(/\s+/g, "-");
-
+  
     let leagueId = selectedLeagueId;
     let leagueName = selectedLeagueName;
     if (customLeague.trim()) {
       leagueId = "custom";
       leagueName = customLeague.trim();
     }
+  
+  // ---------- PAST RESULT MODE ----------
+if (pastResultMode) {
+  const hs = Number(homeScoreInput);
+  const as = Number(awayScoreInput);
+  if (!Number.isFinite(hs) || hs < 0 || !Number.isFinite(as) || as < 0) {
+    alert("Please enter valid non-negative scores for both teams.");
+    return;
+  }
 
-    // ---- NEW: include Pre-game Card data in Firestore broadcast (optional) ----
+  // who is 'home' in the saved doc
+  const homeNameFinal = selectedVenue === "home" ? passedTeamName : opponentNameFinal;
+  const awayNameFinal = selectedVenue === "home" ? opponentNameFinal : passedTeamName;
+
+  const homeColorFinal = selectedVenue === "home" ? (teamColor || "#8B5CF6") : awayTeamColor;
+  const awayColorFinal = selectedVenue === "home" ? awayTeamColor : (teamColor || "#8B5CF6");
+  const homeLogoFinal  = selectedVenue === "home" ? null : opponentLogo;
+  const awayLogoFinal  = selectedVenue === "home" ? opponentLogo : null;
+
+  const docData = {
+    id: slug,
+    slug,
+    link: `/liveGames/${slug}`,
+    createdAt: Date.now(),
+    scheduledStart: { date: dateStr },
+    homeTeamName: homeNameFinal,
+    teamNames: { home: homeNameFinal, away: awayNameFinal },
+    opponentName: awayNameFinal,
+    logos: { home: homeLogoFinal || "", away: awayLogoFinal || "" },
+    homeTeamColor: homeColorFinal,
+    awayTeamColor: awayColorFinal,
+    opponentGroup: selectedGroup || "",
+    venue: selectedVenue,
+    league: { id: leagueId, name: leagueName },
+    passedScore: { home: hs, away: as },
+    gameState: true,        // finished
+    gameActions: [],
+    quarter: 4,
+    isLive: false,
+    broadcast: false,
+    preGameCardEnabled: false,
+  };
+
+  try {
+    await setDoc(doc(firestore, "liveGames", slug), docData);
+
+    // define gameState BEFORE navigate so it doesn't throw
+    const gameState = {
+      opponentName: opponentNameFinal,
+      selectedVenue,
+      playerStatsEnabled: false,
+      lineout: null,
+      opponentLogo,
+      minutesTracked: false,
+      passedTeamName,
+      broadcast: false,
+      preGameCardEnabled: false,
+      preGameCard: null,
+      slug,
+      awayTeamColor,
+      pastHomeScore: hs,   // 👈 add this
+      pastAwayScore: as,   // 👈 add this
+      leagueId,
+      leagueName,
+      opponentGroup: selectedGroup,
+      finished: true,
+    };
+
+    navigate("/ingame", { state: gameState });
+  } catch (err) {
+    console.error("Error saving past result or navigating:", err);
+    alert("Could not save past result. Please try again.");
+  }
+  return;
+}
+
+  
+    // ---------- NORMAL FLOW (your existing behavior) ----------
+    // If broadcasting, create the live game shell now
     if (broadcastToggle) {
       await setDoc(doc(firestoreDb, "liveGames", slug), {
         homeTeamName: passedTeamName,
+        teamNames: { home: passedTeamName, away: opponentNameFinal },
         opponentName: opponentNameFinal,
-        createdAt: new Date(),
+        createdAt: Date.now(),
         isLive: true,
         slug,
+        link: `/liveGames/${slug}`,
         awayTeamColor,
         homeTeamColor: teamColor || "#8B5CF6",
-        leagueId,
-        leagueName,
+        league: { id: leagueId, name: leagueName },
         venue: selectedVenue,
+        opponentGroup: selectedGroup || "",
+        scheduledStart: { date: dateStr },
+        passedScore: { home: 0, away: 0 },
+        gameState: false,
+        gameActions: [],
         preGameCardEnabled: showPreGameCard,
         preGameCard: showPreGameCard ? preGame : null,
+        logos: { home: "", away: opponentLogo || "" },
       });
     }
-
-    // ---- pass everything to InGame route ----
+  
+    // continue to in-game screen with your existing state
     const gameState = {
       opponentName: opponentNameFinal,
       selectedVenue,
@@ -320,13 +409,11 @@ export default function StartGame() {
       leagueId,
       leagueName,
       opponentGroup: selectedGroup,
-      preGameCardEnabled: showPreGameCard,
-      preGameCard: showPreGameCard ? preGame : null,
     };
-
+  
     navigate("/ingame", { state: gameState });
   };
-
+  
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -377,6 +464,7 @@ export default function StartGame() {
   const awayColor = isHome ? awayTeamColor : teamColor;
 
   // ---------- Small WL chip + Recent Form row ----------
+  // This is where I will determine the Win and loss form of the team being printed 
   const WLChip = ({ value, onToggle }) => (
     <button
       type="button"
@@ -435,7 +523,58 @@ export default function StartGame() {
             </svg>
             <span className="font-medium text-sm">{showPreview ? "Hide Preview" : "Preview"}</span>
           </button>
+          
         </div>
+{/* ---------- Past Result (no stats) ---------- */}
+<div className="bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3 mt-1">
+  <span className="text-sm text-gray-200 font-medium">Enter Past Result (no stats)</span>
+  <label className="inline-flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      checked={pastResultMode}
+      onChange={(e) => setPastResultMode(e.target.checked)}
+      className="sr-only peer"
+    />
+    <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:bg-blue-600 transition-all" />
+  </label>
+</div>
+
+{/* Scores inputs when pastResultMode */}
+<div className={`overflow-hidden transition-all duration-300 ease-out ${
+  pastResultMode ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
+}`}>
+  <div className="grid grid-cols-2 gap-3">
+    <div>
+      <label className="block text-[11px] text-gray-400 mb-1">
+        {selectedVenue === "home" ? (passedTeamName || "Home") : (selectedOpponentName || customOpponent || "Home")} Score
+      </label>
+      <input
+        type="number"
+        min="0"
+        value={homeScoreInput}
+        onChange={(e) => setHomeScoreInput(e.target.value)}
+        className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+        placeholder="0"
+      />
+    </div>
+    <div>
+      <label className="block text-[11px] text-gray-400 mb-1">
+        {selectedVenue === "away" ? (passedTeamName || "Away") : (selectedOpponentName || customOpponent || "Away")} Score
+      </label>
+      <input
+        type="number"
+        min="0"
+        value={awayScoreInput}
+        onChange={(e) => setAwayScoreInput(e.target.value)}
+        className="w-full px-2 py-2 rounded-md bg-gray-900/60 border border-gray-700 text-sm text-white"
+        placeholder="0"
+      />
+    </div>
+  </div>
+  <p className="text-xs text-amber-300 mt-2">
+    This will save the game as <span className="font-semibold">Full Time</span> with no stats.
+  </p>
+</div>
 
         {/* PREVIEW CARD (hidden by default) */}
         {showPreview && (

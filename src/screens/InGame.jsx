@@ -138,13 +138,26 @@ const [selectedDate, setSelectedDate] = useState(defaultDate);
 const [selectedTime, setSelectedTime] = useState(defaultTime);
 const [isMobile, setIsMobile] = useState(false);
 const [awayLineout, setAwayLineout] = useState(savedGame?.awayLineout || null);
+
 // --- Pre-game Card (optional) ---
 const [preGameCardEnabled, setPreGameCardEnabled] = useState(
   savedGame?.preGameCardEnabled ?? location.state?.preGameCardEnabled ?? false
 );
+
 const [preGameCard, setPreGameCard] = useState(
   savedGame?.preGameCard ?? location.state?.preGameCard ?? null
 );
+//grabbing the state of thwe passed score entered 
+// Treat as a past-result game if the scores are present
+// const isPastResult = savedGame?.pastHomeScore != null && savedGame?.pastAwayScore != null;
+// true if this InGame was launched in "past result" mode (no stats)
+const isPastResult =
+  savedGame?.pastHomeScore != null &&
+  savedGame?.pastAwayScore != null;
+
+// freeze it so it doesn't flip later
+const [passedGameFlag] = useState(Boolean(isPastResult));
+
 const [quarterTimes, setQuarterTimes] = useState(savedGame?.quarterTimes || {
   1: { minutes: 10, seconds: 0 },
   2: { minutes: 10, seconds: 0 },
@@ -195,6 +208,24 @@ useEffect(() => {
   // Cleanup listener on unmount
   return () => window.removeEventListener("resize", checkMobile);
 }, []);
+
+
+useEffect(() => {
+  if (!isPastResult) return;
+
+  const isHomeVenue = (savedGame?.selectedVenue || "home") === "home";
+  const home = Number(savedGame?.pastHomeScore) || 0;
+  const away = Number(savedGame?.pastAwayScore) || 0;
+
+  // your team is "home" when selectedVenue === "home"
+  setTeamScore(isHomeVenue ? home : away);
+  setOpponentScore(isHomeVenue ? away : home);
+
+  // optional: freeze the clock / set Q4
+  setIsRunning(false);
+  setCurrentQuarter(4);
+}, [isPastResult, savedGame]);
+
 // Ensure leagueId and leagueName are always set from navigation state or savedGame
 useEffect(() => {
   let id = "";
@@ -261,10 +292,8 @@ useEffect(() => {
 
   initTeamName();
 }, [user, savedGame, locationGameState]);
-const opponentScore = gameActions
-  .filter(a => a.type === 'score' && a.team === 'away')
-  .reduce((sum, a) => sum + a.points, 0);
-  const [prevOpponentScore, setPrevOpponentScore] = useState(opponentScore);
+const [opponentScore, setOpponentScore] = useState(0);
+const [prevOpponentScore, setPrevOpponentScore] = useState(0);
 useEffect(() => {
   minutesRef.current = minutes;
 }, [minutes]);
@@ -292,17 +321,22 @@ const filteredLeadChanges =
         .filter((lead) => lead.q === parseInt(String(selectedQuarter).replace("Q", "")
       ));
       const latestLeadChange = filteredLeadChanges.find(lead => lead.team === homeTeamName);
-
-useEffect(() => {
-  const totalPoints = gameActions.reduce((sum, action) => {
-    if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
-      return sum + (action.actionName === "2 Points" ? 2 : action.actionName === "3 Points" ? 3 : 1);
-    }
-    return sum;
-  }, 0);
-  
-  setTeamScore(totalPoints);
-}, [gameActions]); // Recalculate when `gameActions` change
+      useEffect(() => {
+         if (isPastResult) return; // don't overwrite imported scores
+        
+          const totalPoints = gameActions.reduce((sum, action) => {
+            if (["2 Points", "3 Points", "FT Score"].includes(action.actionName)) {
+              return sum + (action.actionName === "2 Points" ? 2
+                            : action.actionName === "3 Points" ? 3
+                            : 1);
+            }
+            return sum;
+          }, 0);
+        
+          setTeamScore(totalPoints);
+    
+        }, [gameActions, isPastResult]);
+        
 
 
 const updateLiveClock = async () => {
@@ -744,7 +778,8 @@ const updateLiveBroadcast = async () => {
         id: finalLeagueId,
         name: finalLeagueName
       },
-      
+       passedGame: passedGameFlag,   // 👈 add this
+ hasStats: !passedGameFlag, 
       // You might also want to include these for backward compatibility
       leagueId: finalLeagueId,
       leagueName: finalLeagueName,
@@ -1174,6 +1209,8 @@ const handleSaveGame = async () => {
       home: teamScore,
       opponent: opponentScore,
     },
+     passedGame: passedGameFlag,   // 👈 add this
+ hasStats: !passedGameFlag,    // (optional)
     homeTeamName,
     userId: user ? user.uid : null,
     synced: !!user,
