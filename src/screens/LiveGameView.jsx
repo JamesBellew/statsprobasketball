@@ -10,9 +10,6 @@ import { useNavigate } from "react-router-dom";
 import jersey from '../assets/jersey2.png'
 import InGameScoreSheet from "./LiveGameComponents/InGameScoreSheet";
 import { PreGameCard } from "./LiveGameComponents/PreGameCard";
-import NoStatsMessage from "./InGameComponents/Modals/NoStatsMessage";
-import ShareButton from "./InGameComponents/Components/Buttons/ShareButton";
-
 
 
 export default function LiveGameView() {
@@ -28,7 +25,6 @@ export default function LiveGameView() {
   // const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
   const [gameStatsToggleMode,setGameStatsToggleMode]= useState(null);
   const navigate = useNavigate();
-  const gameLink = gameData?.link;
   const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
   const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
   const [lineoutPlayers, setLineoutPlayers] = useState([]);
@@ -352,7 +348,7 @@ const awayScores = getQuarterScores(gameData?.gameActions, "away");
 // Compute winner boolean flags beforehand:
 const homeWon = gameData?.gameState && (gameData?.score?.home > gameData?.score?.away);
 const awayWon = gameData?.gameState && (gameData?.score?.away > gameData?.score?.home);
-const score = gameData?.passedScore ?? gameData?.score ?? { home: 0, away: 0 };
+
 console.log('this is the gamedata object', gameData);
 //lets check to see if the game that is opened is a scheduled game or what and if so lets open the lineoutmenue on start
 // useEffect(()=>{
@@ -731,8 +727,6 @@ const handleTeamClick = (passedteamName) => {
               <a onClick={()=>{
                 navigate('/liveGameHomeDashboard')
               }} className="hover:text-white border-b-2 border-b-primary-cta pb-1">LiveGames</a>
-<ShareButton link={gameLink} />
-
             </nav>
 
             {/* Mobile Hamburger - ✅ Use React onClick instead of DOM manipulation */}
@@ -783,8 +777,6 @@ const handleTeamClick = (passedteamName) => {
               navigate('/teamsDashboard');
               handleCloseMobileMenu(); // Close menu after navigation
             }} className="block hover:text-blue-400">Teams</a>
-        <ShareButton link={gameLink} />
-
           </nav>
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">
@@ -934,7 +926,7 @@ const handleTeamClick = (passedteamName) => {
 
   {/* SCORE */}
   <div className="flex flex-col items-center mt-5 w-1/3">
-    <p className="text-2xl font-bold text-white">{score?.home ?? 0} - {score?.away ?? 0}</p>
+    <p className="text-2xl font-bold text-white">{gameData.score?.home ?? 0} - {gameData.score?.away ?? 0}</p>
     <p className="text-xs text-gray-300">
       {gameData?.quarter > 4 ? `OT ${gameData.quarter - 4}` : `Q${gameData?.quarter ?? 1}`} 
       &nbsp;|&nbsp;
@@ -1953,14 +1945,7 @@ const handleTeamClick = (passedteamName) => {
 </div>
     </div>
       </div>
-      
-      <div className="mt-5 px-2">
-{ gameData?.passedScore ?
- <NoStatsMessage />
- : ""
-}
 
-</div>
       {/* {gameData?.gameActions?.length > 0 && ( */}
       {showPreGameCard ? (
   <div className="mt-5 px-4 flex justify-center">
