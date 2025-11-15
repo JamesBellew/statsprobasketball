@@ -66,7 +66,7 @@ const [teamOptions, setTeamOptions] = useState([]);
   .sort((a, b) => {
     const aDate = a?.scheduledStart?.date ? new Date(a.scheduledStart.date) : new Date(0);
     const bDate = b?.scheduledStart?.date ? new Date(b.scheduledStart.date) : new Date(0);
-    return bDate - aDate; // Earliest date first
+    return aDate - bDate; // Earliest date first
 
   });
 
@@ -279,7 +279,7 @@ navigate("/")
     </nav>
     <div>
       <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
-     StatsPro | Basketball<br></br> Beta
+     StatsPro | Basketball<br></br> Alpha 1.63
       </div>
     </div>
   </div>
@@ -310,10 +310,8 @@ navigate("/")
           <h3 className="text-sm font-semibold text-gray-300 mb-4 border-l-gray-800/40 py-2 pl-2">{league}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  gap-6 mb-10">
             {games.map((game) => {
-           const score = game.passedScore ?? game.score ?? { home: 0, away: 0 };
-           const homeScore = score.home;
-           const awayScore = score.away;
-           
+              const homeScore = game.score?.home ?? 0;
+              const awayScore = game.score?.away ?? 0;
               const currentQ = game.quarter ?? 2;
             
               // Robust home/away logic
@@ -725,10 +723,8 @@ navigate("/")
 
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {recentGamesOnly.map((game) => {
-const score = game.passedScore ?? game.score ?? { home: 0, away: 0 };
-const homeScore = score.home;
-const awayScore = score.away;
-
+      const homeScore = game.score?.home ?? 0;
+      const awayScore = game.score?.away ?? 0;
 
       // home/away via venue (same logic you already use)
       const isVenueHome = game.venue === 'home';

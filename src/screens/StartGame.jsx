@@ -323,7 +323,8 @@ if (pastResultMode) {
     opponentGroup: selectedGroup || "",
     venue: selectedVenue,
     league: { id: leagueId, name: leagueName },
-    passedScore: { home: hs, away: as },
+    //! Again, good idea, bad execution, will come back to this featire as a later date
+    // passedScore: { home: hs, away: as },
     gameState: true,        // finished
     gameActions: [],
     quarter: 4,
@@ -383,7 +384,8 @@ if (pastResultMode) {
         venue: selectedVenue,
         opponentGroup: selectedGroup || "",
         scheduledStart: { date: dateStr },
-        passedScore: { home: 0, away: 0 },
+        //! removing for now, good idea, bad excecution
+        // passedScore: { home: 0, away: 0 },
         gameState: false,
         gameActions: [],
         preGameCardEnabled: showPreGameCard,
@@ -526,7 +528,7 @@ if (pastResultMode) {
           
         </div>
 {/* ---------- Past Result (no stats) ---------- */}
-<div className="bg-gray-800 rounded-lg flex items-center justify-between px-4 py-3 mt-1">
+<div className="bg-gray-800 hidden rounded-lg flex items-center justify-between px-4 py-3 mt-1">
   <span className="text-sm text-gray-200 font-medium">Enter Past Result (no stats)</span>
   <label className="inline-flex items-center cursor-pointer">
     <input

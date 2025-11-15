@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import jersey from '../assets/jersey2.png'
 import InGameScoreSheet from "./LiveGameComponents/InGameScoreSheet";
 import { PreGameCard } from "./LiveGameComponents/PreGameCard";
+import ShareButton from "./InGameComponents/Components/Buttons/ShareButton";
+
 
 
 export default function LiveGameView() {
@@ -766,21 +768,26 @@ const handleTeamClick = (passedteamName) => {
             </button>
           </div>
           <nav className="space-y-6 text-lg">
-            <a onClick={() => {
-              navigate('/');
-              handleCloseMobileMenu(); // Close menu after navigation
-            }} className="block hover:text-blue-400">Home</a>
-            <a onClick={()=>{
-              navigate("/../liveGameHomeDashboard")
-            }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Live Games</a>
-                <a onClick={() => {
-              navigate('/teamsDashboard');
-              handleCloseMobileMenu(); // Close menu after navigation
-            }} className="block hover:text-blue-400">Teams</a>
-          </nav>
+  <a onClick={() => { navigate('/'); handleCloseMobileMenu(); }} className="block hover:text-blue-400">
+    Home
+  </a>
+
+  <a onClick={() => { navigate("/../liveGameHomeDashboard"); }} className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">
+    Live Games
+  </a>
+
+  <a onClick={() => { navigate('/teamsDashboard'); handleCloseMobileMenu(); }} className="block hover:text-blue-400">
+    Teamsddd
+  </a>
+
+  {/* Share button */}
+  <ShareButton link={window.location.href} />
+</nav>
+
+
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">
-     StatsPro | Basketball<br></br> Beta
+     StatsPro | Basketball<br></br> Alpha 1.63
       </div>
           </div>
         </div>
