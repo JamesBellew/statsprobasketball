@@ -1700,7 +1700,7 @@ const handleTeamClick = (passedteamName) => {
   </div>
 
   <div
-    className="w-full   
+    className="w-full   pb-4
       h-[40vh] sm:h-[35vh] md:h-[30vh] lg:h-[28vh] xl:h-[25vh] 
       max-h-[500px] bg-opacity-40 rounded-lg flex items-center justify-center"
   >
