@@ -25,10 +25,10 @@ export default function LiveGameView() {
   const [gameFinsihedFlag, setGameFinsihedFlag] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // ✅ Add React state for mobile menu
   // const [gameStatsToggleMode,setGameStatsToggleMode]= useState('Game');
-  const [gameStatsToggleMode,setGameStatsToggleMode]= useState(null);
+  const [gameStatsToggleMode,setGameStatsToggleMode]= useState("Game");
   const navigate = useNavigate();
-  const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
-  const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
+  // const maxQuarter = gameData?.quarter > 4 ? gameData.quarter : 4;
+
   const [lineoutPlayers, setLineoutPlayers] = useState([]);
   const location = useLocation();
   const isScheduled = Boolean(location?.state?.isScheduled);
@@ -38,14 +38,37 @@ export default function LiveGameView() {
   const [selectedPlayerCard, setSelectedPlayerCard] = useState(null);  
   // at top of component:
 const [showPreGameCard, setShowPreGameCard] = useState(false);
-
+const [shotQuarterFilter, setShotQuarterFilter] = useState("All");
   const SUB_TTL_MS = 7500;
   // pop when score changes
 const [homePop, setHomePop] = useState(false);
 const [awayPop, setAwayPop] = useState(false);
 const prevScoresRef = useRef({ home: null, away: null });
 
+const allActions = Array.isArray(gameData?.gameActions)
+  ? gameData.gameActions
+  : [];
 
+// find max quarter that appears in actions
+const maxQuarter = allActions.reduce((max, a) => {
+  if (typeof a.quarter === "number") {
+    return Math.max(max, a.quarter);
+  }
+  return max;
+}, 1);
+
+// build buttons: All, Q1–Q4, OT1, OT2...
+const quarterOptions = [
+  { label: "All", value: "All" },
+  ...Array.from({ length: maxQuarter }, (_, i) => {
+    const q = i + 1;
+    return {
+      label: q <= 4 ? `Q${q}` : `OT${q - 4}`,
+      value: q,
+    };
+  }),
+];
+const quarters = Array.from({ length: maxQuarter }, (_, i) => i + 1);
 // NEW: toggle logic (same -> close, different -> switch)
 const handlePlayerCardClick = (player) => {
   setSelectedPlayerCard((prev) =>
@@ -729,6 +752,7 @@ const handleTeamClick = (passedteamName) => {
               <a onClick={()=>{
                 navigate('/liveGameHomeDashboard')
               }} className="hover:text-white border-b-2 border-b-primary-cta pb-1">LiveGames</a>
+                <ShareButton link={window.location.href} />
             </nav>
 
             {/* Mobile Hamburger - ✅ Use React onClick instead of DOM manipulation */}
@@ -787,7 +811,7 @@ const handleTeamClick = (passedteamName) => {
 
           <div>
           <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-s-lg">
-     StatsPro | Basketball<br></br> Alpha 1.63
+     StatsPro | Basketball<br></br> Alpha 1.64
       </div>
           </div>
         </div>
@@ -1080,7 +1104,7 @@ const handleTeamClick = (passedteamName) => {
 </div>
 
 
-<div className="overflow-x-auto mt-2 px-2  min-h-[20vh] py-5">
+<div className="overflow-x-auto mt-1 px-2  min-h-[20vh] ">
   {gameStatsToggleMode === 'Game' ? (
     <>
     <table className="w-full text-sm text-center bg-opacity-60 text-white rounded-s-lg">
@@ -1630,49 +1654,109 @@ const handleTeamClick = (passedteamName) => {
     <div className="text-center text-white py-10">No Lineout's uploaded yet</div>
   )
 ) : gameStatsToggleMode === 'Map' ? (
-  <>
-     <div className="flex  flex-row w-full h-10 items-center justify-center space-x-4" data-section="map-team-nav-div">
-      <button style={{borderBottomColor: gameData?.homeTeamColor || '#8B5CF6'}} className="text-white text-sm font-medium border-b-2 ">{homeTeamName || "Home"}</button>
-      <button style={{borderBottomColor: gameData?.awayTeamColor || '#0b63fb'}} className="text-gray-600 line-through text-sm font-medium">{awayTeamName || "Away"}</button>
-     </div>
-     <div className="w-full  
-  h-[40vh] sm:h-[35vh] md:h-[30vh] lg:h-[28vh] xl:h-[25vh] 
-  max-h-[500px] pb-5 bg-opacity-40 rounded-lg flex items-center justify-center">
-    
-  <div className="border-[1px] border-gray-600/40 rounded-md h-full w-full relative" data-section="court">
-    <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full"></div>
-    <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40"></div>
-    <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40"></div>
-
-    {/* Home team score dots */}
-    {(() => {
-      const homeShots = Array.isArray(gameData?.gameActions)
-        ? gameData.gameActions.filter(a => a.team === 'home' && typeof a.x === 'number' && typeof a.y === 'number')
-        : [];
-      const latestIdx = homeShots.length - 1;
-      return homeShots.map((action, idx) => {
-        const isMiss = typeof action.actionName === 'string' && action.actionName.toLowerCase().includes('miss');
-        const dotClass = `${isMiss ? 'bg-primary-red' : action.type === 'score' ? 'bg-primary-green' : 'bg-gray-400'} border-2 border-white/20 shadow` + (idx === latestIdx ? ' animate-shot-glow' : '');
-        return (
-          <div
-            key={idx}
-            className={`absolute w-3 h-3 ${dotClass}`}
-            style={{
-              left: `${action.x}%`,
-              top: `${action.y}%`,
-              zIndex: 10,
-              clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-              transform: 'translate(-50%, -50%)',
-            }}
-            title={`Q${action.quarter} (${action.points} pts)`}
-          />
-        );
-      });
-    })()}
+<>
+  {/* Team toggle */}
+  <div
+    className="flex flex-row w-full h-auto items-center justify-center space-x-4"
+    data-section="map-team-nav-div"
+  >
+    <button
+      style={{ borderBottomColor: gameData?.homeTeamColor || "#8B5CF6" }}
+      className="text-white text-sm font-medium border-b-2 "
+    >
+      {homeTeamName || "Home"}
+    </button>
+    <button
+      style={{ borderBottomColor: gameData?.awayTeamColor || "#0b63fb" }}
+      className="text-gray-600 line-through text-sm font-medium"
+    >
+      {awayTeamName || "Away"}
+    </button>
   </div>
-</div>
 
-  </>
+  {/* NEW: quarter filter buttons */}
+  <div
+    className="mt-3 mb-2 flex flex-wrap justify-center gap-2 text-xs"
+    data-section="map-quarter-filter"
+  >
+    {quarterOptions.map((opt) => {
+      const isActive = shotQuarterFilter === opt.value;
+      return (
+        <button
+          key={opt.label}
+          type="button"
+          onClick={() => setShotQuarterFilter(opt.value)}
+          className={`px-3 py-1 rounded-lg border text-xs font-medium transition
+            ${
+              isActive
+                ? "bg-primary-cta text-black border-primary-cta"
+                : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
+            }`}
+        >
+          {opt.label}
+        </button>
+      );
+    })}
+  </div>
+
+  <div
+    className="w-full   
+      h-[40vh] sm:h-[35vh] md:h-[30vh] lg:h-[28vh] xl:h-[25vh] 
+      max-h-[500px] bg-opacity-40 rounded-lg flex items-center justify-center"
+  >
+    <div
+      className="border-[1px] border-gray-600/40 rounded-md h-full w-full relative"
+      data-section="court"
+    >
+      <div className="absolute left-1/2 top-0 w-[82.5%] h-[90%] -translate-x-1/2 border-b-[2px] border-x-2 border-t-0 border-gray-600/40 rounded-b-full" />
+      <div className="absolute left-1/2 top-0 w-1/3 h-[55%] -translate-x-1/2 border-[2px] border-gray-600/40" />
+      <div className="absolute top-[55%] w-1/3 left-1/3 h-1/4 rounded-b-full border-[2px] border-gray-600/40" />
+
+      {/* Home team score dots */}
+      {(() => {
+        const homeShots = allActions.filter(
+          (a) =>
+            a.team === "home" &&
+            typeof a.x === "number" &&
+            typeof a.y === "number" &&
+            (shotQuarterFilter === "All" || a.quarter === shotQuarterFilter)
+        );
+
+        const latestIdx = homeShots.length - 1;
+
+        return homeShots.map((action, idx) => {
+          const isMiss =
+            typeof action.actionName === "string" &&
+            action.actionName.toLowerCase().includes("miss");
+
+          const dotClass =
+            `${isMiss ? "bg-primary-red" : action.type === "score"
+                ? "bg-primary-green"
+                : "bg-gray-400"
+            } border-2 border-white/20 shadow` +
+            (idx === latestIdx ? " animate-shot-glow" : "");
+
+          return (
+            <div
+              key={idx}
+              className={`absolute w-3 h-3 ${dotClass}`}
+              style={{
+                left: `${action.x}%`,
+                top: `${action.y}%`,
+                zIndex: 10,
+                clipPath:
+                  "polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)",
+                transform: "translate(-50%, -50%)",
+              }}
+              title={`Q${action.quarter} (${action.points} pts)`}
+            />
+          );
+        });
+      })()}
+    </div>
+  </div>
+</>
+
 ) : (
   <div className="w-full h-auto flex flex-col gap-3 px-4 ">
   

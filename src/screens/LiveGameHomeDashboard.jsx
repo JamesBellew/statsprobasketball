@@ -279,7 +279,7 @@ navigate("/")
     </nav>
     <div>
       <div className="block text-center text-blue-500 font-semibold text-gray-400 py-3 rounded-lg">
-     StatsPro | Basketball<br></br> Alpha 1.63
+     StatsPro | Basketball<br></br> Alpha 1.64
       </div>
     </div>
   </div>

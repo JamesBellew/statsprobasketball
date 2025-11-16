@@ -37,7 +37,7 @@ const LineoutModal = (props) => {
     setOpponentLineoutName(awayLineout?.name || "Opponent");
     const initialPlayers = awayLineout?.players || Array.from({ length: 5 }, () => ({ name: "", number: "", image: null }));
     setOpponentPlayers(initialPlayers.map(p => ({ name: p.name || "", number: String(p.number ?? "").trim(), image: p.image ?? null })));
-    setAddPhotos(!!awayLineout?.players?.some(p => p.image));
+    setAddPhotos(!!awayLineout?.players?.some(p => p.image)); 
   }, [awayLineout]);
 
   // ✅ this hook is now always in a fixed position when the component renders
@@ -181,45 +181,100 @@ const LineoutModal = (props) => {
                   Edit Roster
                 </button>
               </div>
-
               {homeSubTab === "oncourt" ? (
-                <>
-                  <h3 className="text-white text-lg text-center mb-4">Manage On-Court Players</h3>
-                  {passedLineout?.players ? (
-                    <>
-                      <p className="text-gray-400 text-sm mb-2">On Floor ({onFloorPlayers.length}/5)</p>
-                      {onFloorPlayers.map((player) => (
-                        <div key={player.number} className="flex justify-between items-center text-white py-1">
-                          <span>{player.name} #{player.number}</span>
-                          <input
-                            type="checkbox"
-                            checked={onCourtPlayers.includes(player.number)}
-                            onChange={() => handleTogglePlayer(player.number)}
-                            className="form-checkbox h-5 w-5 text-primary-cta bg-gray-800 border-gray-600 rounded focus:ring-primary-cta"
-                          />
-                        </div>
-                      ))}
+  <>
+    <h3 className="text-white text-lg text-center mb-4">
+      Manage On-Court Players
+    </h3>
 
-                      <hr className="border-gray-700 my-4" />
+    {passedLineout?.players ? (
+      <>
+        {/* ON FLOOR */}
+        <p className="text-gray-400 text-sm mb-2">
+          On Floor ({onFloorPlayers.length}/5)
+        </p>
+        <div className="space-y-1.5">
+          {onFloorPlayers.map((player, idx) => (
+            <div
+              key={player.number}
+              className={`flex items-center justify-between px-3 py-2 rounded-md
+                ${idx % 2 === 0 ? "bg-secondary-bg/60" : "bg-secondary-bg/30"}`}
+            >
+              <span className="text-sm text-white">
+                {player.name}{" "}
+                <span className="text-gray-400">#{player.number}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={onCourtPlayers.includes(player.number)}
+                onChange={() => handleTogglePlayer(player.number)}
+                className="form-checkbox h-5 w-5 text-primary-cta bg-gray-800 border-gray-600 rounded focus:ring-primary-cta"
+              />
+            </div>
+          ))}
+        </div>
 
-                      <p className="text-gray-400 text-sm mb-2">Bench</p>
-                      {benchPlayers.map((player) => (
-                        <div key={player.number} className="flex justify-between items-center text-white py-1">
-                          <span>{player.name} #{player.number}</span>
-                          <input
-                            type="checkbox"
-                            checked={onCourtPlayers.includes(player.number)}
-                            onChange={() => handleTogglePlayer(player.number)}
-                            className="form-checkbox h-5 w-5 text-primary-cta bg-gray-800 border-gray-600 rounded focus:ring-primary-cta"
-                          />
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <p className="text-gray-400 text-center">No home lineout set for this game.</p>
-                  )}
-                </>
-              ) : (
+        <hr className="border-gray-700 my-4" />
+
+        {/* BENCH */}
+     {/* Bench */}
+<p className="text-gray-400 text-sm mb-2 mt-4">Bench</p>
+
+{(() => {
+  // group bench players into rows of 2
+  const benchRows = [];
+  for (let i = 0; i < benchPlayers.length; i += 2) {
+    benchRows.push(benchPlayers.slice(i, i + 2));
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {benchRows.map((row, rowIdx) => (
+        <div
+          key={rowIdx}
+          className={`grid grid-cols-2 gap-2 px-3 py-2 rounded-md
+            ${rowIdx % 2 === 0 ? "bg-secondary-bg/60" : "bg-secondary-bg/30"}`}
+        >
+          {row.map((player) => (
+            <div
+              key={player.number}
+              className="flex items-center justify-between"
+            >
+              <div className="flex flex-col">
+                <span className="text-sm text-white font-medium truncate">
+                  {player.name}
+                </span>
+                <span className="text-xs text-gray-400">
+                  #{player.number}
+                </span>
+              </div>
+
+              <input
+                type="checkbox"
+                checked={onCourtPlayers.includes(player.number)}
+                onChange={() => handleTogglePlayer(player.number)}
+                className="form-checkbox h-5 w-5 text-primary-cta bg-gray-800
+                           border-gray-600 rounded focus:ring-primary-cta"
+              />
+            </div>
+          ))}
+
+          {/* if odd number of bench players, add an empty cell to keep grid even */}
+          {row.length === 1 && <div />}
+        </div>
+      ))}
+    </div>
+  );
+})()}
+
+      </>
+    ) : (
+      <p className="text-gray-400 text-center">
+        No home lineout set for this game.
+      </p>
+    )}
+  </>
+) : (
                 <>
                   <h3 className="text-white text-lg text-center mb-3">Edit Home Roster</h3>
                   <div className="space-y-2">

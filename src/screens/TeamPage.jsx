@@ -913,7 +913,7 @@ useEffect(() => {
             <a className="block hover:text-blue-400 text-white border-l-2 border-l-primary-cta pl-4">Teams</a>
           </nav>
           <div className="block text-center text-gray-400 py-3">
-            StatsPro | Basketball<br /> Alpha 1.63
+            StatsPro | Basketball<br /> Alpha 1.64
           
           </div>
         </div>
